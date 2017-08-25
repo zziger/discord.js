@@ -1339,7 +1339,7 @@ module.exports = Collection;
 /* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(Buffer) {const snekfetch = __webpack_require__(30);
+/* WEBPACK VAR INJECTION */(function(Buffer) {const snekfetch = __webpack_require__(31);
 const Constants = __webpack_require__(0);
 const ConstantsHttp = Constants.DefaultOptions.http;
 
@@ -3572,7 +3572,7 @@ process.umask = function() { return 0; };
 /* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Long = __webpack_require__(35);
+const Long = __webpack_require__(36);
 
 // Discord epoch (2015-01-01T00:00:00.000Z)
 const EPOCH = 1420070400000;
@@ -4324,7 +4324,7 @@ util.inherits = __webpack_require__(10);
 /*</replacement>*/
 
 var Readable = __webpack_require__(45);
-var Writable = __webpack_require__(33);
+var Writable = __webpack_require__(34);
 
 util.inherits(Duplex, Readable);
 
@@ -5852,7 +5852,7 @@ module.exports = Channel;
 exports = module.exports = __webpack_require__(45);
 exports.Stream = exports;
 exports.Readable = exports;
-exports.Writable = __webpack_require__(33);
+exports.Writable = __webpack_require__(34);
 exports.Duplex = __webpack_require__(12);
 exports.Transform = __webpack_require__(49);
 exports.PassThrough = __webpack_require__(84);
@@ -6211,8 +6211,8 @@ var substr = 'ab'.substr(-1) === 'b'
 const Message = __webpack_require__(22);
 const MessageCollector = __webpack_require__(61);
 const Collection = __webpack_require__(3);
-const Attachment = __webpack_require__(27);
-const RichEmbed = __webpack_require__(38);
+const Attachment = __webpack_require__(28);
+const RichEmbed = __webpack_require__(27);
 const util = __webpack_require__(13);
 
 /**
@@ -6739,6 +6739,7 @@ exports.applyToClass = (structure, full = false, ignore = []) => {
 const Mentions = __webpack_require__(56);
 const Attachment = __webpack_require__(57);
 const Embed = __webpack_require__(58);
+const RichEmbed = __webpack_require__(27);
 const MessageReaction = __webpack_require__(59);
 const ReactionCollector = __webpack_require__(60);
 const Util = __webpack_require__(4);
@@ -7103,7 +7104,7 @@ class Message {
   /**
    * Edit the content of the message.
    * @param {StringResolvable} [content] The new content for the message
-   * @param {MessageEditOptions} [options] The options to provide
+   * @param {MessageEditOptions|RichEmbed} [options] The options to provide
    * @returns {Promise<Message>}
    * @example
    * // Update the content of a message
@@ -7118,6 +7119,7 @@ class Message {
     } else if (!options) {
       options = {};
     }
+    if (options instanceof RichEmbed) options = { embed: options };
     return this.client.rest.methods.updateMessage(this, content, options);
   }
 
@@ -8129,6 +8131,238 @@ function nextTick(fn, arg1, arg2, arg3) {
 
 /***/ }),
 /* 27 */
+/***/ (function(module, exports, __webpack_require__) {
+
+const Attachment = __webpack_require__(28);
+let ClientDataResolver;
+
+/**
+ * A rich embed to be sent with a message with a fluent interface for creation.
+ * @param {Object} [data] Data to set in the rich embed
+ */
+class RichEmbed {
+  constructor(data = {}) {
+    /**
+     * Title for this Embed
+     * @type {string}
+     */
+    this.title = data.title;
+
+    /**
+     * Description for this Embed
+     * @type {string}
+     */
+    this.description = data.description;
+
+    /**
+     * URL for this Embed
+     * @type {string}
+     */
+    this.url = data.url;
+
+    /**
+     * Color for this Embed
+     * @type {number}
+     */
+    this.color = data.color;
+
+    /**
+     * Author for this Embed
+     * @type {Object}
+     */
+    this.author = data.author;
+
+    /**
+     * Timestamp for this Embed
+     * @type {Date}
+     */
+    this.timestamp = data.timestamp;
+
+    /**
+     * Fields for this Embed
+     * @type {Object[]}
+     */
+    this.fields = data.fields || [];
+
+    /**
+     * Thumbnail for this Embed
+     * @type {Object}
+     */
+    this.thumbnail = data.thumbnail;
+
+    /**
+     * Image for this Embed
+     * @type {Object}
+     */
+    this.image = data.image;
+
+    /**
+     * Footer for this Embed
+     * @type {Object}
+     */
+    this.footer = data.footer;
+
+    /**
+     * File to upload alongside this Embed
+     * @type {FileOptions|string|Attachment}
+     */
+    this.file = data.file;
+  }
+
+  /**
+   * Sets the title of this embed.
+   * @param {StringResolvable} title The title
+   * @returns {RichEmbed} This embed
+   */
+  setTitle(title) {
+    title = resolveString(title);
+    if (title.length > 256) throw new RangeError('RichEmbed titles may not exceed 256 characters.');
+    this.title = title;
+    return this;
+  }
+
+  /**
+   * Sets the description of this embed.
+   * @param {StringResolvable} description The description
+   * @returns {RichEmbed} This embed
+   */
+  setDescription(description) {
+    description = resolveString(description);
+    if (description.length > 2048) throw new RangeError('RichEmbed descriptions may not exceed 2048 characters.');
+    this.description = description;
+    return this;
+  }
+
+  /**
+   * Sets the URL of this embed.
+   * @param {string} url The URL
+   * @returns {RichEmbed} This embed
+   */
+  setURL(url) {
+    this.url = url;
+    return this;
+  }
+
+  /**
+   * Sets the color of this embed.
+   * @param {ColorResolvable} color The color of the embed
+   * @returns {RichEmbed} This embed
+   */
+  setColor(color) {
+    if (!ClientDataResolver) ClientDataResolver = __webpack_require__(37);
+    this.color = ClientDataResolver.resolveColor(color);
+    return this;
+  }
+
+  /**
+   * Sets the author of this embed.
+   * @param {StringResolvable} name The name of the author
+   * @param {string} [icon] The icon URL of the author
+   * @param {string} [url] The URL of the author
+   * @returns {RichEmbed} This embed
+   */
+  setAuthor(name, icon, url) {
+    this.author = { name: resolveString(name), icon_url: icon, url };
+    return this;
+  }
+
+  /**
+   * Sets the timestamp of this embed.
+   * @param {Date} [timestamp=current date] The timestamp
+   * @returns {RichEmbed} This embed
+   */
+  setTimestamp(timestamp = new Date()) {
+    this.timestamp = timestamp;
+    return this;
+  }
+
+  /**
+   * Adds a field to the embed (max 25).
+   * @param {StringResolvable} name The name of the field
+   * @param {StringResolvable} value The value of the field
+   * @param {boolean} [inline=false] Set the field to display inline
+   * @returns {RichEmbed} This embed
+   */
+  addField(name, value, inline = false) {
+    if (this.fields.length >= 25) throw new RangeError('RichEmbeds may not exceed 25 fields.');
+    name = resolveString(name);
+    if (name.length > 256) throw new RangeError('RichEmbed field names may not exceed 256 characters.');
+    if (!/\S/.test(name)) throw new RangeError('RichEmbed field names may not be empty.');
+    value = resolveString(value);
+    if (value.length > 1024) throw new RangeError('RichEmbed field values may not exceed 1024 characters.');
+    if (!/\S/.test(value)) throw new RangeError('RichEmbed field values may not be empty.');
+    this.fields.push({ name, value, inline });
+    return this;
+  }
+
+  /**
+   * Convenience function for `<RichEmbed>.addField('\u200B', '\u200B', inline)`.
+   * @param {boolean} [inline=false] Set the field to display inline
+   * @returns {RichEmbed} This embed
+   */
+  addBlankField(inline = false) {
+    return this.addField('\u200B', '\u200B', inline);
+  }
+
+  /**
+   * Set the thumbnail of this embed.
+   * @param {string} url The URL of the thumbnail
+   * @returns {RichEmbed} This embed
+   */
+  setThumbnail(url) {
+    this.thumbnail = { url };
+    return this;
+  }
+
+  /**
+   * Set the image of this embed.
+   * @param {string} url The URL of the image
+   * @returns {RichEmbed} This embed
+   */
+  setImage(url) {
+    this.image = { url };
+    return this;
+  }
+
+  /**
+   * Sets the footer of this embed.
+   * @param {StringResolvable} text The text of the footer
+   * @param {string} [icon] The icon URL of the footer
+   * @returns {RichEmbed} This embed
+   */
+  setFooter(text, icon) {
+    text = resolveString(text);
+    if (text.length > 2048) throw new RangeError('RichEmbed footer text may not exceed 2048 characters.');
+    this.footer = { text, icon_url: icon };
+    return this;
+  }
+
+  /**
+   * Sets the file to upload alongside the embed. This file can be accessed via `attachment://fileName.extension` when
+   * setting an embed image or author/footer icons. Only one file may be attached.
+   * @param {FileOptions|string|Attachment} file Local path or URL to the file to attach,
+   * or valid FileOptions for a file to attach
+   * @returns {RichEmbed} This embed
+   */
+  attachFile(file) {
+    if (this.file) throw new RangeError('You may not upload more than one file at once.');
+    if (file instanceof Attachment) file = file.file;
+    this.file = file;
+    return this;
+  }
+}
+
+module.exports = RichEmbed;
+
+function resolveString(data) {
+  if (typeof data === 'string') return data;
+  if (data instanceof Array) return data.join('\n');
+  return String(data);
+}
+
+
+/***/ }),
+/* 28 */
 /***/ (function(module, exports) {
 
 /**
@@ -8209,11 +8443,11 @@ module.exports = Attachment;
 
 
 /***/ }),
-/* 28 */
+/* 29 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const util = __webpack_require__(13);
-const Long = __webpack_require__(35);
+const Long = __webpack_require__(36);
 const User = __webpack_require__(14);
 const Role = __webpack_require__(15);
 const Emoji = __webpack_require__(23);
@@ -9435,7 +9669,7 @@ module.exports = Guild;
 
 
 /***/ }),
-/* 29 */
+/* 30 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Channel = __webpack_require__(17);
@@ -9828,7 +10062,7 @@ module.exports = GuildChannel;
 
 
 /***/ }),
-/* 30 */
+/* 31 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Snekfetch = __webpack_require__(78);
@@ -9839,7 +10073,7 @@ module.exports = Snekfetch;
 
 
 /***/ }),
-/* 31 */
+/* 32 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // Copyright Joyent, Inc. and other Node contributors.
@@ -9972,7 +10206,7 @@ Stream.prototype.pipe = function(dest, options) {
 
 
 /***/ }),
-/* 32 */
+/* 33 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* eslint-disable node/no-deprecated-api */
@@ -10040,7 +10274,7 @@ SafeBuffer.allocUnsafeSlow = function (size) {
 
 
 /***/ }),
-/* 33 */
+/* 34 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -10125,7 +10359,7 @@ var Stream = __webpack_require__(46);
 /*</replacement>*/
 
 /*<replacement>*/
-var Buffer = __webpack_require__(32).Buffer;
+var Buffer = __webpack_require__(33).Buffer;
 var OurUint8Array = global.Uint8Array || function () {};
 function _uint8ArrayToBuffer(chunk) {
   return Buffer.from(chunk);
@@ -10711,7 +10945,7 @@ Writable.prototype._destroy = function (err, cb) {
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(7), __webpack_require__(81).setImmediate, __webpack_require__(6)))
 
 /***/ }),
-/* 34 */
+/* 35 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -10722,7 +10956,7 @@ exports.encode = exports.stringify = __webpack_require__(90);
 
 
 /***/ }),
-/* 35 */
+/* 36 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*
@@ -11940,494 +12174,22 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
 
 
 /***/ }),
-/* 36 */
-/***/ (function(module, exports) {
-
-/**
- * Represents a limited emoji set used for both custom and unicode emojis. Custom emojis
- * will use this class opposed to the Emoji class when the client doesn't know enough
- * information about them.
- */
-class ReactionEmoji {
-  constructor(reaction, name, id) {
-    /**
-     * The message reaction this emoji refers to
-     * @type {MessageReaction}
-     */
-    this.reaction = reaction;
-
-    /**
-     * The name of this reaction emoji
-     * @type {string}
-     */
-    this.name = name;
-
-    /**
-     * The ID of this reaction emoji
-     * @type {?Snowflake}
-     */
-    this.id = id;
-  }
-
-  /**
-   * The identifier of this emoji, used for message reactions
-   * @type {string}
-   * @readonly
-   */
-  get identifier() {
-    if (this.id) return `${this.name}:${this.id}`;
-    return encodeURIComponent(this.name);
-  }
-
-  /**
-   * Creates the text required to form a graphical emoji on Discord.
-   * @example
-   * // Send the emoji used in a reaction to the channel the reaction is part of
-   * reaction.message.channel.send(`The emoji used is ${reaction.emoji}`);
-   * @returns {string}
-   */
-  toString() {
-    return this.id ? `<:${this.name}:${this.id}>` : this.name;
-  }
-}
-
-module.exports = ReactionEmoji;
-
-
-/***/ }),
 /* 37 */
-/***/ (function(module, exports, __webpack_require__) {
-
-const Collection = __webpack_require__(3);
-const EventEmitter = __webpack_require__(9).EventEmitter;
-
-/**
- * Filter to be applied to the collector.
- * @typedef {Function} CollectorFilter
- * @param {...*} args Any arguments received by the listener
- * @param {Collection} collection The items collected by this collector
- * @returns {boolean}
- */
-
-/**
- * Options to be applied to the collector.
- * @typedef {Object} CollectorOptions
- * @property {number} [time] How long to run the collector for
- */
-
-/**
- * Abstract class for defining a new Collector.
- * @abstract
- */
-class Collector extends EventEmitter {
-  constructor(client, filter, options = {}) {
-    super();
-
-    /**
-     * The client
-     * @name Collector#client
-     * @type {Client}
-     * @readonly
-     */
-    Object.defineProperty(this, 'client', { value: client });
-
-    /**
-     * The filter applied to this collector
-     * @type {CollectorFilter}
-     */
-    this.filter = filter;
-
-    /**
-     * The options of this collector
-     * @type {CollectorOptions}
-     */
-    this.options = options;
-
-    /**
-     * The items collected by this collector
-     * @type {Collection}
-     */
-    this.collected = new Collection();
-
-    /**
-     * Whether this collector has finished collecting
-     * @type {boolean}
-     */
-    this.ended = false;
-
-    /**
-     * Timeout for cleanup
-     * @type {?Timeout}
-     * @private
-     */
-    this._timeout = null;
-
-    /**
-     * Call this to handle an event as a collectable element
-     * Accepts any event data as parameters
-     * @type {Function}
-     * @private
-     */
-    this.listener = this._handle.bind(this);
-    if (options.time) this._timeout = this.client.setTimeout(() => this.stop('time'), options.time);
-  }
-
-  /**
-   * @param {...*} args The arguments emitted by the listener
-   * @emits Collector#collect
-   * @private
-   */
-  _handle(...args) {
-    const collect = this.handle(...args);
-    if (!collect || !this.filter(...args, this.collected)) return;
-
-    this.collected.set(collect.key, collect.value);
-
-    /**
-     * Emitted whenever an element is collected.
-     * @event Collector#collect
-     * @param {*} element The element that got collected
-     * @param {Collector} collector The collector
-     */
-    this.emit('collect', collect.value, this);
-
-    const post = this.postCheck(...args);
-    if (post) this.stop(post);
-  }
-
-  /**
-   * Return a promise that resolves with the next collected element;
-   * rejects with collected elements if the collector finishes without receving a next element
-   * @type {Promise}
-   * @readonly
-   */
-  get next() {
-    return new Promise((resolve, reject) => {
-      if (this.ended) {
-        reject(this.collected);
-        return;
-      }
-
-      const cleanup = () => {
-        this.removeListener('collect', onCollect);
-        this.removeListener('end', onEnd);
-      };
-
-      const onCollect = item => {
-        cleanup();
-        resolve(item);
-      };
-
-      const onEnd = () => {
-        cleanup();
-        reject(this.collected); // eslint-disable-line prefer-promise-reject-errors
-      };
-
-      this.on('collect', onCollect);
-      this.on('end', onEnd);
-    });
-  }
-
-  /**
-   * Stop this collector and emit the `end` event.
-   * @param {string} [reason='user'] The reason this collector is ending
-   * @emits Collector#end
-   */
-  stop(reason = 'user') {
-    if (this.ended) return;
-
-    if (this._timeout) this.client.clearTimeout(this._timeout);
-    this.ended = true;
-    this.cleanup();
-
-    /**
-     * Emitted when the collector is finished collecting.
-     * @event Collector#end
-     * @param {Collection} collected The elements collected by the collector
-     * @param {string} reason The reason the collector ended
-     */
-    this.emit('end', this.collected, reason);
-  }
-
-  /* eslint-disable no-empty-function, valid-jsdoc */
-  /**
-   * Handles incoming events from the `listener` function. Returns null if the event should not be collected,
-   * or returns an object describing the data that should be stored.
-   * @see Collector#listener
-   * @param {...*} args Any args the event listener emits
-   * @returns {?{key: string, value}} Data to insert into collection, if any
-   * @abstract
-   */
-  handle() {}
-
-  /**
-   * This method runs after collection to see if the collector should finish.
-   * @param {...*} args Any args the event listener emits
-   * @returns {?string} Reason to end the collector, if any
-   * @abstract
-   */
-  postCheck() {}
-
-  /**
-   * Called when the collector is ending.
-   * @abstract
-   */
-  cleanup() {}
-  /* eslint-enable no-empty-function, valid-jsdoc */
-}
-
-module.exports = Collector;
-
-
-/***/ }),
-/* 38 */
-/***/ (function(module, exports, __webpack_require__) {
-
-const Attachment = __webpack_require__(27);
-let ClientDataResolver;
-
-/**
- * A rich embed to be sent with a message with a fluent interface for creation.
- * @param {Object} [data] Data to set in the rich embed
- */
-class RichEmbed {
-  constructor(data = {}) {
-    /**
-     * Title for this Embed
-     * @type {string}
-     */
-    this.title = data.title;
-
-    /**
-     * Description for this Embed
-     * @type {string}
-     */
-    this.description = data.description;
-
-    /**
-     * URL for this Embed
-     * @type {string}
-     */
-    this.url = data.url;
-
-    /**
-     * Color for this Embed
-     * @type {number}
-     */
-    this.color = data.color;
-
-    /**
-     * Author for this Embed
-     * @type {Object}
-     */
-    this.author = data.author;
-
-    /**
-     * Timestamp for this Embed
-     * @type {Date}
-     */
-    this.timestamp = data.timestamp;
-
-    /**
-     * Fields for this Embed
-     * @type {Object[]}
-     */
-    this.fields = data.fields || [];
-
-    /**
-     * Thumbnail for this Embed
-     * @type {Object}
-     */
-    this.thumbnail = data.thumbnail;
-
-    /**
-     * Image for this Embed
-     * @type {Object}
-     */
-    this.image = data.image;
-
-    /**
-     * Footer for this Embed
-     * @type {Object}
-     */
-    this.footer = data.footer;
-
-    /**
-     * File to upload alongside this Embed
-     * @type {string}
-     */
-    this.file = data.file;
-  }
-
-  /**
-   * Sets the title of this embed.
-   * @param {StringResolvable} title The title
-   * @returns {RichEmbed} This embed
-   */
-  setTitle(title) {
-    title = resolveString(title);
-    if (title.length > 256) throw new RangeError('RichEmbed titles may not exceed 256 characters.');
-    this.title = title;
-    return this;
-  }
-
-  /**
-   * Sets the description of this embed.
-   * @param {StringResolvable} description The description
-   * @returns {RichEmbed} This embed
-   */
-  setDescription(description) {
-    description = resolveString(description);
-    if (description.length > 2048) throw new RangeError('RichEmbed descriptions may not exceed 2048 characters.');
-    this.description = description;
-    return this;
-  }
-
-  /**
-   * Sets the URL of this embed.
-   * @param {string} url The URL
-   * @returns {RichEmbed} This embed
-   */
-  setURL(url) {
-    this.url = url;
-    return this;
-  }
-
-  /**
-   * Sets the color of this embed.
-   * @param {ColorResolvable} color The color of the embed
-   * @returns {RichEmbed} This embed
-   */
-  setColor(color) {
-    if (!ClientDataResolver) ClientDataResolver = __webpack_require__(39);
-    this.color = ClientDataResolver.resolveColor(color);
-    return this;
-  }
-
-  /**
-   * Sets the author of this embed.
-   * @param {StringResolvable} name The name of the author
-   * @param {string} [icon] The icon URL of the author
-   * @param {string} [url] The URL of the author
-   * @returns {RichEmbed} This embed
-   */
-  setAuthor(name, icon, url) {
-    this.author = { name: resolveString(name), icon_url: icon, url };
-    return this;
-  }
-
-  /**
-   * Sets the timestamp of this embed.
-   * @param {Date} [timestamp=current date] The timestamp
-   * @returns {RichEmbed} This embed
-   */
-  setTimestamp(timestamp = new Date()) {
-    this.timestamp = timestamp;
-    return this;
-  }
-
-  /**
-   * Adds a field to the embed (max 25).
-   * @param {StringResolvable} name The name of the field
-   * @param {StringResolvable} value The value of the field
-   * @param {boolean} [inline=false] Set the field to display inline
-   * @returns {RichEmbed} This embed
-   */
-  addField(name, value, inline = false) {
-    if (this.fields.length >= 25) throw new RangeError('RichEmbeds may not exceed 25 fields.');
-    name = resolveString(name);
-    if (name.length > 256) throw new RangeError('RichEmbed field names may not exceed 256 characters.');
-    if (!/\S/.test(name)) throw new RangeError('RichEmbed field names may not be empty.');
-    value = resolveString(value);
-    if (value.length > 1024) throw new RangeError('RichEmbed field values may not exceed 1024 characters.');
-    if (!/\S/.test(value)) throw new RangeError('RichEmbed field values may not be empty.');
-    this.fields.push({ name, value, inline });
-    return this;
-  }
-
-  /**
-   * Convenience function for `<RichEmbed>.addField('\u200B', '\u200B', inline)`.
-   * @param {boolean} [inline=false] Set the field to display inline
-   * @returns {RichEmbed} This embed
-   */
-  addBlankField(inline = false) {
-    return this.addField('\u200B', '\u200B', inline);
-  }
-
-  /**
-   * Set the thumbnail of this embed.
-   * @param {string} url The URL of the thumbnail
-   * @returns {RichEmbed} This embed
-   */
-  setThumbnail(url) {
-    this.thumbnail = { url };
-    return this;
-  }
-
-  /**
-   * Set the image of this embed.
-   * @param {string} url The URL of the image
-   * @returns {RichEmbed} This embed
-   */
-  setImage(url) {
-    this.image = { url };
-    return this;
-  }
-
-  /**
-   * Sets the footer of this embed.
-   * @param {StringResolvable} text The text of the footer
-   * @param {string} [icon] The icon URL of the footer
-   * @returns {RichEmbed} This embed
-   */
-  setFooter(text, icon) {
-    text = resolveString(text);
-    if (text.length > 2048) throw new RangeError('RichEmbed footer text may not exceed 2048 characters.');
-    this.footer = { text, icon_url: icon };
-    return this;
-  }
-
-  /**
-   * Sets the file to upload alongside the embed. This file can be accessed via `attachment://fileName.extension` when
-   * setting an embed image or author/footer icons. Only one file may be attached.
-   * @param {FileOptions|string|Attachment} file Local path or URL to the file to attach,
-   * or valid FileOptions for a file to attach
-   * @returns {RichEmbed} This embed
-   */
-  attachFile(file) {
-    if (this.file) throw new RangeError('You may not upload more than one file at once.');
-    if (file instanceof Attachment) file = file.file;
-    this.file = file;
-    return this;
-  }
-}
-
-module.exports = RichEmbed;
-
-function resolveString(data) {
-  if (typeof data === 'string') return data;
-  if (data instanceof Array) return data.join('\n');
-  return String(data);
-}
-
-
-/***/ }),
-/* 39 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(Buffer) {const path = __webpack_require__(20);
 const fs = __webpack_require__(26);
-const snekfetch = __webpack_require__(30);
+const snekfetch = __webpack_require__(31);
 
 const Constants = __webpack_require__(0);
 const convertToBuffer = __webpack_require__(4).convertToBuffer;
 const User = __webpack_require__(14);
 const Message = __webpack_require__(22);
-const Guild = __webpack_require__(28);
+const Guild = __webpack_require__(29);
 const Channel = __webpack_require__(17);
 const GuildMember = __webpack_require__(24);
 const Emoji = __webpack_require__(23);
-const ReactionEmoji = __webpack_require__(36);
+const ReactionEmoji = __webpack_require__(38);
 
 /**
  * The DataResolver identifies different objects and tries to resolve a specific piece of information from them, e.g.
@@ -12774,13 +12536,253 @@ module.exports = ClientDataResolver;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(5).Buffer))
 
 /***/ }),
+/* 38 */
+/***/ (function(module, exports) {
+
+/**
+ * Represents a limited emoji set used for both custom and unicode emojis. Custom emojis
+ * will use this class opposed to the Emoji class when the client doesn't know enough
+ * information about them.
+ */
+class ReactionEmoji {
+  constructor(reaction, name, id) {
+    /**
+     * The message reaction this emoji refers to
+     * @type {MessageReaction}
+     */
+    this.reaction = reaction;
+
+    /**
+     * The name of this reaction emoji
+     * @type {string}
+     */
+    this.name = name;
+
+    /**
+     * The ID of this reaction emoji
+     * @type {?Snowflake}
+     */
+    this.id = id;
+  }
+
+  /**
+   * The identifier of this emoji, used for message reactions
+   * @type {string}
+   * @readonly
+   */
+  get identifier() {
+    if (this.id) return `${this.name}:${this.id}`;
+    return encodeURIComponent(this.name);
+  }
+
+  /**
+   * Creates the text required to form a graphical emoji on Discord.
+   * @example
+   * // Send the emoji used in a reaction to the channel the reaction is part of
+   * reaction.message.channel.send(`The emoji used is ${reaction.emoji}`);
+   * @returns {string}
+   */
+  toString() {
+    return this.id ? `<:${this.name}:${this.id}>` : this.name;
+  }
+}
+
+module.exports = ReactionEmoji;
+
+
+/***/ }),
+/* 39 */
+/***/ (function(module, exports, __webpack_require__) {
+
+const Collection = __webpack_require__(3);
+const EventEmitter = __webpack_require__(9).EventEmitter;
+
+/**
+ * Filter to be applied to the collector.
+ * @typedef {Function} CollectorFilter
+ * @param {...*} args Any arguments received by the listener
+ * @param {Collection} collection The items collected by this collector
+ * @returns {boolean}
+ */
+
+/**
+ * Options to be applied to the collector.
+ * @typedef {Object} CollectorOptions
+ * @property {number} [time] How long to run the collector for
+ */
+
+/**
+ * Abstract class for defining a new Collector.
+ * @abstract
+ */
+class Collector extends EventEmitter {
+  constructor(client, filter, options = {}) {
+    super();
+
+    /**
+     * The client
+     * @name Collector#client
+     * @type {Client}
+     * @readonly
+     */
+    Object.defineProperty(this, 'client', { value: client });
+
+    /**
+     * The filter applied to this collector
+     * @type {CollectorFilter}
+     */
+    this.filter = filter;
+
+    /**
+     * The options of this collector
+     * @type {CollectorOptions}
+     */
+    this.options = options;
+
+    /**
+     * The items collected by this collector
+     * @type {Collection}
+     */
+    this.collected = new Collection();
+
+    /**
+     * Whether this collector has finished collecting
+     * @type {boolean}
+     */
+    this.ended = false;
+
+    /**
+     * Timeout for cleanup
+     * @type {?Timeout}
+     * @private
+     */
+    this._timeout = null;
+
+    /**
+     * Call this to handle an event as a collectable element
+     * Accepts any event data as parameters
+     * @type {Function}
+     * @private
+     */
+    this.listener = this._handle.bind(this);
+    if (options.time) this._timeout = this.client.setTimeout(() => this.stop('time'), options.time);
+  }
+
+  /**
+   * @param {...*} args The arguments emitted by the listener
+   * @emits Collector#collect
+   * @private
+   */
+  _handle(...args) {
+    const collect = this.handle(...args);
+    if (!collect || !this.filter(...args, this.collected)) return;
+
+    this.collected.set(collect.key, collect.value);
+
+    /**
+     * Emitted whenever an element is collected.
+     * @event Collector#collect
+     * @param {*} element The element that got collected
+     * @param {Collector} collector The collector
+     */
+    this.emit('collect', collect.value, this);
+
+    const post = this.postCheck(...args);
+    if (post) this.stop(post);
+  }
+
+  /**
+   * Return a promise that resolves with the next collected element;
+   * rejects with collected elements if the collector finishes without receving a next element
+   * @type {Promise}
+   * @readonly
+   */
+  get next() {
+    return new Promise((resolve, reject) => {
+      if (this.ended) {
+        reject(this.collected);
+        return;
+      }
+
+      const cleanup = () => {
+        this.removeListener('collect', onCollect);
+        this.removeListener('end', onEnd);
+      };
+
+      const onCollect = item => {
+        cleanup();
+        resolve(item);
+      };
+
+      const onEnd = () => {
+        cleanup();
+        reject(this.collected); // eslint-disable-line prefer-promise-reject-errors
+      };
+
+      this.on('collect', onCollect);
+      this.on('end', onEnd);
+    });
+  }
+
+  /**
+   * Stop this collector and emit the `end` event.
+   * @param {string} [reason='user'] The reason this collector is ending
+   * @emits Collector#end
+   */
+  stop(reason = 'user') {
+    if (this.ended) return;
+
+    if (this._timeout) this.client.clearTimeout(this._timeout);
+    this.ended = true;
+    this.cleanup();
+
+    /**
+     * Emitted when the collector is finished collecting.
+     * @event Collector#end
+     * @param {Collection} collected The elements collected by the collector
+     * @param {string} reason The reason the collector ended
+     */
+    this.emit('end', this.collected, reason);
+  }
+
+  /* eslint-disable no-empty-function, valid-jsdoc */
+  /**
+   * Handles incoming events from the `listener` function. Returns null if the event should not be collected,
+   * or returns an object describing the data that should be stored.
+   * @see Collector#listener
+   * @param {...*} args Any args the event listener emits
+   * @returns {?{key: string, value}} Data to insert into collection, if any
+   * @abstract
+   */
+  handle() {}
+
+  /**
+   * This method runs after collection to see if the collector should finish.
+   * @param {...*} args Any args the event listener emits
+   * @returns {?string} Reason to end the collector, if any
+   * @abstract
+   */
+  postCheck() {}
+
+  /**
+   * Called when the collector is ending.
+   * @abstract
+   */
+  cleanup() {}
+  /* eslint-enable no-empty-function, valid-jsdoc */
+}
+
+module.exports = Collector;
+
+
+/***/ }),
 /* 40 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(Buffer) {const path = __webpack_require__(20);
 const Util = __webpack_require__(4);
-const Attachment = __webpack_require__(27);
-const RichEmbed = __webpack_require__(38);
+const Attachment = __webpack_require__(28);
+const RichEmbed = __webpack_require__(27);
 
 /**
  * Represents a webhook.
@@ -13562,7 +13564,7 @@ var Stream = __webpack_require__(46);
 // TODO(bmeurer): Change this back to const once hole checks are
 // properly optimized away early in Ignition+TurboFan.
 /*<replacement>*/
-var Buffer = __webpack_require__(32).Buffer;
+var Buffer = __webpack_require__(33).Buffer;
 var OurUint8Array = global.Uint8Array || function () {};
 function _uint8ArrayToBuffer(chunk) {
   return Buffer.from(chunk);
@@ -15313,7 +15315,7 @@ var protocolPattern = /^([a-z0-9.+-]+:)/i,
       'gopher:': true,
       'file:': true
     },
-    querystring = __webpack_require__(34);
+    querystring = __webpack_require__(35);
 
 function urlParse(url, parseQueryString, slashesDenoteHost) {
   if (url && util.isObject(url) && url instanceof Url) return url;
@@ -16659,7 +16661,7 @@ module.exports = MessageEmbed;
 
 const Collection = __webpack_require__(3);
 const Emoji = __webpack_require__(23);
-const ReactionEmoji = __webpack_require__(36);
+const ReactionEmoji = __webpack_require__(38);
 
 /**
  * Represents a reaction to a message.
@@ -16756,7 +16758,7 @@ module.exports = MessageReaction;
 /* 60 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Collector = __webpack_require__(37);
+const Collector = __webpack_require__(39);
 const Collection = __webpack_require__(3);
 
 /**
@@ -16845,7 +16847,7 @@ module.exports = ReactionCollector;
 /* 61 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Collector = __webpack_require__(37);
+const Collector = __webpack_require__(39);
 const util = __webpack_require__(13);
 
 /**
@@ -17636,7 +17638,7 @@ module.exports = DMChannel;
 /* 68 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const GuildChannel = __webpack_require__(29);
+const GuildChannel = __webpack_require__(30);
 const TextBasedChannel = __webpack_require__(21);
 const Collection = __webpack_require__(3);
 
@@ -17799,7 +17801,7 @@ module.exports = PermissionOverwrites;
 /* 70 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const GuildChannel = __webpack_require__(29);
+const GuildChannel = __webpack_require__(30);
 const Collection = __webpack_require__(3);
 
 /**
@@ -18941,18 +18943,18 @@ module.exports = {
   splitMessage: Util.splitMessage,
 
   // Structures
-  Attachment: __webpack_require__(27),
+  Attachment: __webpack_require__(28),
   Channel: __webpack_require__(17),
   ClientUser: __webpack_require__(72),
   ClientUserSettings: __webpack_require__(73),
-  Collector: __webpack_require__(37),
+  Collector: __webpack_require__(39),
   DMChannel: __webpack_require__(67),
   Emoji: __webpack_require__(23),
   Game: __webpack_require__(16).Game,
   GroupDMChannel: __webpack_require__(42),
-  Guild: __webpack_require__(28),
+  Guild: __webpack_require__(29),
   GuildAuditLogs: __webpack_require__(65),
-  GuildChannel: __webpack_require__(29),
+  GuildChannel: __webpack_require__(30),
   GuildMember: __webpack_require__(24),
   Invite: __webpack_require__(62),
   Message: __webpack_require__(22),
@@ -18967,9 +18969,9 @@ module.exports = {
   PartialGuildChannel: __webpack_require__(64),
   PermissionOverwrites: __webpack_require__(69),
   Presence: __webpack_require__(16).Presence,
-  ReactionEmoji: __webpack_require__(36),
+  ReactionEmoji: __webpack_require__(38),
   ReactionCollector: __webpack_require__(60),
-  RichEmbed: __webpack_require__(38),
+  RichEmbed: __webpack_require__(27),
   Role: __webpack_require__(15),
   TextChannel: __webpack_require__(68),
   User: __webpack_require__(14),
@@ -19193,14 +19195,14 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 /* 78 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(Buffer) {__webpack_require__(31);
+/* WEBPACK VAR INJECTION */(function(Buffer) {__webpack_require__(32);
 const zlib = __webpack_require__(26);
-const qs = __webpack_require__(34);
+const qs = __webpack_require__(35);
 const http = __webpack_require__(50);
 const https = __webpack_require__(99);
 const URL = __webpack_require__(52);
 const Package = __webpack_require__(100);
-const Stream = __webpack_require__(31);
+const Stream = __webpack_require__(32);
 const FormData = __webpack_require__(101);
 const fileLoader = __webpack_require__(104);
 
@@ -19537,7 +19539,7 @@ function makeURLFromRequest(request) {
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var Buffer = __webpack_require__(32).Buffer;
+var Buffer = __webpack_require__(33).Buffer;
 /*</replacement>*/
 
 function copyBuffer(src, target, offset) {
@@ -19989,7 +19991,7 @@ PassThrough.prototype._transform = function (chunk, encoding, cb) {
 /* 85 */
 /***/ (function(module, exports, __webpack_require__) {
 
-module.exports = __webpack_require__(33);
+module.exports = __webpack_require__(34);
 
 
 /***/ }),
@@ -22060,7 +22062,7 @@ const fs = __webpack_require__(26);
 const path = __webpack_require__(20);
 const mime = __webpack_require__(53);
 const EventEmitter = __webpack_require__(9);
-const Stream = __webpack_require__(31);
+const Stream = __webpack_require__(32);
 
 class ResponseStream extends Stream.Readable {
   constructor() {
@@ -22247,7 +22249,7 @@ const Util = __webpack_require__(4);
 const RESTManager = __webpack_require__(55);
 const ClientDataManager = __webpack_require__(117);
 const ClientManager = __webpack_require__(118);
-const ClientDataResolver = __webpack_require__(39);
+const ClientDataResolver = __webpack_require__(37);
 const ClientVoiceManager = __webpack_require__(162);
 const WebSocketManager = __webpack_require__(163);
 const ActionsManager = __webpack_require__(164);
@@ -22866,8 +22868,8 @@ module.exports = UserAgentManager;
 /* 110 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const querystring = __webpack_require__(34);
-const long = __webpack_require__(35);
+const querystring = __webpack_require__(35);
+const long = __webpack_require__(36);
 const Permissions = __webpack_require__(11);
 const Constants = __webpack_require__(0);
 const Endpoints = Constants.Endpoints;
@@ -22885,7 +22887,7 @@ const UserProfile = __webpack_require__(111);
 const OAuth2Application = __webpack_require__(41);
 const Channel = __webpack_require__(17);
 const GroupDMChannel = __webpack_require__(42);
-const Guild = __webpack_require__(28);
+const Guild = __webpack_require__(29);
 const VoiceRegion = __webpack_require__(113);
 const GuildAuditLogs = __webpack_require__(65);
 
@@ -24175,7 +24177,7 @@ module.exports = BurstRequestHandler;
 /* 116 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const snekfetch = __webpack_require__(30);
+const snekfetch = __webpack_require__(31);
 const Constants = __webpack_require__(0);
 
 class APIRequest {
@@ -24235,13 +24237,13 @@ module.exports = APIRequest;
 
 const Constants = __webpack_require__(0);
 const Util = __webpack_require__(4);
-const Guild = __webpack_require__(28);
+const Guild = __webpack_require__(29);
 const User = __webpack_require__(14);
 const DMChannel = __webpack_require__(67);
 const Emoji = __webpack_require__(23);
 const TextChannel = __webpack_require__(68);
 const VoiceChannel = __webpack_require__(70);
-const GuildChannel = __webpack_require__(29);
+const GuildChannel = __webpack_require__(30);
 const GroupDMChannel = __webpack_require__(42);
 
 class ClientDataManager {
@@ -26893,7 +26895,7 @@ module.exports = GuildChannelsPositionUpdate;
 
 const Webhook = __webpack_require__(40);
 const RESTManager = __webpack_require__(55);
-const ClientDataResolver = __webpack_require__(39);
+const ClientDataResolver = __webpack_require__(37);
 const Constants = __webpack_require__(0);
 const Util = __webpack_require__(4);
 
