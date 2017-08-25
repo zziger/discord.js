@@ -8683,7 +8683,7 @@ class TextBasedChannel {
   constructor() {
     /**
      * A collection containing the messages sent to this channel
-     * @type {Collection<Snowflake, Message>}
+     * @type {MessageStore<Snowflake, Message>}
      */
     this.messages = new MessageStore(this);
 
