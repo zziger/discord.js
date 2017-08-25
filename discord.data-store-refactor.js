@@ -9739,6 +9739,10 @@ const DataStore = __webpack_require__(12);
 const Collection = __webpack_require__(3);
 let Message;
 
+/**
+ * Stores messages from channels
+ * @extends {DataStore}
+ */
 class MessageStore extends DataStore {
   constructor(channel, iterable) {
     super(channel.client, iterable);
