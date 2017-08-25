@@ -9743,7 +9743,7 @@ const Collection = __webpack_require__(3);
 let Message;
 
 /**
- * Stores messages from channels
+ * Stores messages for text-based channels.
  * @extends {DataStore}
  */
 class MessageStore extends DataStore {
