@@ -4589,7 +4589,7 @@ class Message extends Base {
 
     /**
      * A collection of reactions to this message, mapped by the reaction ID
-     * @type {Collection<Snowflake, MessageReaction>}
+     * @type {ReactionStore<Snowflake, MessageReaction>}
      */
     this.reactions = new ReactionStore(this);
     if (data.reactions && data.reactions.length > 0) {
@@ -6441,7 +6441,7 @@ class Guild extends Base {
 
     /**
      * A collection of channels that are in this guild. The key is the channel's ID, the value is the channel
-     * @type {Collection<Snowflake, GuildChannel>}
+     * @type {GuildChannelStore<Snowflake, GuildChannel>}
      */
     this.channels = new GuildChannelStore(this);
 
