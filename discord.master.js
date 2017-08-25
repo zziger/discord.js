@@ -25202,14 +25202,10 @@ module.exports = MessageCreateHandler;
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
-const Constants = __webpack_require__(0);
 
 class MessageDeleteHandler extends AbstractHandler {
   handle(packet) {
-    const client = this.packetManager.client;
-    const data = packet.d;
-    const response = client.actions.MessageDelete.handle(data);
-    if (response.message) client.emit(Constants.Events.MESSAGE_DELETE, response.message);
+    this.packetManager.client.actions.MessageDelete.handle(packet.d);
   }
 }
 
