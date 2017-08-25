@@ -23978,7 +23978,11 @@ module.exports = function search(target, options) {
 
 const DataStore = __webpack_require__(12);
 const MessageReaction = __webpack_require__(46);
-
+/**
+ * Stores reactions.
+ * @private
+ * @extends {DataStore}
+ */
 class ReactionStore extends DataStore {
   constructor(message, iterable) {
     super(message.client, iterable);
@@ -24007,7 +24011,11 @@ module.exports = ReactionStore;
 
 const DataStore = __webpack_require__(12);
 const GuildMember = __webpack_require__(18);
-
+/**
+ * Stores guild members.
+ * @private
+ * @extends {DataStore}
+ */
 class GuildMemberStore extends DataStore {
   constructor(guild, iterable) {
     super(guild.client, iterable);
@@ -24034,7 +24042,11 @@ module.exports = GuildMemberStore;
 
 const DataStore = __webpack_require__(12);
 const Role = __webpack_require__(19);
-
+/**
+ * Stores roles.
+ * @private
+ * @extends {DataStore}
+ */
 class RoleStore extends DataStore {
   constructor(guild, iterable) {
     super(guild.client, iterable);
@@ -24061,7 +24073,11 @@ module.exports = RoleStore;
 
 const DataStore = __webpack_require__(12);
 const Emoji = __webpack_require__(29);
-
+/**
+ * Stores emojis.
+ * @private
+ * @extends {DataStore}
+ */
 class EmojiStore extends DataStore {
   constructor(guild, iterable) {
     super(guild.client, iterable);
@@ -24092,7 +24108,11 @@ const DataStore = __webpack_require__(12);
 const TextChannel = __webpack_require__(49);
 const VoiceChannel = __webpack_require__(50);
 const Constants = __webpack_require__(0);
-
+/**
+ * Stores guild channels.
+ * @private
+ * @extends {DataStore}
+ */
 class GuildChannelStore extends DataStore {
   constructor(guild, iterable) {
     super(guild.client, iterable);
@@ -26512,6 +26532,11 @@ const DMChannel = __webpack_require__(45);
 const GroupDMChannel = __webpack_require__(35);
 const Constants = __webpack_require__(0);
 
+/**
+ * Stores channels.
+ * @private
+ * @extends {DataStore}
+ */
 class ChannelStore extends DataStore {
   create(data, guild, cache = true) {
     const existing = this.get(data.id);
@@ -26556,7 +26581,11 @@ module.exports = ChannelStore;
 
 const DataStore = __webpack_require__(12);
 const Guild = __webpack_require__(22);
-
+/**
+ * Stores guilds.
+ * @private
+ * @extends {DataStore}
+ */
 class GuildStore extends DataStore {
   create(data) {
     const existing = this.get(data.id);
