@@ -98,6 +98,7 @@
  * 100% certain you don't need, as many are important, but not obviously so. The safest one to disable with the
  * most impact is typically `TYPING_START`.
  * @property {WebsocketOptions} [ws] Options for the WebSocket
+ * @property {HTTPOptions} [http] HTTP options
  */
 exports.DefaultOptions = {
   apiRequestMethod: 'sequential',
@@ -132,6 +133,15 @@ exports.DefaultOptions = {
     },
     version: 6,
   },
+
+  /**
+   * HTTP options
+   * @typedef {Object} HTTPOptions
+   * @property {number} [version=7] API version to use
+   * @property {string} [api='https://discordapp.com/api'] Base url of the API
+   * @property {string} [cdn='https://cdn.discordapp.com'] Base url of the CDN
+   * @property {string} [invite='https://discord.gg'] Base url of invites
+   */
   http: {
     version: 7,
     host: 'https://discordapp.com',
@@ -362,6 +372,7 @@ exports.VoiceOPCodes = {
 
 exports.Events = {
   READY: 'ready',
+  RESUME: 'resume',
   GUILD_CREATE: 'guildCreate',
   GUILD_DELETE: 'guildDelete',
   GUILD_UPDATE: 'guildUpdate',
@@ -4161,7 +4172,8 @@ class Permissions {
  * - `MANAGE_GUILD` (edit the guild information, region, etc.)
  * - `ADD_REACTIONS` (add new reactions to messages)
  * - `VIEW_AUDIT_LOG`
- * - `READ_MESSAGES`
+ * - `VIEW_CHANNEL`
+ * - `READ_MESSAGES` **(deprecated)**
  * - `SEND_MESSAGES`
  * - `SEND_TTS_MESSAGES`
  * - `MANAGE_MESSAGES` (delete messages and reactions)
@@ -4196,6 +4208,7 @@ Permissions.FLAGS = {
   ADD_REACTIONS: 1 << 6,
   VIEW_AUDIT_LOG: 1 << 7,
 
+  VIEW_CHANNEL: 1 << 10,
   READ_MESSAGES: 1 << 10,
   SEND_MESSAGES: 1 << 11,
   SEND_TTS_MESSAGES: 1 << 12,
@@ -5489,7 +5502,7 @@ class Role {
    * @property {ColorResolvable} [color] The color of the role, either a hex string or a base 10 number
    * @property {boolean} [hoist] Whether or not the role should be hoisted
    * @property {number} [position] The position of the role
-   * @property {string[]} [permissions] The permissions of the role
+   * @property {PermissionResolvable[]|number} [permissions] The permissions of the role
    * @property {boolean} [mentionable] Whether or not the role should be mentionable
    */
 
@@ -6427,12 +6440,17 @@ class TextBasedChannel {
    */
 
   /**
+   * @typedef {Object} MessageSearchResult
+   * @property {number} totalResults Total result count
+   * @property {Message[][]} messages Array of message results
+   * The message which has triggered the result will have the `hit` property set to `true`
+   */
+
+  /**
    * Performs a search within the channel.
    * <warn>This is only available when using a user account.</warn>
    * @param {MessageSearchOptions} [options={}] Options to pass to the search
-   * @returns {Promise<Array<Message[]>>}
-   * An array containing arrays of messages. Each inner array is a search context cluster
-   * The message which has triggered the result will have the `hit` property set to `true`
+   * @returns {Promise<MessageSearchResult>}
    * @example
    * channel.search({
    *   content: 'discord.js',
@@ -6991,7 +7009,7 @@ class Message {
    */
 
   /**
-   * Similar to createCollector but in promise form.
+   * Similar to createMessageCollector but in promise form.
    * Resolves with a collection of reactions that pass the specified filter.
    * @param {CollectorFilter} filter The filter function to use
    * @param {AwaitReactionsOptions} [options={}] Optional options to pass to the internal collector
@@ -8178,6 +8196,7 @@ class Attachment {
     * Set the file of this attachment.
     * @param {BufferResolvable|Stream} file The file
     * @param {string} name The name of the file
+    * @returns {void}
     * @private
     */
   _attach(file, name) {
@@ -8707,7 +8726,7 @@ class Guild {
   /**
    * Fetch a single guild member from a user.
    * @param {UserResolvable} user The user to fetch the member for
-   * @param {boolean} [cache=true] Insert the user into the users cache
+   * @param {boolean} [cache=true] Insert the member into the members cache
    * @returns {Promise<GuildMember>}
    */
   fetchMember(user, cache = true) {
@@ -8758,9 +8777,7 @@ class Guild {
    * Performs a search within the entire guild.
    * <warn>This is only available when using a user account.</warn>
    * @param {MessageSearchOptions} [options={}] Options to pass to the search
-   * @returns {Promise<Array<Message[]>>}
-   * An array containing arrays of messages. Each inner array is a search context cluster.
-   * The message which has triggered the result will have the `hit` property set to `true`.
+   * @returns {Promise<MessageSearchResult>}
    * @example
    * guild.search({
    *   content: 'discord.js',
@@ -8782,6 +8799,7 @@ class Guild {
    * @property {number} [verificationLevel] The verification level of the guild
    * @property {number} [explicitContentFilter] The level of the explicit content filter
    * @property {ChannelResolvable} [afkChannel] The AFK channel of the guild
+   * @property {ChannelResolvable} [systemChannel] The system channel of the guild
    * @property {number} [afkTimeout] The AFK timeout of the guild
    * @property {Base64Resolvable} [icon] The icon of the guild
    * @property {GuildMemberResolvable} [owner] The owner of the guild
@@ -8791,7 +8809,7 @@ class Guild {
   /**
    * Updates the guild with new information - e.g. a new name.
    * @param {GuildEditData} data The data to update the guild with
-   * @param {string} [reason] Reason for editing this guild
+   * @param {string} [reason] Reason for editing the guild
    * @returns {Promise<Guild>}
    * @example
    * // Set the guild name and region
@@ -8810,9 +8828,9 @@ class Guild {
     if (data.afkChannel) _data.afk_channel_id = this.client.resolver.resolveChannel(data.afkChannel).id;
     if (data.systemChannel) _data.system_channel_id = this.client.resolver.resolveChannel(data.systemChannel).id;
     if (data.afkTimeout) _data.afk_timeout = Number(data.afkTimeout);
-    if (data.icon) _data.icon = data.icon;
+    if (typeof data.icon !== 'undefined') _data.icon = data.icon;
     if (data.owner) _data.owner_id = this.client.resolver.resolveUser(data.owner).id;
-    if (data.splash) _data.splash = data.splash;
+    if (typeof data.splash !== 'undefined') _data.splash = data.splash;
     if (typeof data.explicitContentFilter !== 'undefined') {
       _data.explicit_content_filter = Number(data.explicitContentFilter);
     }
@@ -8984,6 +9002,7 @@ class Guild {
 
   /**
    * Allow direct messages from guild members.
+   * <warn>This is only available when using a user account.</warn>
    * @param {boolean} allow Whether to allow direct messages
    * @returns {Promise<Guild>}
    */
@@ -9022,7 +9041,7 @@ class Guild {
   /**
    * Unbans a user from the guild.
    * @param {UserResolvable} user The user to unban
-    * @param {string} [reason] Reason for unbanning the user
+   * @param {string} [reason] Reason for unbanning the user
    * @returns {Promise<User>}
    * @example
    * // Unban a user by ID (or with a user/guild member object)
@@ -9143,16 +9162,13 @@ class Guild {
    *   .catch(console.error);
    */
   createEmoji(attachment, name, roles, reason) {
-    return new Promise(resolve => {
-      if (typeof attachment === 'string' && attachment.startsWith('data:')) {
-        resolve(this.client.rest.methods.createEmoji(this, attachment, name, roles, reason));
-      } else {
-        this.client.resolver.resolveFile(attachment).then(data => {
-          const dataURI = this.client.resolver.resolveBase64(data);
-          resolve(this.client.rest.methods.createEmoji(this, dataURI, name, roles, reason));
-        });
-      }
-    });
+    if (typeof attachment === 'string' && attachment.startsWith('data:')) {
+      return this.client.rest.methods.createEmoji(this, attachment, name, roles, reason);
+    } else {
+      return this.client.resolver.resolveImage(attachment).then(data =>
+        this.client.rest.methods.createEmoji(this, data, name, roles, reason)
+      );
+    }
   }
 
   /**
@@ -9561,7 +9577,7 @@ class GuildChannel extends Channel {
 
   /**
    * Overwrites the permissions for a user or role in this channel.
-   * @param {RoleResolvable|UserResolvable} userOrRole The user or role to update
+   * @param {Role|Snowflake|UserResolvable} userOrRole The user or role to update
    * @param {PermissionOverwriteOptions} options The configuration for the update
    * @param {string} [reason] Reason for creating/editing this overwrite
    * @returns {Promise}
@@ -9686,18 +9702,14 @@ class GuildChannel extends Channel {
   }
 
   /**
-   * Options given when creating a guild channel invite.
-   * @typedef {Object} InviteOptions
-
-   */
-
-  /**
    * Create an invite to this guild channel.
-   * @param {InviteOptions} [options={}] Options for the invite
+   * <warn>This is only available when using a bot account.</warn>
+   * @param {Object} [options={}] Options for the invite
    * @param {boolean} [options.temporary=false] Whether members that joined via the invite should be automatically
    * kicked after 24 hours if they have not yet received a role
    * @param {number} [options.maxAge=86400] How long the invite should last (in seconds, 0 for forever)
    * @param {number} [options.maxUses=0] Maximum number of uses
+   * @param {boolean} [options.unique=false] Create a unique invite, or use an existing one with similar settings
    * @param {string} [reason] Reason for creating the invite
    * @returns {Promise<Invite>}
    */
@@ -9716,6 +9728,20 @@ class GuildChannel extends Channel {
   clone(name = this.name, withPermissions = true, withTopic = true, reason) {
     return this.guild.createChannel(name, this.type, withPermissions ? this.permissionOverwrites : [], reason)
       .then(channel => withTopic ? channel.setTopic(this.topic) : channel);
+  }
+
+  /**
+   * Deletes this channel.
+   * @param {string} [reason] Reason for deleting this channel
+   * @returns {Promise<GuildChannel>}
+   * @example
+   * // Delete the channel
+   * channel.delete('making room for new channels')
+   *   .then(channel => console.log(`Deleted ${channel.name} to make room for new channels`))
+   *   .catch(console.error); // Log error
+   */
+  delete(reason) {
+    return this.client.rest.methods.deleteChannel(this, reason);
   }
 
   /**
@@ -12569,7 +12595,7 @@ class ClientDataResolver {
   /**
    * Resolves a Base64Resolvable, a string, or a BufferResolvable to a Base 64 image.
    * @param {BufferResolvable|Base64Resolvable} image The image to be resolved
-   * @returns {Promise<string>}
+   * @returns {Promise<?string>}
    */
   resolveImage(image) {
     if (!image) return Promise.resolve(null);
@@ -12995,20 +13021,16 @@ class Webhook {
   /**
    * Edit the webhook.
    * @param {string} name The new name for the webhook
-   * @param {BufferResolvable} avatar The new avatar for the webhook
+   * @param {BufferResolvable} [avatar] The new avatar for the webhook
    * @returns {Promise<Webhook>}
    */
   edit(name = this.name, avatar) {
     if (avatar) {
-      return this.client.resolver.resolveFile(avatar).then(file => {
-        const dataURI = this.client.resolver.resolveBase64(file);
-        return this.client.rest.methods.editWebhook(this, name, dataURI);
-      });
+      return this.client.resolver.resolveImage(avatar).then(data =>
+        this.client.rest.methods.editWebhook(this, name, data)
+      );
     }
-    return this.client.rest.methods.editWebhook(this, name).then(data => {
-      this.setup(data);
-      return this;
-    });
+    return this.client.rest.methods.editWebhook(this, name);
   }
 
   /**
@@ -13299,7 +13321,7 @@ class GroupDMChannel extends Channel {
   edit(data) {
     const _data = {};
     if (data.name) _data.name = data.name;
-    if (data.icon) _data.icon = data.icon;
+    if (typeof data.icon !== 'undefined') _data.icon = data.icon;
     return this.client.rest.methods.updateGroupDMChannel(this, _data);
   }
 
@@ -13328,6 +13350,7 @@ class GroupDMChannel extends Channel {
    * Add a user to the DM
    * @param {UserResolvable|string} accessTokenOrID Access token or user resolvable
    * @param {string} [nick] Permanent nickname to give the user (only available if a bot is creating the DM)
+   * @returns {Promise<GroupDMChannel>}
    */
 
   addUser(accessTokenOrID, nick) {
@@ -13341,7 +13364,7 @@ class GroupDMChannel extends Channel {
   /**
    * Set a new GroupDMChannel icon.
    * @param {Base64Resolvable|BufferResolvable} icon The new icon of the group dm
-   * @returns {Promise<Guild>}
+   * @returns {Promise<GroupDMChannel>}
    * @example
    * // Edit the group dm icon
    * channel.setIcon('./icon.png')
@@ -13350,6 +13373,25 @@ class GroupDMChannel extends Channel {
    */
   setIcon(icon) {
     return this.client.resolver.resolveImage(icon).then(data => this.edit({ icon: data }));
+  }
+
+  /**
+   * Sets a new name for this Group DM.
+   * @param {string} name New name for this Group DM
+   * @returns {Promise<GroupDMChannel>}
+   */
+  setName(name) {
+    return this.edit({ name });
+  }
+
+  /**
+   * Removes an user from this Group DM.
+   * @param {UserResolvable} user User to remove
+   * @returns {Promise<GroupDMChannel>}
+   */
+  removeUser(user) {
+    const id = this.client.resolver.resolveUserID(user);
+    return this.client.rest.methods.removeUserFromGroupDM(this, id);
   }
 
   /**
@@ -13383,6 +13425,7 @@ class GroupDMChannel extends Channel {
   get typing() {}
   get typingCount() {}
   createCollector() {}
+  createMessageCollector() {}
   awaitMessages() {}
   // Doesn't work on Group DMs; bulkDelete() {}
   acknowledge() {}
@@ -17577,6 +17620,7 @@ class DMChannel extends Channel {
   get typing() {}
   get typingCount() {}
   createCollector() {}
+  createMessageCollector() {}
   awaitMessages() {}
   // Doesn't work on DM channels; bulkDelete() {}
   acknowledge() {}
@@ -17654,7 +17698,7 @@ class TextChannel extends GuildChannel {
   /**
    * Create a webhook for the channel.
    * @param {string} name The name of the webhook
-   * @param {BufferResolvable|Base64Resolvable} avatar The avatar for the webhook
+   * @param {BufferResolvable|Base64Resolvable} [avatar] The avatar for the webhook
    * @param {string} [reason] Reason for creating this webhook
    * @returns {Promise<Webhook>} webhook The created webhook
    * @example
@@ -17663,15 +17707,13 @@ class TextChannel extends GuildChannel {
    *   .catch(console.error)
    */
   createWebhook(name, avatar, reason) {
-    return new Promise(resolve => {
-      if (typeof avatar === 'string' && avatar.startsWith('data:')) {
-        resolve(this.client.rest.methods.createWebhook(this, name, avatar, reason));
-      } else {
-        this.client.resolver.resolveFile(avatar).then(data =>
-          resolve(this.client.rest.methods.createWebhook(this, name, data, reason))
-        );
-      }
-    });
+    if (typeof avatar === 'string' && avatar.startsWith('data:')) {
+      return this.client.rest.methods.createWebhook(this, name, avatar, reason);
+    } else {
+      return this.client.resolver.resolveImage(avatar).then(data =>
+        this.client.rest.methods.createWebhook(this, name, data, reason)
+      );
+    }
   }
 
   // These are here only for documentation purposes - they are implemented by TextBasedChannel
@@ -18715,37 +18757,17 @@ class ClientUser extends User {
    * Creates a guild.
    * <warn>This is only available when using a user account.</warn>
    * @param {string} name The name of the guild
-   * @param {string} region The region for the server
+   * @param {string} [region] The region for the server
    * @param {BufferResolvable|Base64Resolvable} [icon=null] The icon for the guild
    * @returns {Promise<Guild>} The guild that was created
    */
-
-  createGuild(name, { region, icon = null } = {}) {
-    if (!icon || (typeof icon === 'string' && icon.startsWith('data:'))) {
-      return new Promise((resolve, reject) =>
-        this.client.api.guilds.post({ data: { name, region, icon } })
-          .then(data => {
-            if (this.client.guilds.has(data.id)) return resolve(this.client.guilds.get(data.id));
-
-            const handleGuild = guild => {
-              if (guild.id === data.id) {
-                this.client.removeListener(Constants.Events.GUILD_CREATE, handleGuild);
-                this.client.clearTimeout(timeout);
-                resolve(guild);
-              }
-            };
-            this.client.on(Constants.Events.GUILD_CREATE, handleGuild);
-
-            const timeout = this.client.setTimeout(() => {
-              this.client.removeListener(Constants.Events.GUILD_CREATE, handleGuild);
-              resolve(this.client.dataManager.newGuild(data));
-            }, 10000);
-            return undefined;
-          }, reject)
-      );
+  createGuild(name, region, icon = null) {
+    if (typeof icon === 'string' && icon.startsWith('data:')) {
+      return this.client.rest.methods.createGuild({ name, icon, region });
     } else {
-      return this.client.resolver.resolveFile(icon)
-        .then(data => this.createGuild(name, { region, icon: this.client.resolver.resolveBase64(data) || null }));
+      return this.client.resolver.resolveImage(icon).then(data =>
+        this.client.rest.methods.createGuild({ name, icon: data, region })
+      );
     }
   }
 
@@ -18805,6 +18827,8 @@ class ClientUserSettings {
   /**
    * Patch the data contained in this class with new partial data.
    * @param {Object} data Data to patch this with
+   * @returns {void}
+   * @private
    */
   patch(data) {
     for (const key of Object.keys(Constants.UserSettingsMap)) {
@@ -18821,7 +18845,7 @@ class ClientUserSettings {
   /**
    * Update a specific property of of user settings.
    * @param {string} name Name of property
-   * @param {value} value Value to patch
+   * @param {*} value Value to patch
    * @returns {Promise<Object>}
    */
   update(name, value) {
@@ -18829,6 +18853,7 @@ class ClientUserSettings {
   }
 
   /**
+   * Sets the position at which this guild will appear in the Discord client.
    * @param {Guild} guild The guild to move
    * @param {number} position Absolute or relative position
    * @param {boolean} [relative=false] Whether to position relatively or absolutely
@@ -23128,6 +23153,11 @@ class RESTMethods {
       .then(() => channel);
   }
 
+  removeUserFromGroupDM(channel, userId) {
+    return this.rest.makeRequest('delete', Endpoints.Channel(channel).Recipient(userId), true)
+      .then(() => channel);
+  }
+
   updateGroupDMChannel(channel, _data) {
     const data = {};
     data.name = _data.name;
@@ -23141,13 +23171,14 @@ class RESTMethods {
     );
   }
 
-  deleteChannel(channel) {
+  deleteChannel(channel, reason) {
     if (channel instanceof User || channel instanceof GuildMember) channel = this.getExistingDM(channel);
     if (!channel) return Promise.reject(new Error('No channel to delete.'));
-    return this.rest.makeRequest('delete', Endpoints.Channel(channel), true).then(data => {
-      data.id = channel.id;
-      return this.client.actions.ChannelDelete.handle(data).channel;
-    });
+    return this.rest.makeRequest('delete', Endpoints.Channel(channel), true, undefined, undefined, reason)
+      .then(data => {
+        data.id = channel.id;
+        return this.client.actions.ChannelDelete.handle(data).channel;
+      });
   }
 
   updateChannel(channel, _data, reason) {
@@ -23212,7 +23243,7 @@ class RESTMethods {
     const user = this.client.user;
     const data = {};
     data.username = _data.username || user.username;
-    data.avatar = this.client.resolver.resolveBase64(_data.avatar) || user.avatar;
+    data.avatar = typeof _data.avatar === 'undefined' ? user.avatar : this.client.resolver.resolveBase64(_data.avatar);
     if (!user.bot) {
       data.email = _data.email || user.email;
       data.password = password;
@@ -23482,6 +23513,7 @@ class RESTMethods {
     payload.temporary = options.temporary;
     payload.max_age = options.maxAge;
     payload.max_uses = options.maxUses;
+    payload.unique = options.unique;
     return this.rest.makeRequest('post', Endpoints.Channel(channel).invites, true, payload, undefined, reason)
       .then(invite => new Invite(this.client, invite));
   }
@@ -24647,6 +24679,8 @@ class ClientUserGuildSettings {
   /**
    * Patch the data contained in this class with new partial data.
    * @param {Object} data Data to patch this with
+   * @returns {void}
+   * @private
    */
   patch(data) {
     for (const key of Object.keys(Constants.UserGuildSettingsMap)) {
@@ -24696,6 +24730,8 @@ class ClientUserChannelOverride {
   /**
    * Patch the data contained in this class with new partial data.
    * @param {Object} data Data to patch this with
+   * @returns {void}
+   * @private
    */
   patch(data) {
     for (const key of Object.keys(Constants.UserChannelOverrideMap)) {
@@ -24733,7 +24769,7 @@ class ResumedHandler extends AbstractHandler {
     const replayed = ws.sequence - ws.closeSequence;
 
     ws.debug(`RESUMED ${ws._trace.join(' -> ')} | replayed ${replayed} events.`);
-    client.emit('resume', replayed);
+    client.emit(Constants.Events.RESUME, replayed);
     ws.heartbeat();
   }
 }
