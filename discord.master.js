@@ -1258,308 +1258,6 @@ module.exports.Messages = __webpack_require__(111);
 /* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(Buffer) {const snekfetch = __webpack_require__(37);
-const Constants = __webpack_require__(0);
-const ConstantsHttp = Constants.DefaultOptions.http;
-const { Error: DiscordError, RangeError, TypeError } = __webpack_require__(4);
-const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
-
-/**
- * Contains various general-purpose utility methods. These functions are also available on the base `Discord` object.
- */
-class Util {
-  constructor() {
-    throw new Error(`The ${this.constructor.name} class may not be instantiated.`);
-  }
-
-  /**
-   * Splits a string into multiple chunks at a designated character that do not exceed a specific length.
-   * @param {string} text Content to split
-   * @param {SplitOptions} [options] Options controlling the behaviour of the split
-   * @returns {string|string[]}
-   */
-  static splitMessage(text, { maxLength = 1950, char = '\n', prepend = '', append = '' } = {}) {
-    if (text.length <= maxLength) return text;
-    const splitText = text.split(char);
-    if (splitText.length === 1) {
-      throw new RangeError('SPLIT_MAX_LEN');
-    }
-    const messages = [''];
-    let msg = 0;
-    for (let i = 0; i < splitText.length; i++) {
-      if (messages[msg].length + splitText[i].length + 1 > maxLength) {
-        messages[msg] += append;
-        messages.push(prepend);
-        msg++;
-      }
-      messages[msg] += (messages[msg].length > 0 && messages[msg] !== prepend ? char : '') + splitText[i];
-    }
-    return messages.filter(m => m);
-  }
-
-  /**
-   * Escapes any Discord-flavour markdown in a string.
-   * @param {string} text Content to escape
-   * @param {boolean} [onlyCodeBlock=false] Whether to only escape codeblocks (takes priority)
-   * @param {boolean} [onlyInlineCode=false] Whether to only escape inline code
-   * @returns {string}
-   */
-  static escapeMarkdown(text, onlyCodeBlock = false, onlyInlineCode = false) {
-    if (onlyCodeBlock) return text.replace(/```/g, '`\u200b``');
-    if (onlyInlineCode) return text.replace(/\\(`|\\)/g, '$1').replace(/(`|\\)/g, '\\$1');
-    return text.replace(/\\(\*|_|`|~|\\)/g, '$1').replace(/(\*|_|`|~|\\)/g, '\\$1');
-  }
-
-  /**
-   * Gets the recommended shard count from Discord.
-   * @param {string} token Discord auth token
-   * @param {number} [guildsPerShard=1000] Number of guilds per shard
-   * @returns {Promise<number>} The recommended number of shards
-   */
-  static fetchRecommendedShards(token, guildsPerShard = 1000) {
-    return new Promise((resolve, reject) => {
-      if (!token) throw new DiscordError('TOKEN_MISSING');
-      snekfetch.get(`${ConstantsHttp.api}/v${ConstantsHttp.version}${Constants.Endpoints.botGateway}`)
-        .set('Authorization', `Bot ${token.replace(/^Bot\s*/i, '')}`)
-        .end((err, res) => {
-          if (err) reject(err);
-          resolve(res.body.shards * (1000 / guildsPerShard));
-        });
-    });
-  }
-
-  /**
-   * Parses emoji info out of a string. The string must be one of:
-   * * A UTF-8 emoji (no ID)
-   * * A URL-encoded UTF-8 emoji (no ID)
-   * * A Discord custom emoji (`<:name:id>`)
-   * @param {string} text Emoji string to parse
-   * @returns {Object} Object with `name` and `id` properties
-   * @private
-   */
-  static parseEmoji(text) {
-    if (text.includes('%')) text = decodeURIComponent(text);
-    if (text.includes(':')) {
-      const [name, id] = text.split(':');
-      return { name, id };
-    } else {
-      return {
-        name: text,
-        id: null,
-      };
-    }
-  }
-
-  /**
-   * Checks whether the arrays are equal, also removes duplicated entries from b.
-   * @param {Array<*>} a Array which will not be modified.
-   * @param {Array<*>} b Array to remove duplicated entries from.
-   * @returns {boolean} Whether the arrays are equal.
-   * @private
-   */
-  static arraysEqual(a, b) {
-    if (a === b) return true;
-    if (a.length !== b.length) return false;
-
-    for (const item of a) {
-      const ind = b.indexOf(item);
-      if (ind !== -1) b.splice(ind, 1);
-    }
-
-    return b.length === 0;
-  }
-
-  /**
-   * Shallow-copies an object with its class/prototype intact.
-   * @param {Object} obj Object to clone
-   * @returns {Object}
-   * @private
-   */
-  static cloneObject(obj) {
-    return Object.assign(Object.create(obj), obj);
-  }
-
-  /**
-   * Sets default properties on an object that aren't already specified.
-   * @param {Object} def Default properties
-   * @param {Object} given Object to assign defaults to
-   * @returns {Object}
-   * @private
-   */
-  static mergeDefault(def, given) {
-    if (!given) return def;
-    for (const key in def) {
-      if (!has(given, key) || given[key] === undefined) {
-        given[key] = def[key];
-      } else if (given[key] === Object(given[key])) {
-        given[key] = this.mergeDefault(def[key], given[key]);
-      }
-    }
-
-    return given;
-  }
-
-  /**
-   * Converts an ArrayBuffer or string to a Buffer.
-   * @param {ArrayBuffer|string} ab ArrayBuffer to convert
-   * @returns {Buffer}
-   * @private
-   */
-  static convertToBuffer(ab) {
-    if (typeof ab === 'string') ab = this.str2ab(ab);
-    return Buffer.from(ab);
-  }
-
-  /**
-   * Converts a string to an ArrayBuffer.
-   * @param {string} str String to convert
-   * @returns {ArrayBuffer}
-   * @private
-   */
-  static str2ab(str) {
-    const buffer = new ArrayBuffer(str.length * 2);
-    const view = new Uint16Array(buffer);
-    for (var i = 0, strLen = str.length; i < strLen; i++) view[i] = str.charCodeAt(i);
-    return buffer;
-  }
-
-  /**
-   * Makes an Error from a plain info object.
-   * @param {Object} obj Error info
-   * @param {string} obj.name Error type
-   * @param {string} obj.message Message for the error
-   * @param {string} obj.stack Stack for the error
-   * @returns {Error}
-   * @private
-   */
-  static makeError(obj) {
-    const err = new Error(obj.message);
-    err.name = obj.name;
-    err.stack = obj.stack;
-    return err;
-  }
-
-  /**
-   * Makes a plain error info object from an Error.
-   * @param {Error} err Error to get info from
-   * @returns {Object}
-   * @private
-   */
-  static makePlainError(err) {
-    const obj = {};
-    obj.name = err.name;
-    obj.message = err.message;
-    obj.stack = err.stack;
-    return obj;
-  }
-
-  /**
-   * Moves an element in an array *in place*.
-   * @param {Array<*>} array Array to modify
-   * @param {*} element Element to move
-   * @param {number} newIndex Index or offset to move the element to
-   * @param {boolean} [offset=false] Move the element by an offset amount rather than to a set index
-   * @returns {number}
-   * @private
-   */
-  static moveElementInArray(array, element, newIndex, offset = false) {
-    const index = array.indexOf(element);
-    newIndex = (offset ? index : 0) + newIndex;
-    if (newIndex > -1 && newIndex < array.length) {
-      const removedElement = array.splice(index, 1)[0];
-      array.splice(newIndex, 0, removedElement);
-    }
-    return array.indexOf(element);
-  }
-
-  /**
-   * Data that can be resolved to give a string. This can be:
-   * * A string
-   * * An array (joined with a new line delimiter to give a string)
-   * * Any value
-   * @typedef {string|Array|*} StringResolvable
-   */
-
-  /**
-   * Resolves a StringResolvable to a string.
-   * @param {StringResolvable} data The string resolvable to resolve
-   * @returns {string}
-   */
-
-  static resolveString(data) {
-    if (typeof data === 'string') return data;
-    if (data instanceof Array) return data.join('\n');
-    return String(data);
-  }
-
-  /**
-   * Can be a Hex Literal, Hex String, Number, RGB Array, or one of the following
-   * ```
-   * [
-   *   'DEFAULT',
-   *   'AQUA',
-   *   'GREEN',
-   *   'BLUE',
-   *   'PURPLE',
-   *   'GOLD',
-   *   'ORANGE',
-   *   'RED',
-   *   'GREY',
-   *   'DARKER_GREY',
-   *   'NAVY',
-   *   'DARK_AQUA',
-   *   'DARK_GREEN',
-   *   'DARK_BLUE',
-   *   'DARK_PURPLE',
-   *   'DARK_GOLD',
-   *   'DARK_ORANGE',
-   *   'DARK_RED',
-   *   'DARK_GREY',
-   *   'LIGHT_GREY',
-   *   'DARK_NAVY',
-   *   'RANDOM',
-   * ]
-   * ```
-   * or something like
-   * ```
-   * [255, 0, 255]
-   * ```
-   * for purple
-   * @typedef {string|number|Array} ColorResolvable
-   */
-
-  /**
-   * Resolves a ColorResolvable into a color number.
-   * @param {ColorResolvable} color Color to resolve
-   * @returns {number} A color
-   */
-
-  static resolveColor(color) {
-    if (typeof color === 'string') {
-      if (color === 'RANDOM') return Math.floor(Math.random() * (0xFFFFFF + 1));
-      color = Constants.Colors[color] || parseInt(color.replace('#', ''), 16);
-    } else if (color instanceof Array) {
-      color = (color[0] << 16) + (color[1] << 8) + color[2];
-    }
-
-    if (color < 0 || color > 0xFFFFFF) {
-      throw new RangeError('COLOR_RANGE');
-    } else if (color && isNaN(color)) {
-      throw new TypeError('COLOR_CONVERT');
-    }
-
-    return color;
-  }
-}
-
-module.exports = Util;
-
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(6).Buffer))
-
-/***/ }),
-/* 6 */
-/***/ (function(module, exports, __webpack_require__) {
-
 "use strict";
 /* WEBPACK VAR INJECTION */(function(global) {/*!
  * The buffer module from node.js, for the browser.
@@ -3354,6 +3052,308 @@ function isnan (val) {
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(7)))
 
 /***/ }),
+/* 6 */
+/***/ (function(module, exports, __webpack_require__) {
+
+/* WEBPACK VAR INJECTION */(function(Buffer) {const snekfetch = __webpack_require__(37);
+const Constants = __webpack_require__(0);
+const ConstantsHttp = Constants.DefaultOptions.http;
+const { Error: DiscordError, RangeError, TypeError } = __webpack_require__(4);
+const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+
+/**
+ * Contains various general-purpose utility methods. These functions are also available on the base `Discord` object.
+ */
+class Util {
+  constructor() {
+    throw new Error(`The ${this.constructor.name} class may not be instantiated.`);
+  }
+
+  /**
+   * Splits a string into multiple chunks at a designated character that do not exceed a specific length.
+   * @param {string} text Content to split
+   * @param {SplitOptions} [options] Options controlling the behaviour of the split
+   * @returns {string|string[]}
+   */
+  static splitMessage(text, { maxLength = 1950, char = '\n', prepend = '', append = '' } = {}) {
+    if (text.length <= maxLength) return text;
+    const splitText = text.split(char);
+    if (splitText.length === 1) {
+      throw new RangeError('SPLIT_MAX_LEN');
+    }
+    const messages = [''];
+    let msg = 0;
+    for (let i = 0; i < splitText.length; i++) {
+      if (messages[msg].length + splitText[i].length + 1 > maxLength) {
+        messages[msg] += append;
+        messages.push(prepend);
+        msg++;
+      }
+      messages[msg] += (messages[msg].length > 0 && messages[msg] !== prepend ? char : '') + splitText[i];
+    }
+    return messages.filter(m => m);
+  }
+
+  /**
+   * Escapes any Discord-flavour markdown in a string.
+   * @param {string} text Content to escape
+   * @param {boolean} [onlyCodeBlock=false] Whether to only escape codeblocks (takes priority)
+   * @param {boolean} [onlyInlineCode=false] Whether to only escape inline code
+   * @returns {string}
+   */
+  static escapeMarkdown(text, onlyCodeBlock = false, onlyInlineCode = false) {
+    if (onlyCodeBlock) return text.replace(/```/g, '`\u200b``');
+    if (onlyInlineCode) return text.replace(/\\(`|\\)/g, '$1').replace(/(`|\\)/g, '\\$1');
+    return text.replace(/\\(\*|_|`|~|\\)/g, '$1').replace(/(\*|_|`|~|\\)/g, '\\$1');
+  }
+
+  /**
+   * Gets the recommended shard count from Discord.
+   * @param {string} token Discord auth token
+   * @param {number} [guildsPerShard=1000] Number of guilds per shard
+   * @returns {Promise<number>} The recommended number of shards
+   */
+  static fetchRecommendedShards(token, guildsPerShard = 1000) {
+    return new Promise((resolve, reject) => {
+      if (!token) throw new DiscordError('TOKEN_MISSING');
+      snekfetch.get(`${ConstantsHttp.api}/v${ConstantsHttp.version}${Constants.Endpoints.botGateway}`)
+        .set('Authorization', `Bot ${token.replace(/^Bot\s*/i, '')}`)
+        .end((err, res) => {
+          if (err) reject(err);
+          resolve(res.body.shards * (1000 / guildsPerShard));
+        });
+    });
+  }
+
+  /**
+   * Parses emoji info out of a string. The string must be one of:
+   * * A UTF-8 emoji (no ID)
+   * * A URL-encoded UTF-8 emoji (no ID)
+   * * A Discord custom emoji (`<:name:id>`)
+   * @param {string} text Emoji string to parse
+   * @returns {Object} Object with `name` and `id` properties
+   * @private
+   */
+  static parseEmoji(text) {
+    if (text.includes('%')) text = decodeURIComponent(text);
+    if (text.includes(':')) {
+      const [name, id] = text.split(':');
+      return { name, id };
+    } else {
+      return {
+        name: text,
+        id: null,
+      };
+    }
+  }
+
+  /**
+   * Checks whether the arrays are equal, also removes duplicated entries from b.
+   * @param {Array<*>} a Array which will not be modified.
+   * @param {Array<*>} b Array to remove duplicated entries from.
+   * @returns {boolean} Whether the arrays are equal.
+   * @private
+   */
+  static arraysEqual(a, b) {
+    if (a === b) return true;
+    if (a.length !== b.length) return false;
+
+    for (const item of a) {
+      const ind = b.indexOf(item);
+      if (ind !== -1) b.splice(ind, 1);
+    }
+
+    return b.length === 0;
+  }
+
+  /**
+   * Shallow-copies an object with its class/prototype intact.
+   * @param {Object} obj Object to clone
+   * @returns {Object}
+   * @private
+   */
+  static cloneObject(obj) {
+    return Object.assign(Object.create(obj), obj);
+  }
+
+  /**
+   * Sets default properties on an object that aren't already specified.
+   * @param {Object} def Default properties
+   * @param {Object} given Object to assign defaults to
+   * @returns {Object}
+   * @private
+   */
+  static mergeDefault(def, given) {
+    if (!given) return def;
+    for (const key in def) {
+      if (!has(given, key) || given[key] === undefined) {
+        given[key] = def[key];
+      } else if (given[key] === Object(given[key])) {
+        given[key] = this.mergeDefault(def[key], given[key]);
+      }
+    }
+
+    return given;
+  }
+
+  /**
+   * Converts an ArrayBuffer or string to a Buffer.
+   * @param {ArrayBuffer|string} ab ArrayBuffer to convert
+   * @returns {Buffer}
+   * @private
+   */
+  static convertToBuffer(ab) {
+    if (typeof ab === 'string') ab = this.str2ab(ab);
+    return Buffer.from(ab);
+  }
+
+  /**
+   * Converts a string to an ArrayBuffer.
+   * @param {string} str String to convert
+   * @returns {ArrayBuffer}
+   * @private
+   */
+  static str2ab(str) {
+    const buffer = new ArrayBuffer(str.length * 2);
+    const view = new Uint16Array(buffer);
+    for (var i = 0, strLen = str.length; i < strLen; i++) view[i] = str.charCodeAt(i);
+    return buffer;
+  }
+
+  /**
+   * Makes an Error from a plain info object.
+   * @param {Object} obj Error info
+   * @param {string} obj.name Error type
+   * @param {string} obj.message Message for the error
+   * @param {string} obj.stack Stack for the error
+   * @returns {Error}
+   * @private
+   */
+  static makeError(obj) {
+    const err = new Error(obj.message);
+    err.name = obj.name;
+    err.stack = obj.stack;
+    return err;
+  }
+
+  /**
+   * Makes a plain error info object from an Error.
+   * @param {Error} err Error to get info from
+   * @returns {Object}
+   * @private
+   */
+  static makePlainError(err) {
+    const obj = {};
+    obj.name = err.name;
+    obj.message = err.message;
+    obj.stack = err.stack;
+    return obj;
+  }
+
+  /**
+   * Moves an element in an array *in place*.
+   * @param {Array<*>} array Array to modify
+   * @param {*} element Element to move
+   * @param {number} newIndex Index or offset to move the element to
+   * @param {boolean} [offset=false] Move the element by an offset amount rather than to a set index
+   * @returns {number}
+   * @private
+   */
+  static moveElementInArray(array, element, newIndex, offset = false) {
+    const index = array.indexOf(element);
+    newIndex = (offset ? index : 0) + newIndex;
+    if (newIndex > -1 && newIndex < array.length) {
+      const removedElement = array.splice(index, 1)[0];
+      array.splice(newIndex, 0, removedElement);
+    }
+    return array.indexOf(element);
+  }
+
+  /**
+   * Data that can be resolved to give a string. This can be:
+   * * A string
+   * * An array (joined with a new line delimiter to give a string)
+   * * Any value
+   * @typedef {string|Array|*} StringResolvable
+   */
+
+  /**
+   * Resolves a StringResolvable to a string.
+   * @param {StringResolvable} data The string resolvable to resolve
+   * @returns {string}
+   */
+
+  static resolveString(data) {
+    if (typeof data === 'string') return data;
+    if (data instanceof Array) return data.join('\n');
+    return String(data);
+  }
+
+  /**
+   * Can be a Hex Literal, Hex String, Number, RGB Array, or one of the following
+   * ```
+   * [
+   *   'DEFAULT',
+   *   'AQUA',
+   *   'GREEN',
+   *   'BLUE',
+   *   'PURPLE',
+   *   'GOLD',
+   *   'ORANGE',
+   *   'RED',
+   *   'GREY',
+   *   'DARKER_GREY',
+   *   'NAVY',
+   *   'DARK_AQUA',
+   *   'DARK_GREEN',
+   *   'DARK_BLUE',
+   *   'DARK_PURPLE',
+   *   'DARK_GOLD',
+   *   'DARK_ORANGE',
+   *   'DARK_RED',
+   *   'DARK_GREY',
+   *   'LIGHT_GREY',
+   *   'DARK_NAVY',
+   *   'RANDOM',
+   * ]
+   * ```
+   * or something like
+   * ```
+   * [255, 0, 255]
+   * ```
+   * for purple
+   * @typedef {string|number|Array} ColorResolvable
+   */
+
+  /**
+   * Resolves a ColorResolvable into a color number.
+   * @param {ColorResolvable} color Color to resolve
+   * @returns {number} A color
+   */
+
+  static resolveColor(color) {
+    if (typeof color === 'string') {
+      if (color === 'RANDOM') return Math.floor(Math.random() * (0xFFFFFF + 1));
+      color = Constants.Colors[color] || parseInt(color.replace('#', ''), 16);
+    } else if (color instanceof Array) {
+      color = (color[0] << 16) + (color[1] << 8) + color[2];
+    }
+
+    if (color < 0 || color > 0xFFFFFF) {
+      throw new RangeError('COLOR_RANGE');
+    } else if (color && isNaN(color)) {
+      throw new TypeError('COLOR_CONVERT');
+    }
+
+    return color;
+  }
+}
+
+module.exports = Util;
+
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(5).Buffer))
+
+/***/ }),
 /* 7 */
 /***/ (function(module, exports) {
 
@@ -4480,7 +4480,7 @@ const Embed = __webpack_require__(21);
 const MessageReaction = __webpack_require__(46);
 const ReactionCollector = __webpack_require__(71);
 const ClientApplication = __webpack_require__(48);
-const Util = __webpack_require__(5);
+const Util = __webpack_require__(6);
 const Collection = __webpack_require__(3);
 const ReactionStore = __webpack_require__(125);
 const Constants = __webpack_require__(0);
@@ -5612,7 +5612,7 @@ module.exports = GuildMember;
 
 const Snowflake = __webpack_require__(9);
 const Permissions = __webpack_require__(11);
-const Util = __webpack_require__(5);
+const Util = __webpack_require__(6);
 const Base = __webpack_require__(10);
 
 /**
@@ -6015,6 +6015,12 @@ class Presence {
     this.game = data.game ? new Game(data.game) : null;
   }
 
+  _clone() {
+    const clone = Object.assign(Object.create(this), this);
+    if (this.game) clone.game = this.game._clone();
+    return clone;
+  }
+
   /**
    * Whether this presence is equal to another
    * @param {Presence} presence The presence to compare with
@@ -6066,6 +6072,10 @@ class Game {
       this.url === game.url
     );
   }
+
+  _clone() {
+    return Object.assign(Object.create(this), this);
+  }
 }
 
 exports.Presence = Presence;
@@ -6077,7 +6087,7 @@ exports.Game = Game;
 /***/ (function(module, exports, __webpack_require__) {
 
 const Attachment = __webpack_require__(34);
-const Util = __webpack_require__(5);
+const Util = __webpack_require__(6);
 const { RangeError } = __webpack_require__(4);
 
 /**
@@ -6427,7 +6437,7 @@ const GuildMember = __webpack_require__(18);
 const VoiceRegion = __webpack_require__(73);
 const Constants = __webpack_require__(0);
 const Collection = __webpack_require__(3);
-const Util = __webpack_require__(5);
+const Util = __webpack_require__(6);
 const Snowflake = __webpack_require__(9);
 const Permissions = __webpack_require__(11);
 const Shared = __webpack_require__(68);
@@ -6450,7 +6460,7 @@ class Guild extends Base {
 
     /**
      * A collection of members that are in this guild. The key is the member's ID, the value is the member
-     * @type {Collection<Snowflake, GuildMember>}
+     * @type {GuildMemberStore<Snowflake, GuildMember>}
      */
     this.members = new GuildMemberStore(this);
 
@@ -7699,7 +7709,7 @@ module.exports = Guild;
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(Buffer) {const path = __webpack_require__(26);
-const Util = __webpack_require__(5);
+const Util = __webpack_require__(6);
 const Embed = __webpack_require__(21);
 const Attachment = __webpack_require__(34);
 const MessageEmbed = __webpack_require__(21);
@@ -7981,7 +7991,7 @@ class Webhook {
 
 module.exports = Webhook;
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(6).Buffer))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(5).Buffer))
 
 /***/ }),
 /* 24 */
@@ -8108,7 +8118,7 @@ function objectToString(o) {
   return Object.prototype.toString.call(o);
 }
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(6).Buffer))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(5).Buffer))
 
 /***/ }),
 /* 26 */
@@ -8963,7 +8973,7 @@ class TextBasedChannel {
 
 module.exports = TextBasedChannel;
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(6).Buffer))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(5).Buffer))
 
 /***/ }),
 /* 29 */
@@ -10427,7 +10437,7 @@ Stream.prototype.pipe = function(dest, options) {
 /***/ (function(module, exports, __webpack_require__) {
 
 /* eslint-disable node/no-deprecated-api */
-var buffer = __webpack_require__(6)
+var buffer = __webpack_require__(5)
 var Buffer = buffer.Buffer
 
 // alternative to using Object.keys for old browsers
@@ -15028,7 +15038,7 @@ module.exports = {
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 // USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-var Buffer = __webpack_require__(6).Buffer;
+var Buffer = __webpack_require__(5).Buffer;
 
 var isBufferEncoding = Buffer.isEncoding
   || function(encoding) {
@@ -17081,7 +17091,7 @@ WebSocketConnection.WebSocket = WebSocket;
 
 module.exports = WebSocketConnection;
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(6).Buffer))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(5).Buffer))
 
 /***/ }),
 /* 66 */
@@ -17092,7 +17102,7 @@ const Collection = __webpack_require__(3);
 const ClientUserSettings = __webpack_require__(75);
 const ClientUserGuildSettings = __webpack_require__(133);
 const Constants = __webpack_require__(0);
-const Util = __webpack_require__(5);
+const Util = __webpack_require__(6);
 const Guild = __webpack_require__(22);
 const Message = __webpack_require__(17);
 const GroupDMChannel = __webpack_require__(35);
@@ -18361,7 +18371,7 @@ module.exports = PermissionOverwrites;
 /***/ (function(module, exports, __webpack_require__) {
 
 const Constants = __webpack_require__(0);
-const Util = __webpack_require__(5);
+const Util = __webpack_require__(6);
 const { Error } = __webpack_require__(4);
 
 /**
@@ -18447,7 +18457,7 @@ module.exports = ClientUserSettings;
 const fs = __webpack_require__(32);
 const snekfetch = __webpack_require__(37);
 
-const Util = __webpack_require__(5);
+const Util = __webpack_require__(6);
 const User = __webpack_require__(27);
 const Message = __webpack_require__(17);
 const Guild = __webpack_require__(22);
@@ -18726,7 +18736,7 @@ class ClientDataResolver {
 
 module.exports = ClientDataResolver;
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(6).Buffer))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(5).Buffer))
 
 /***/ }),
 /* 77 */
@@ -18747,7 +18757,7 @@ else if (!browser) console.warn('Warning: Attempting to use browser version of D
 /* 78 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Util = __webpack_require__(5);
+const Util = __webpack_require__(6);
 
 module.exports = {
   // "Root" classes (starting points)
@@ -19348,7 +19358,7 @@ function makeURLFromRequest(request) {
   });
 }
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(6).Buffer))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(5).Buffer))
 
 /***/ }),
 /* 82 */
@@ -20337,7 +20347,7 @@ var unsafeHeaders = [
 	'via'
 ]
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(6).Buffer, __webpack_require__(7), __webpack_require__(8)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(5).Buffer, __webpack_require__(7), __webpack_require__(8)))
 
 /***/ }),
 /* 95 */
@@ -20526,13 +20536,13 @@ IncomingMessage.prototype._onXHRProgress = function () {
 	}
 }
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(8), __webpack_require__(6).Buffer, __webpack_require__(7)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(8), __webpack_require__(5).Buffer, __webpack_require__(7)))
 
 /***/ }),
 /* 96 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var Buffer = __webpack_require__(6).Buffer
+var Buffer = __webpack_require__(5).Buffer
 
 module.exports = function (buf) {
 	// If the buffer is backed by a Uint8Array, a faster version will work
@@ -21322,7 +21332,7 @@ class FormData {
 
 module.exports = FormData;
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(6).Buffer))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(5).Buffer))
 
 /***/ }),
 /* 105 */
@@ -22719,7 +22729,7 @@ exports.EOL = '\n';
 /* WEBPACK VAR INJECTION */(function(process) {const EventEmitter = __webpack_require__(13);
 const Constants = __webpack_require__(0);
 const Permissions = __webpack_require__(11);
-const Util = __webpack_require__(5);
+const Util = __webpack_require__(6);
 const RESTManager = __webpack_require__(63);
 const ClientManager = __webpack_require__(121);
 const ClientDataResolver = __webpack_require__(76);
@@ -23005,7 +23015,10 @@ class Client extends EventEmitter {
       if (typeof token !== 'string') throw new Error('TOKEN_INVALID');
       token = token.replace(/^Bot\s*/i, '');
       this.manager.connectToWebSocket(token, resolve, reject);
-    }).catch(() => this.destroy());
+    }).catch(e => {
+      this.destroy();
+      return Promise.reject(e);
+    });
   }
 
   /**
@@ -24181,7 +24194,7 @@ module.exports = GuildChannelStore;
 /* 130 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Util = __webpack_require__(5);
+const Util = __webpack_require__(6);
 const Embed = __webpack_require__(21);
 const { RangeError } = __webpack_require__(4);
 
@@ -24944,7 +24957,6 @@ module.exports = ChannelPinsUpdate;
 
 const AbstractHandler = __webpack_require__(1);
 const Constants = __webpack_require__(0);
-const Util = __webpack_require__(5);
 
 class PresenceUpdateHandler extends AbstractHandler {
   handle(packet) {
@@ -24985,7 +24997,7 @@ class PresenceUpdateHandler extends AbstractHandler {
         }
         const oldMember = member._clone();
         if (member.presence) {
-          oldMember.frozenPresence = Util.cloneObject(member.presence);
+          oldMember.frozenPresence = member.presence._clone();
         }
         guild._setPresence(user.id, data);
         client.emit(Constants.Events.PRESENCE_UPDATE, oldMember, member);
@@ -26571,12 +26583,51 @@ const DMChannel = __webpack_require__(45);
 const GroupDMChannel = __webpack_require__(35);
 const Constants = __webpack_require__(0);
 
+const kLru = Symbol('LRU');
+const lruable = ['group', 'dm'];
+
 /**
  * Stores channels.
  * @private
  * @extends {DataStore}
  */
 class ChannelStore extends DataStore {
+  constructor(iterable, options = {}) {
+    super(iterable);
+
+    if (options.lru) {
+      const lru = this[kLru] = [];
+      lru.add = item => {
+        lru.remove(item);
+        lru.unshift(item);
+        while (lru.length > options.lru) this.remove(lru[lru.length - 1]);
+      };
+      lru.remove = item => {
+        const index = lru.indexOf(item);
+        if (index > -1) lru.splice(index, 1);
+      };
+    }
+  }
+
+  get(key, peek = false) {
+    const item = super.get(key);
+    if (!item || !lruable.includes(item.type)) return item;
+    if (!peek && this[kLru]) this[kLru].add(key);
+    return item;
+  }
+
+  set(key, val) {
+    if (this[kLru] && lruable.includes(val.type)) this[kLru].add(key);
+    return super.set(key, val);
+  }
+
+  delete(key) {
+    const item = this.get(key, true);
+    if (!item) return false;
+    if (this[kLru] && lruable.includes(item.type)) this[kLru].remove(key);
+    return super.delete(key);
+  }
+
   create(data, guild, cache = true) {
     const existing = this.get(data.id);
     if (existing) return existing;
@@ -26666,7 +26717,7 @@ const Webhook = __webpack_require__(23);
 const RESTManager = __webpack_require__(63);
 const ClientDataResolver = __webpack_require__(76);
 const Constants = __webpack_require__(0);
-const Util = __webpack_require__(5);
+const Util = __webpack_require__(6);
 
 /**
  * The webhook client.
