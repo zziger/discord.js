@@ -16714,7 +16714,7 @@ class WebSocketConnection extends EventEmitter {
       this.status = Constants.Status.NEARLY;
       if (!this.client.options.fetchAllMembers) return this.triggerReady();
       // Fetch all members before marking self as ready
-      const promises = this.client.guilds.map(g => g.fetchMembers());
+      const promises = this.client.guilds.map(g => g.members.fetch());
       Promise.all(promises)
         .then(() => this.triggerReady())
         .catch(e => {
@@ -24546,7 +24546,7 @@ class GuildCreateHandler extends AbstractHandler {
          * @event Client#guildCreate
          * @param {Guild} guild The created guild
          */
-        if (client.options.fetchAllMembers) await guild.fetchMembers();
+        if (client.options.fetchAllMembers) await guild.members.fetch();
         client.emit(Constants.Events.GUILD_CREATE, guild);
       }
     }
