@@ -6967,64 +6967,6 @@ class Guild extends Base {
   }
 
   /**
-   * Fetch a single guild member from a user.
-   * @param {UserResolvable} user The user to fetch the member for
-   * @param {boolean} [cache=true] Insert the user into the users cache
-   * @returns {Promise<GuildMember>}
-   */
-  fetchMember(user, cache = true) {
-    user = this.client.resolver.resolveUser(user);
-    if (!user) return Promise.reject(new Error('USER_NOT_CACHED'));
-    if (this.members.has(user.id)) return Promise.resolve(this.members.get(user.id));
-    return this.client.api.guilds(this.id).members(user.id).get()
-      .then(data => {
-        if (cache) return this.client.actions.GuildMemberGet.handle(this, data).member;
-        else return new GuildMember(this, data);
-      });
-  }
-
-  /**
-   * Fetches all the members in the guild, even if they are offline. If the guild has less than 250 members,
-   * this should not be necessary.
-   * @param {Object} [options] Options for the fetch operation
-   * @param {string} [options.query=''] Limit fetch to members with similar usernames
-   * @param {number} [options.limit=0] Maximum number of members to request
-   * @returns {Promise<Collection<Snowflake, GuildMember>>}
-   */
-  fetchMembers({ query = '', limit = 0 } = {}) {
-    return new Promise((resolve, reject) => {
-      if (this.memberCount === this.members.size) {
-        resolve(query || limit ? new Collection() : this.members);
-        return;
-      }
-      this.client.ws.send({
-        op: Constants.OPCodes.REQUEST_GUILD_MEMBERS,
-        d: {
-          guild_id: this.id,
-          query,
-          limit,
-        },
-      });
-      const fetchedMembers = new Collection();
-      const handler = (members, guild) => {
-        if (guild.id !== this.id) return;
-        for (const member of members.values()) {
-          if (query || limit) fetchedMembers.set(member.user.id, member);
-        }
-        if (this.memberCount === this.members.size || ((query || limit) && members.size < 1000)) {
-          this.client.removeListener(Constants.Events.GUILD_MEMBERS_CHUNK, handler);
-          resolve(query || limit ? fetchedMembers : this.members);
-        }
-      };
-      this.client.on(Constants.Events.GUILD_MEMBERS_CHUNK, handler);
-      this.client.setTimeout(() => {
-        this.client.removeListener(Constants.Events.GUILD_MEMBERS_CHUNK, handler);
-        reject(new Error('GUILD_MEMBERS_TIMEOUT'));
-      }, 120e3);
-    });
-  }
-
-  /**
    * Performs a search within the entire guild.
    * <warn>This is only available when using a user account.</warn>
    * @param {MessageSearchOptions} [options={}] Options to pass to the search
@@ -24019,6 +23961,8 @@ module.exports = ReactionStore;
 
 const DataStore = __webpack_require__(12);
 const GuildMember = __webpack_require__(18);
+const Constants = __webpack_require__(0);
+const Collection = __webpack_require__(3);
 /**
  * Stores guild members.
  * @private
@@ -24031,13 +23975,104 @@ class GuildMemberStore extends DataStore {
   }
 
   create(data) {
-    const existing = this.has(data.user.id);
+    const existing = this.get(data.user.id);
     if (existing) return existing;
 
     const member = new GuildMember(this.guild, data);
     this.set(member.id, member);
 
     return member;
+  }
+
+  /**
+   * Options used to fetch a single member from a guild.
+   * @typedef {Object} FetchMemberOptions
+   * @property {UserResolvable} user The user to fetch
+   * @property {boolean} [cache=true] Whether or not to cache the fetched member
+   */
+
+  /**
+   * Options used to fetch multiple members from a guild.
+   * @typedef {Object} FetchMembersOptions
+   * @property {string} [query=''] Limit fetch to members with similar usernames
+   * @property {number} [limit=0] Maximum number of members to request
+   */
+
+  /**
+   * Fetch member(s) from Discord, even if they're offline.
+   * @param {UserResolvable|FetchMemberOptions|FetchMembersOptions} [options] If a UserResolvable, the user to fetch.
+   * If undefined, fetches all members.
+   * If a query, it limits the results to users with similar usernames.
+   * @returns {Promise<GuildMember>|Promise<Collection<Snowflake, GuildMember>>}
+   * @example
+   * // Fetch all members from a guild
+   * guild.members.fetch();
+   * @example
+   * // Fetch a single member
+   * guild.members.fetch('66564597481480192');
+   * guild.members.fetch(user);
+   * guild.members.fetch({ user, cache: false }); // Fetch and don't cache
+   * @example
+   * // Fetch by query
+   * guild.members.fetch({
+   *   query: 'hydra',
+   * });
+   * guild.members.fetch({
+   *   query: 'hydra',
+   *   limit: 10,
+   * });
+   */
+  fetch(options) {
+    if (!options) return this._fetchMany();
+    const user = this.client.resolver.resolveUser(options);
+    if (user) return this._fetchSingle({ user, cache: true });
+    if (options.user) {
+      options.user = this.client.resolver.resolveUser(options);
+      if (options.user) return this._fetchSingle(options);
+    }
+    return this._fetchMany(options);
+  }
+
+  _fetchSingle({ user, cache }) {
+    if (this.has(user.id)) return Promise.resolve(this.get(user.id));
+    return this.client.api.guilds(this.guild.id).members(user.id).get()
+      .then(data => {
+        if (cache) return this.create(data);
+        else return new GuildMember(this, data);
+      });
+  }
+
+  _fetchMany({ query = '', limit = 0 } = {}) {
+    return new Promise((resolve, reject) => {
+      if (this.guild.memberCount === this.size) {
+        resolve(query || limit ? new Collection() : this);
+        return;
+      }
+      this.guild.client.ws.send({
+        op: Constants.OPCodes.REQUEST_GUILD_MEMBERS,
+        d: {
+          guild_id: this.guild.id,
+          query,
+          limit,
+        },
+      });
+      const fetchedMembers = new Collection();
+      const handler = (members, guild) => {
+        if (guild.id !== this.guild.id) return;
+        for (const member of members.values()) {
+          if (query || limit) fetchedMembers.set(member.user.id, member);
+        }
+        if (this.guild.memberCount === this.size || ((query || limit) && members.size < 1000)) {
+          this.guild.client.removeListener(Constants.Events.GUILD_MEMBERS_CHUNK, handler);
+          resolve(query || limit ? fetchedMembers : this);
+        }
+      };
+      this.guild.client.on(Constants.Events.GUILD_MEMBERS_CHUNK, handler);
+      this.guild.client.setTimeout(() => {
+        this.guild.client.removeListener(Constants.Events.GUILD_MEMBERS_CHUNK, handler);
+        reject(new Error('GUILD_MEMBERS_TIMEOUT'));
+      }, 120e3);
+    });
   }
 }
 
