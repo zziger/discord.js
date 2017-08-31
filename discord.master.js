@@ -5895,7 +5895,7 @@ class Role extends Base {
 
   /**
    * Set the permissions of the role.
-   * @param {string[]} permissions The permissions of the role
+   * @param {PermissionResolvable[]} permissions The permissions of the role
    * @param {string} [reason] Reason for changing the role's permissions
    * @returns {Promise<Role>}
    * @example
@@ -7005,6 +7005,7 @@ class Guild extends Base {
    * @property {number} [verificationLevel] The verification level of the guild
    * @property {number} [explicitContentFilter] The level of the explicit content filter
    * @property {ChannelResolvable} [afkChannel] The AFK channel of the guild
+   * @property {ChannelResolvable} [systemChannel] The system channel of the guild
    * @property {number} [afkTimeout] The AFK timeout of the guild
    * @property {Base64Resolvable} [icon] The icon of the guild
    * @property {GuildMemberResolvable} [owner] The owner of the guild
@@ -7213,6 +7214,7 @@ class Guild extends Base {
 
   /**
    * Allow direct messages from guild members.
+   * <warn>This is only available when using a user account.</warn>
    * @param {boolean} allow Whether to allow direct messages
    * @returns {Promise<Guild>}
    */
@@ -7274,6 +7276,7 @@ class Guild extends Base {
 
   /**
    * Prunes members from the guild based on how long they have been inactive.
+   * @param {Object} [options] Prune options
    * @param {number} [options.days=7] Number of days of inactivity required to kick
    * @param {boolean} [options.dry=false] Get number of users that will be kicked, without actually kicking them
    * @param {string} [options.reason] Reason for this prune
@@ -7308,7 +7311,7 @@ class Guild extends Base {
    * @typedef {Object} ChannelCreationOverwrites
    * @property {PermissionResolvable[]|number} [allow] The permissions to allow
    * @property {PermissionResolvable[]|number} [deny] The permissions to deny
-   * @property {RoleResolvable|UserResolvable} id ID of the group or member this overwrite is for
+   * @property {RoleResolvable|UserResolvable} id ID of the role or member this overwrite is for
    */
 
   /**
@@ -7482,7 +7485,7 @@ class Guild extends Base {
    * Delete an emoji.
    * @param {Emoji|string} emoji The emoji to delete
    * @param {string} [reason] Reason for deleting the emoji
-   * @returns {Promise}
+   * @returns {Promise<Emoji>}
    */
   deleteEmoji(emoji, reason) {
     if (!(emoji instanceof Emoji)) emoji = this.emojis.get(emoji);
@@ -7592,7 +7595,7 @@ class Guild extends Base {
 
   /**
    * Set the position of a role in this guild.
-   * @param {string|Role} role The role to edit, can be a role object or a role ID
+   * @param {RoleResolvable} role The role to edit, can be a role object or a role ID
    * @param {number} position The new position of the role
    * @param {boolean} [relative=false] Position Moves the role relative to its current position
    * @returns {Promise<Guild>}
@@ -7622,7 +7625,7 @@ class Guild extends Base {
 
   /**
    * Set the position of a channel in this guild.
-   * @param {string|GuildChannel} channel The channel to edit, can be a channel object or a channel ID
+   * @param {ChannelResolvable} channel The channel to edit, can be a channel object or a channel ID
    * @param {number} position The new position of the channel
    * @param {boolean} [relative=false] Position Moves the channel relative to its current position
    * @returns {Promise<Guild>}
@@ -7957,7 +7960,7 @@ class Webhook {
   /**
    * Edit the webhook.
    * @param {Object} options Options
-   * @param {string} [options.name] New name for this webhook
+   * @param {string} [options.name=this.name] New name for this webhook
    * @param {BufferResolvable} [options.avatar] New avatar for this webhook
    * @param {string} [reason] Reason for editing this webhook
    * @returns {Promise<Webhook>}
@@ -9343,10 +9346,11 @@ class GuildChannel extends Channel {
   }
 
   /**
-   * An object mapping permission flags to `true` (enabled) or `false` (disabled).
+   * An object mapping permission flags to `true` (enabled), `null` (default) or `false` (disabled).
    * ```js
    * {
    *  'SEND_MESSAGES': true,
+   *  'EMBED_LINKS': null,
    *  'ATTACH_FILES': false,
    * }
    * ```
@@ -9433,7 +9437,7 @@ class GuildChannel extends Channel {
    * @property {number} [position] The position of the channel
    * @property {string} [topic] The topic of the text channel
    * @property {number} [bitrate] The bitrate of the voice channel
-   * @property {number} [userLimit] The user limit of voice the channel
+   * @property {number} [userLimit] The user limit of the voice channel
    */
 
   /**
@@ -13630,7 +13634,7 @@ class ClientApplication extends Base {
   /**
    * Reset the app's secret.
    * <warn>This is only available when using a user account.</warn>
-   * @returns {OAuth2Application}
+   * @returns {ClientApplication}
    */
   resetSecret() {
     return this.client.api.oauth2.applications[this.id].reset.post()
@@ -13640,7 +13644,7 @@ class ClientApplication extends Base {
   /**
    * Reset the app's bot token.
    * <warn>This is only available when using a user account.</warn>
-   * @returns {OAuth2Application}
+   * @returns {ClientApplication}
    */
   resetToken() {
     return this.client.api.oauth2.applications[this.id].bot.reset.post()
@@ -18378,6 +18382,7 @@ class ClientUserSettings {
   /**
    * Patch the data contained in this class with new partial data.
    * @param {Object} data Data to patch this with
+   * @private
    */
   patch(data) {
     for (const [key, value] of Object.entries(Constants.UserSettingsMap)) {
@@ -18393,14 +18398,16 @@ class ClientUserSettings {
   /**
    * Update a specific property of of user settings.
    * @param {string} name Name of property
-   * @param {value} value Value to patch
+   * @param {*} value Value to patch
    * @returns {Promise<Object>}
+   * @private
    */
   update(name, value) {
     return this.user.client.api.users['@me'].settings.patch({ data: { [name]: value } });
   }
 
   /**
+   * Sets the position of the guild in the guild listing.
    * @param {Guild} guild The guild to move
    * @param {number} position Absolute or relative position
    * @param {boolean} [relative=false] Whether to position relatively or absolutely
@@ -18479,7 +18486,7 @@ class ClientDataResolver {
    * * A Snowflake
    * * A Message object (resolves to the message author)
    * * A GuildMember object
-   * @typedef {User|Snowflake|Message|Guild|GuildMember} UserResolvable
+   * @typedef {User|Snowflake|Message|GuildMember} UserResolvable
    */
 
   /**
@@ -18571,7 +18578,7 @@ class ClientDataResolver {
    * Data that can be resolved to give a Channel object. This can be:
    * * A Channel object
    * * A Snowflake
-   * @typedef {Channel|Guild|Message|Snowflake} ChannelResolvable
+   * @typedef {Channel|Snowflake} ChannelResolvable
    */
 
   /**
@@ -18618,7 +18625,7 @@ class ClientDataResolver {
   /**
    * Resolves a Base64Resolvable, a string, or a BufferResolvable to a Base 64 image.
    * @param {BufferResolvable|Base64Resolvable} image The image to be resolved
-   * @returns {Promise<string>}
+   * @returns {Promise<?string>}
    */
   async resolveImage(image) {
     if (!image) return null;
@@ -18707,7 +18714,7 @@ class ClientDataResolver {
    * * A custom emoji ID
    * * An Emoji object
    * * A ReactionEmoji object
-   * @typedef {string|Emoji|ReactionEmoji} EmojiIdentifierResolvable
+   * @typedef {string|Snowflake|Emoji|ReactionEmoji} EmojiIdentifierResolvable
    */
 
   /**
@@ -23107,7 +23114,7 @@ class Client extends EventEmitter {
   /**
    * Obtains the OAuth Application of the bot from Discord.
    * @param {Snowflake} [id='@me'] ID of application to fetch
-   * @returns {Promise<OAuth2Application>}
+   * @returns {Promise<ClientApplication>}
    */
   fetchApplication(id = '@me') {
     return this.api.oauth2.applications(id).get()
@@ -24418,6 +24425,7 @@ class ClientUserGuildSettings {
   /**
    * Patch the data contained in this class with new partial data.
    * @param {Object} data Data to patch this with
+   * @private
    */
   patch(data) {
     for (const [key, value] of Object.entries(Constants.UserGuildSettingsMap)) {
@@ -24438,8 +24446,9 @@ class ClientUserGuildSettings {
   /**
    * Update a specific property of the guild settings.
    * @param {string} name Name of property
-   * @param {value} value Value to patch
+   * @param {*} value Value to patch
    * @returns {Promise<Object>}
+   * @private
    */
   update(name, value) {
     return this.client.api.users('@me').guilds(this.guildID).settings.patch({ data: { [name]: value } });
@@ -24466,6 +24475,7 @@ class ClientUserChannelOverride {
   /**
    * Patch the data contained in this class with new partial data.
    * @param {Object} data Data to patch this with
+   * @private
    */
   patch(data) {
     for (const [key, value] of Object.entries(Constants.UserChannelOverrideMap)) {
