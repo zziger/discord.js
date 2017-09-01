@@ -13448,11 +13448,17 @@ module.exports = GroupDMChannel;
  * @extends Error
  */
 class DiscordAPIError extends Error {
-  constructor(error) {
+  constructor(path, error) {
     super();
     const flattened = this.constructor.flattenErrors(error.errors || error).join('\n');
     this.name = 'DiscordAPIError';
     this.message = error.message && flattened ? `${error.message}\n${flattened}` : error.message || flattened;
+
+    /**
+     * The path of the request relative to the HTTP endpoint
+     * @type {string}
+     */
+    this.path = path;
 
     /**
      * HTTP error code returned by Discord
@@ -24063,7 +24069,7 @@ class SequentialRequestHandler extends RequestHandler {
             this.queue.unshift(item);
             this.restManager.client.setTimeout(resolve, 1e3 + this.client.options.restTimeOffset);
           } else {
-            item.reject(err.status >= 400 && err.status < 500 ? new DiscordAPIError(res.body) : err);
+            item.reject(err.status >= 400 && err.status < 500 ? new DiscordAPIError(res.request.path, res.body) : err);
             resolve(err);
           }
         } else {
@@ -24149,7 +24155,7 @@ class BurstRequestHandler extends RequestHandler {
             this.resetTimeout = null;
           }, 1e3 + this.client.options.restTimeOffset);
         } else {
-          item.reject(err.status === 400 ? new DiscordAPIError(res.body) : err);
+          item.reject(err.status >= 400 && err.status < 500 ? new DiscordAPIError(res.request.path, res.body) : err);
           this.handle();
         }
       } else {
