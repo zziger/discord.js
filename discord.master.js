@@ -1061,19 +1061,23 @@ class Collection extends Map {
 
   /**
    * Searches for the existence of a single item where its specified property's value is identical to the given value
-   * (`item[prop] === value`).
+   * (`item[prop] === value`), or the given function returns a truthy value.
    * <warn>Do not use this to check for an item by its ID. Instead, use `collection.has(id)`. See
    * [MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map/has) for details.</warn>
-   * @param {string} prop The property to test against
-   * @param {*} value The expected value
+   * @param {string|Function} propOrFn The property to test against, or the function to test with
+   * @param {*} [value] The expected value - only applicable and required if using a property for the first argument
    * @returns {boolean}
    * @example
    * if (collection.exists('username', 'Bob')) {
    *  console.log('user here!');
    * }
+   * @example 
+   * if (collection.exists(user => user.username === 'Bob')) {
+   *  console.log('user here!');
+   * }
    */
-  exists(prop, value) {
-    return Boolean(this.find(prop, value));
+  exists(propOrFn, value) {
+    return Boolean(this.find(propOrFn, value));
   }
 
   /**
@@ -26751,6 +26755,7 @@ const PresenceStore = __webpack_require__(74);
 const Collection = __webpack_require__(3);
 const Constants = __webpack_require__(0);
 const { Presence } = __webpack_require__(20);
+const { TypeError } = __webpack_require__(4);
 
 class ClientPresenceStore extends PresenceStore {
   constructor(...args) {
@@ -26763,7 +26768,9 @@ class ClientPresenceStore extends PresenceStore {
     });
   }
 
-  async setClientPresence({ status, since, afk, activity }) {
+  async setClientPresence({ status, since, afk, activity }) { // eslint-disable-line complexity
+    if (typeof activity.name !== 'string') throw new TypeError('INVALID_TYPE', 'name', 'string');
+    if (!activity.type) activity.type = 0;
     const applicationID = activity && (activity.application ? activity.application.id || activity.application : null);
     let assets = new Collection();
     if (activity && activity.assets && applicationID) {
