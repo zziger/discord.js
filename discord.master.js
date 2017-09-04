@@ -6622,16 +6622,17 @@ const { Error } = __webpack_require__(4);
 class User extends Base {
   constructor(client, data) {
     super(client);
-    this._patch(data);
-  }
 
-  _patch(data) {
     /**
      * The ID of the user
      * @type {Snowflake}
      */
     this.id = data.id;
 
+    this._patch(data);
+  }
+
+  _patch(data) {
     /**
      * The username of the user
      * @type {string}
