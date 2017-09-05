@@ -17228,6 +17228,7 @@ class VoiceChannel extends GuildChannel {
     /**
      * The members in this voice channel
      * @type {Collection<Snowflake, GuildMember>}
+     * @name VoiceChannel#members
      */
     Object.defineProperty(this, 'members', { value: new Collection() });
   }
@@ -25383,6 +25384,13 @@ class MessageUpdateHandler extends AbstractHandler {
 }
 
 module.exports = MessageUpdateHandler;
+
+/**
+ * Emitted whenever a message is updated - e.g. embed or content change.
+ * @event Client#messageUpdate
+ * @param {Message} oldMessage The message before the update
+ * @param {Message} newMessage The message after the update
+ */
 
 
 /***/ }),
