@@ -23781,8 +23781,10 @@ class Client extends BaseClient {
     super(Object.assign({ _tokenType: 'Bot' }, options));
 
     // Obtain shard details from environment
-    if (!options.shardId && 'SHARD_ID' in Object({"__DISCORD_WEBPACK__":"true"})) options.shardId = Number(Object({"__DISCORD_WEBPACK__":"true"}).SHARD_ID);
-    if (!options.shardCount && 'SHARD_COUNT' in Object({"__DISCORD_WEBPACK__":"true"})) options.shardCount = Number(Object({"__DISCORD_WEBPACK__":"true"}).SHARD_COUNT);
+    if (!this.options.shardId && 'SHARD_ID' in Object({"__DISCORD_WEBPACK__":"true"})) this.options.shardId = Number(Object({"__DISCORD_WEBPACK__":"true"}).SHARD_ID);
+    if (!this.options.shardCount && 'SHARD_COUNT' in Object({"__DISCORD_WEBPACK__":"true"})) {
+      this.options.shardCount = Number(Object({"__DISCORD_WEBPACK__":"true"}).SHARD_COUNT);
+    }
 
     this._validateOptions();
 
