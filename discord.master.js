@@ -891,7 +891,7 @@ class Collection extends Map {
    * Obtains the first value(s) in this collection.
    * @param {number} [amount] Amount of values to obtain from the beginning
    * @returns {*|Array<*>} A single value if no amount is provided or an array of values, starting from the end if
-   * count is negative
+   * amount is negative
    */
   first(amount) {
     if (typeof amount === 'undefined') return this.values().next().value;
@@ -907,7 +907,7 @@ class Collection extends Map {
    * Obtains the first key(s) in this collection.
    * @param {number} [amount] Amount of keys to obtain from the beginning
    * @returns {*|Array<*>} A single key if no amount is provided or an array of keys, starting from the end if
-   * count is negative
+   * amount is negative
    */
   firstKey(amount) {
     if (typeof amount === 'undefined') return this.keys().next().value;
@@ -924,7 +924,7 @@ class Collection extends Map {
    * mechanism applies here as well.
    * @param {number} [amount] Amount of values to obtain from the end
    * @returns {*|Array<*>} A single value if no amount is provided or an array of values, starting from the end if
-   * count is negative
+   * amount is negative
    */
   last(amount) {
     const arr = this.array();
@@ -939,7 +939,7 @@ class Collection extends Map {
    * mechanism applies here as well.
    * @param {number} [amount] Amount of keys to obtain from the end
    * @returns {*|Array<*>} A single key if no amount is provided or an array of keys, starting from the end if
-   * count is negative
+   * amount is negative
    */
   lastKey(amount) {
     const arr = this.keyArray();
