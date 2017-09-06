@@ -60,7 +60,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 79);
+/******/ 	return __webpack_require__(__webpack_require__.s = 78);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -125,7 +125,7 @@ exports.DefaultOptions = {
    */
   ws: {
     large_threshold: 250,
-    compress: __webpack_require__(114).platform() !== 'browser',
+    compress: __webpack_require__(113).platform() !== 'browser',
     properties: {
       $os: process ? process.platform : 'discord.js',
       $browser: 'discord.js',
@@ -1262,7 +1262,7 @@ module.exports = Collection;
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = __webpack_require__(58);
-module.exports.Messages = __webpack_require__(113);
+module.exports.Messages = __webpack_require__(112);
 
 
 /***/ }),
@@ -1280,8 +1280,8 @@ module.exports.Messages = __webpack_require__(113);
 
 
 
-var base64 = __webpack_require__(81)
-var ieee754 = __webpack_require__(82)
+var base64 = __webpack_require__(80)
+var ieee754 = __webpack_require__(81)
 var isArray = __webpack_require__(47)
 
 exports.Buffer = Buffer
@@ -4318,10 +4318,10 @@ class Channel extends Base {
 
   static create(client, data, guild) {
     const DMChannel = __webpack_require__(63);
-    const GroupDMChannel = __webpack_require__(68);
-    const TextChannel = __webpack_require__(69);
-    const VoiceChannel = __webpack_require__(71);
-    const GuildChannel = __webpack_require__(27);
+    const GroupDMChannel = __webpack_require__(67);
+    const TextChannel = __webpack_require__(68);
+    const VoiceChannel = __webpack_require__(70);
+    const GuildChannel = __webpack_require__(28);
     const types = Constants.ChannelTypes;
     let channel;
     if (data.type === types.DM) {
@@ -4386,7 +4386,7 @@ module.exports = Channel;
 
 /*<replacement>*/
 
-var processNextTick = __webpack_require__(29);
+var processNextTick = __webpack_require__(30);
 /*</replacement>*/
 
 /*<replacement>*/
@@ -5628,7 +5628,7 @@ exports.RichPresenceAssets = RichPresenceAssets;
 /* 20 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Attachment = __webpack_require__(33);
+const MessageAttachment = __webpack_require__(27);
 const Util = __webpack_require__(7);
 const { RangeError } = __webpack_require__(4);
 
@@ -5765,10 +5765,10 @@ class MessageEmbed {
     /**
      * The files of this embed
      * @type {?Object}
-     * @property {Array<FileOptions|string|Attachment>} files Files to attach
+     * @property {Array<FileOptions|string|MessageAttachment>} files Files to attach
      */
     if (data.files) {
-      for (let file of data.files) if (file instanceof Attachment) file = file.file;
+      for (let file of data.files) if (file instanceof MessageAttachment) file = file.file;
     } else { data.files = null; }
   }
 
@@ -5819,14 +5819,14 @@ class MessageEmbed {
   /**
    * Sets the file to upload alongside the embed. This file can be accessed via `attachment://fileName.extension` when
    * setting an embed image or author/footer icons. Only one file may be attached.
-   * @param {Array<FileOptions|string|Attachment>} files Files to attach
+   * @param {Array<FileOptions|string|MessageAttachment>} files Files to attach
    * @returns {MessageEmbed}
    */
   attachFiles(files) {
     if (this.files) this.files = this.files.concat(files);
     else this.files = files;
     for (let file of files) {
-      if (file instanceof Attachment) file = file.file;
+      if (file instanceof MessageAttachment) file = file.file;
     }
     return this;
   }
@@ -5970,28 +5970,22 @@ module.exports = MessageEmbed;
 /* WEBPACK VAR INJECTION */(function(Buffer) {const path = __webpack_require__(24);
 const Util = __webpack_require__(7);
 const Embed = __webpack_require__(20);
-const Attachment = __webpack_require__(33);
+const MessageAttachment = __webpack_require__(27);
 const MessageEmbed = __webpack_require__(20);
 
 /**
  * Represents a webhook.
  */
 class Webhook {
-  constructor(client, dataOrID, token) {
-    if (client) {
-      /**
-       * The client that instantiated the webhook
-       * @name Webhook#client
-       * @type {Client}
-       * @readonly
-       */
-      Object.defineProperty(this, 'client', { value: client });
-      if (dataOrID) this._patch(dataOrID);
-    } else {
-      this.id = dataOrID;
-      this.token = token;
-      Object.defineProperty(this, 'client', { value: this });
-    }
+  constructor(client, data) {
+    /**
+     * The client that instantiated the webhook
+     * @name Webhook#client
+     * @type {Client}
+     * @readonly
+     */
+    Object.defineProperty(this, 'client', { value: client });
+    if (data) this._patch(data);
   }
 
   _patch(data) {
@@ -6060,10 +6054,11 @@ class Webhook {
    * it exceeds the character limit. If an object is provided, these are the options for splitting the message.
    */
 
+  /* eslint-disable max-len */
   /**
    * Send a message with this webhook.
    * @param {StringResolvable} [content] The content to send
-   * @param {WebhookMessageOptions|MessageEmbed|Attachment|Attachment[]} [options={}] The options to provide
+   * @param {WebhookMessageOptions|MessageEmbed|MessageAttachment|MessageAttachment[]} [options={}] The options to provide
    * @returns {Promise<Message|Object>}
    * @example
    * // Send a message
@@ -6071,6 +6066,7 @@ class Webhook {
    *   .then(message => console.log(`Sent message: ${message.content}`))
    *   .catch(console.error);
    */
+  /* eslint-enable max-len */
   send(content, options) { // eslint-disable-line complexity
     if (!options && typeof content === 'object' && !(content instanceof Array)) {
       options = content;
@@ -6079,13 +6075,13 @@ class Webhook {
       options = {};
     }
 
-    if (options instanceof Attachment) options = { files: [options.file] };
+    if (options instanceof MessageAttachment) options = { files: [options.file] };
     if (options instanceof MessageEmbed) options = { embeds: [options] };
     if (options.embed) options = { embeds: [options.embed] };
 
     if (content instanceof Array || options instanceof Array) {
       const which = content instanceof Array ? content : options;
-      const attachments = which.filter(item => item instanceof Attachment);
+      const attachments = which.filter(item => item instanceof MessageAttachment);
       const embeds = which.filter(item => item instanceof MessageEmbed);
       if (attachments.length) options = { files: attachments };
       if (embeds.length) options = { embeds };
@@ -6129,12 +6125,12 @@ class Webhook {
             file.name = path.basename(file.attachment);
           } else if (file.attachment && file.attachment.path) {
             file.name = path.basename(file.attachment.path);
-          } else if (file instanceof Attachment) {
+          } else if (file instanceof MessageAttachment) {
             file = { attachment: file.file, name: path.basename(file.file) || 'file.jpg' };
           } else {
             file.name = 'file.jpg';
           }
-        } else if (file instanceof Attachment) {
+        } else if (file instanceof MessageAttachment) {
           file = file.file;
         }
         options.files[i] = file;
@@ -6243,6 +6239,18 @@ class Webhook {
   delete(reason) {
     return this.client.api.webhooks(this.id, this.token).delete({ reason });
   }
+
+  static applyToClass(structure) {
+    for (const prop of [
+      'send',
+      'sendSlackMessage',
+      'edit',
+      'delete',
+    ]) {
+      Object.defineProperty(structure.prototype, prop,
+        Object.getOwnPropertyDescriptor(Webhook.prototype, prop));
+    }
+  }
 }
 
 module.exports = Webhook;
@@ -6259,7 +6267,7 @@ exports.Readable = exports;
 exports.Writable = __webpack_require__(39);
 exports.Duplex = __webpack_require__(16);
 exports.Transform = __webpack_require__(52);
-exports.PassThrough = __webpack_require__(89);
+exports.PassThrough = __webpack_require__(88);
 
 
 /***/ }),
@@ -6613,7 +6621,7 @@ var substr = 'ab'.substr(-1) === 'b'
 
 const TextBasedChannel = __webpack_require__(26);
 const { Presence } = __webpack_require__(19);
-const UserProfile = __webpack_require__(130);
+const UserProfile = __webpack_require__(129);
 const Snowflake = __webpack_require__(9);
 const Base = __webpack_require__(10);
 const { Error } = __webpack_require__(4);
@@ -6890,10 +6898,10 @@ module.exports = User;
 /* WEBPACK VAR INJECTION */(function(Buffer) {const path = __webpack_require__(24);
 const MessageCollector = __webpack_require__(61);
 const Shared = __webpack_require__(62);
-const MessageStore = __webpack_require__(32);
+const MessageStore = __webpack_require__(33);
 const Snowflake = __webpack_require__(9);
 const Collection = __webpack_require__(3);
-const Attachment = __webpack_require__(33);
+const MessageAttachment = __webpack_require__(27);
 const MessageEmbed = __webpack_require__(20);
 const { RangeError, TypeError } = __webpack_require__(4);
 
@@ -6957,7 +6965,7 @@ class TextBasedChannel {
   /**
    * Send a message to this channel.
    * @param {StringResolvable} [content] Text for the message
-   * @param {MessageOptions|MessageEmbed|Attachment|Attachment[]} [options={}] Options for the message
+   * @param {MessageOptions|MessageEmbed|MessageAttachment|MessageAttachment[]} [options={}] Options for the message
    * @returns {Promise<Message|Message[]>}
    * @example
    * // Send a message
@@ -6974,11 +6982,11 @@ class TextBasedChannel {
     }
 
     if (options instanceof MessageEmbed) options = { embed: options };
-    if (options instanceof Attachment) options = { files: [options.file] };
+    if (options instanceof MessageAttachment) options = { files: [options.file] };
 
     if (content instanceof Array || options instanceof Array) {
       const which = content instanceof Array ? content : options;
-      const attachments = which.filter(item => item instanceof Attachment);
+      const attachments = which.filter(item => item instanceof MessageAttachment);
       if (attachments.length) {
         options = { files: attachments };
         if (content instanceof Array) content = '';
@@ -7001,12 +7009,12 @@ class TextBasedChannel {
             file.name = path.basename(file.attachment);
           } else if (file.attachment && file.attachment.path) {
             file.name = path.basename(file.attachment.path);
-          } else if (file instanceof Attachment) {
+          } else if (file instanceof MessageAttachment) {
             file = { attachment: file.file, name: path.basename(file.file) || 'file.jpg' };
           } else {
             file.name = 'file.jpg';
           }
-        } else if (file instanceof Attachment) {
+        } else if (file instanceof MessageAttachment) {
           file = file.file;
         }
         options.files[i] = file;
@@ -7235,12 +7243,131 @@ module.exports = TextBasedChannel;
 
 /***/ }),
 /* 27 */
+/***/ (function(module, exports) {
+
+/**
+ * Represents an attachment in a message.
+ * @param {BufferResolvable|Stream} file The file
+ * @param {string} [name] The name of the file, if any
+ */
+class MessageAttachment {
+  constructor(file, name, data) {
+    this.file = null;
+    if (data) this._patch(data);
+    if (name) this.setAttachment(file, name);
+    else this._attach(file);
+  }
+
+  /**
+    * The name of the file
+    * @type {?string}
+    * @readonly
+    */
+  get name() {
+    return this.file.name;
+  }
+
+  /**
+    * The file
+    * @type {?BufferResolvable|Stream}
+    * @readonly
+    */
+  get attachment() {
+    return this.file.attachment;
+  }
+
+  /**
+    * Set the file of this attachment.
+    * @param {BufferResolvable|Stream} file The file
+    * @param {string} name The name of the file
+    * @returns {MessageAttachment} This attachment
+    */
+  setAttachment(file, name) {
+    this.file = { attachment: file, name };
+    return this;
+  }
+
+  /**
+    * Set the file of this attachment.
+    * @param {BufferResolvable|Stream} attachment The file
+    * @returns {MessageAttachment} This attachment
+    */
+  setFile(attachment) {
+    this.file = { attachment };
+    return this;
+  }
+
+  /**
+    * Set the name of this attachment.
+    * @param {string} name The name of the image
+    * @returns {MessageAttachment} This attachment
+    */
+  setName(name) {
+    this.file.name = name;
+    return this;
+  }
+
+  /**
+    * Set the file of this attachment.
+    * @param {BufferResolvable|Stream} file The file
+    * @param {string} name The name of the file
+    * @private
+    */
+  _attach(file, name) {
+    if (typeof file === 'string') this.file = file;
+    else this.setAttachment(file, name);
+  }
+
+  _patch(data) {
+    /**
+     * The ID of this attachment
+     * @type {Snowflake}
+     */
+    this.id = data.id;
+
+    /**
+     * The size of this attachment in bytes
+     * @type {number}
+     */
+    this.size = data.size;
+
+    /**
+     * The URL to this attachment
+     * @type {string}
+     */
+    this.url = data.url;
+
+    /**
+     * The Proxy URL to this attachment
+     * @type {string}
+     */
+    this.proxyURL = data.proxy_url;
+
+    /**
+     * The height of this attachment (if an image)
+     * @type {?number}
+     */
+    this.height = data.height;
+
+    /**
+     * The width of this attachment (if an image)
+     * @type {?number}
+     */
+    this.width = data.width;
+  }
+}
+
+module.exports = MessageAttachment;
+
+
+/***/ }),
+/* 28 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Channel = __webpack_require__(15);
 const Role = __webpack_require__(18);
 const Invite = __webpack_require__(35);
-const PermissionOverwrites = __webpack_require__(70);
+const PermissionOverwrites = __webpack_require__(69);
 const Permissions = __webpack_require__(12);
 const Collection = __webpack_require__(3);
 const Constants = __webpack_require__(0);
@@ -7667,28 +7794,28 @@ module.exports = GuildChannel;
 
 
 /***/ }),
-/* 28 */
+/* 29 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Long = __webpack_require__(43);
 const Role = __webpack_require__(18);
 const Invite = __webpack_require__(35);
-const GuildAuditLogs = __webpack_require__(72);
+const GuildAuditLogs = __webpack_require__(71);
 const Webhook = __webpack_require__(21);
-const GuildChannel = __webpack_require__(27);
+const GuildChannel = __webpack_require__(28);
 const GuildMember = __webpack_require__(17);
-const VoiceRegion = __webpack_require__(73);
+const VoiceRegion = __webpack_require__(72);
 const Constants = __webpack_require__(0);
 const Collection = __webpack_require__(3);
 const Util = __webpack_require__(7);
 const Snowflake = __webpack_require__(9);
 const Permissions = __webpack_require__(12);
 const Shared = __webpack_require__(62);
-const GuildMemberStore = __webpack_require__(125);
-const RoleStore = __webpack_require__(126);
-const EmojiStore = __webpack_require__(127);
-const GuildChannelStore = __webpack_require__(128);
-const PresenceStore = __webpack_require__(74);
+const GuildMemberStore = __webpack_require__(124);
+const RoleStore = __webpack_require__(125);
+const EmojiStore = __webpack_require__(126);
+const GuildChannelStore = __webpack_require__(127);
+const PresenceStore = __webpack_require__(73);
 const Base = __webpack_require__(10);
 const { Error, TypeError } = __webpack_require__(4);
 
@@ -8933,7 +9060,7 @@ module.exports = Guild;
 
 
 /***/ }),
-/* 29 */
+/* 30 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -8984,24 +9111,24 @@ function nextTick(fn, arg1, arg2, arg3) {
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(8)))
 
 /***/ }),
-/* 30 */
+/* 31 */
 /***/ (function(module, exports) {
 
 
 
 /***/ }),
-/* 31 */
+/* 32 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-exports.decode = exports.parse = __webpack_require__(94);
-exports.encode = exports.stringify = __webpack_require__(95);
+exports.decode = exports.parse = __webpack_require__(93);
+exports.encode = exports.stringify = __webpack_require__(94);
 
 
 /***/ }),
-/* 32 */
+/* 33 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const DataStore = __webpack_require__(11);
@@ -9103,86 +9230,6 @@ class MessageStore extends DataStore {
 }
 
 module.exports = MessageStore;
-
-
-/***/ }),
-/* 33 */
-/***/ (function(module, exports) {
-
-/**
- * Represents an attachment in a message.
- * @param {BufferResolvable|Stream} file The file
- * @param {string} [name] The name of the file, if any
- */
-class Attachment {
-  constructor(file, name) {
-    this.file = null;
-    if (name) this.setAttachment(file, name);
-    else this._attach(file);
-  }
-
-  /**
-    * The name of the file
-    * @type {?string}
-    * @readonly
-    */
-  get name() {
-    return this.file.name;
-  }
-
-  /**
-    * The file
-    * @type {?BufferResolvable|Stream}
-    * @readonly
-    */
-  get attachment() {
-    return this.file.attachment;
-  }
-
-  /**
-    * Set the file of this attachment.
-    * @param {BufferResolvable|Stream} file The file
-    * @param {string} name The name of the file
-    * @returns {Attachment} This attachment
-    */
-  setAttachment(file, name) {
-    this.file = { attachment: file, name };
-    return this;
-  }
-
-  /**
-    * Set the file of this attachment.
-    * @param {BufferResolvable|Stream} attachment The file
-    * @returns {Attachment} This attachment
-    */
-  setFile(attachment) {
-    this.file = { attachment };
-    return this;
-  }
-
-  /**
-    * Set the name of this attachment.
-    * @param {string} name The name of the image
-    * @returns {Attachment} This attachment
-    */
-  setName(name) {
-    this.file.name = name;
-    return this;
-  }
-
-  /**
-    * Set the file of this attachment.
-    * @param {BufferResolvable|Stream} file The file
-    * @param {string} name The name of the file
-    * @private
-    */
-  _attach(file, name) {
-    if (typeof file === 'string') this.file = file;
-    else this.setAttachment(file, name);
-  }
-}
-
-module.exports = Attachment;
 
 
 /***/ }),
@@ -9592,7 +9639,7 @@ module.exports = Invite;
 /* 36 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Snekfetch = __webpack_require__(83);
+const Snekfetch = __webpack_require__(82);
 
 // Sync stuff might go here
 
@@ -9631,10 +9678,10 @@ var inherits = __webpack_require__(14);
 
 inherits(Stream, EE);
 Stream.Readable = __webpack_require__(22);
-Stream.Writable = __webpack_require__(90);
-Stream.Duplex = __webpack_require__(91);
-Stream.Transform = __webpack_require__(92);
-Stream.PassThrough = __webpack_require__(93);
+Stream.Writable = __webpack_require__(89);
+Stream.Duplex = __webpack_require__(90);
+Stream.Transform = __webpack_require__(91);
+Stream.PassThrough = __webpack_require__(92);
 
 // Backwards-compat with node 0.4.x
 Stream.Stream = Stream;
@@ -9834,7 +9881,7 @@ SafeBuffer.allocUnsafeSlow = function (size) {
 
 /*<replacement>*/
 
-var processNextTick = __webpack_require__(29);
+var processNextTick = __webpack_require__(30);
 /*</replacement>*/
 
 module.exports = Writable;
@@ -9877,7 +9924,7 @@ util.inherits = __webpack_require__(14);
 
 /*<replacement>*/
 var internalUtil = {
-  deprecate: __webpack_require__(88)
+  deprecate: __webpack_require__(87)
 };
 /*</replacement>*/
 
@@ -10469,7 +10516,7 @@ Writable.prototype._destroy = function (err, cb) {
   this.end();
   cb(err);
 };
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(8), __webpack_require__(86).setImmediate, __webpack_require__(6)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(8), __webpack_require__(85).setImmediate, __webpack_require__(6)))
 
 /***/ }),
 /* 40 */
@@ -11000,7 +11047,7 @@ function isPrimitive(arg) {
 }
 exports.isPrimitive = isPrimitive;
 
-exports.isBuffer = __webpack_require__(111);
+exports.isBuffer = __webpack_require__(110);
 
 function objectToString(o) {
   return Object.prototype.toString.call(o);
@@ -11044,7 +11091,7 @@ exports.log = function() {
  *     prototype.
  * @param {function} superCtor Constructor function to inherit prototype from.
  */
-exports.inherits = __webpack_require__(112);
+exports.inherits = __webpack_require__(111);
 
 exports._extend = function(origin, add) {
   // Don't do anything if add isn't an object
@@ -11070,7 +11117,7 @@ function hasOwnProperty(obj, prop) {
 
 const EventEmitter = __webpack_require__(13);
 const RESTManager = __webpack_require__(59);
-const ClientDataResolver = __webpack_require__(122);
+const ClientDataResolver = __webpack_require__(121);
 const Util = __webpack_require__(7);
 const Constants = __webpack_require__(0);
 
@@ -12633,13 +12680,13 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
 /***/ (function(module, exports, __webpack_require__) {
 
 const Mentions = __webpack_require__(64);
-const Attachment = __webpack_require__(65);
+const MessageAttachment = __webpack_require__(27);
 const Embed = __webpack_require__(20);
-const ReactionCollector = __webpack_require__(66);
+const ReactionCollector = __webpack_require__(65);
 const ClientApplication = __webpack_require__(45);
 const Util = __webpack_require__(7);
 const Collection = __webpack_require__(3);
-const ReactionStore = __webpack_require__(124);
+const ReactionStore = __webpack_require__(123);
 const Constants = __webpack_require__(0);
 const Permissions = __webpack_require__(12);
 const Base = __webpack_require__(10);
@@ -12730,7 +12777,11 @@ class Message extends Base {
      * @type {Collection<Snowflake, MessageAttachment>}
      */
     this.attachments = new Collection();
-    for (const attachment of data.attachments) this.attachments.set(attachment.id, new Attachment(this, attachment));
+    for (const attachment of data.attachments) {
+      this.attachments.set(attachment.id, new MessageAttachment(
+        attachment.url, attachment.filename, attachment
+      ));
+    }
 
     /**
      * The timestamp the message was sent at
@@ -12814,7 +12865,11 @@ class Message extends Base {
 
     if ('attachments' in data) {
       this.attachments = new Collection();
-      for (const attachment of data.attachments) this.attachments.set(attachment.id, new Attachment(this, attachment));
+      for (const attachment of data.attachments) {
+        this.attachments.set(attachment.id, new MessageAttachment(
+          attachment.url, attachment.filename, attachment
+        ));
+      }
     } else {
       this.attachments = new Collection(this.attachments);
     }
@@ -13505,7 +13560,7 @@ module.exports = Array.isArray || function (arr) {
 
 /*<replacement>*/
 
-var processNextTick = __webpack_require__(29);
+var processNextTick = __webpack_require__(30);
 /*</replacement>*/
 
 module.exports = Readable;
@@ -13551,7 +13606,7 @@ util.inherits = __webpack_require__(14);
 /*</replacement>*/
 
 /*<replacement>*/
-var debugUtil = __webpack_require__(84);
+var debugUtil = __webpack_require__(83);
 var debug = void 0;
 if (debugUtil && debugUtil.debuglog) {
   debug = debugUtil.debuglog('stream');
@@ -13560,7 +13615,7 @@ if (debugUtil && debugUtil.debuglog) {
 }
 /*</replacement>*/
 
-var BufferList = __webpack_require__(85);
+var BufferList = __webpack_require__(84);
 var destroyImpl = __webpack_require__(50);
 var StringDecoder;
 
@@ -14505,7 +14560,7 @@ module.exports = __webpack_require__(13).EventEmitter;
 
 /*<replacement>*/
 
-var processNextTick = __webpack_require__(29);
+var processNextTick = __webpack_require__(30);
 /*</replacement>*/
 
 // undocumented cb() API, needed for core, not for public API
@@ -15025,9 +15080,9 @@ function done(stream, er, data) {
 /* 53 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(global) {var ClientRequest = __webpack_require__(96)
-var extend = __webpack_require__(99)
-var statusCodes = __webpack_require__(100)
+/* WEBPACK VAR INJECTION */(function(global) {var ClientRequest = __webpack_require__(95)
+var extend = __webpack_require__(98)
+var statusCodes = __webpack_require__(99)
 var url = __webpack_require__(55)
 
 var http = exports
@@ -15210,8 +15265,8 @@ xhr = null // Help gc
 
 
 
-var punycode = __webpack_require__(101);
-var util = __webpack_require__(103);
+var punycode = __webpack_require__(100);
+var util = __webpack_require__(102);
 
 exports.parse = urlParse;
 exports.resolve = urlResolve;
@@ -15286,7 +15341,7 @@ var protocolPattern = /^([a-z0-9.+-]+:)/i,
       'gopher:': true,
       'file:': true
     },
-    querystring = __webpack_require__(31);
+    querystring = __webpack_require__(32);
 
 function urlParse(url, parseQueryString, slashesDenoteHost) {
   if (url && util.isObject(url) && url instanceof Url) return url;
@@ -15925,8 +15980,8 @@ Url.prototype.parseHost = function() {
 /* 56 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const mimes = __webpack_require__(107);
-const mimeOfBuffer = __webpack_require__(108);
+const mimes = __webpack_require__(106);
+const mimeOfBuffer = __webpack_require__(107);
 
 function lookupMime(ext) {
   return mimes[ext.replace(/^\./, '')] || mimes.bin;
@@ -15957,7 +16012,7 @@ module.exports = {"name":"discord.js","version":"12.0.0-dev","description":"A po
 
 const kCode = Symbol('code');
 const messages = new Map();
-const assert = __webpack_require__(110);
+const assert = __webpack_require__(109);
 const util = __webpack_require__(40);
 
 /**
@@ -16024,10 +16079,10 @@ module.exports = {
 /* 59 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const UserAgentManager = __webpack_require__(115);
-const handlers = __webpack_require__(116);
-const APIRequest = __webpack_require__(120);
-const routeBuilder = __webpack_require__(121);
+const UserAgentManager = __webpack_require__(114);
+const handlers = __webpack_require__(115);
+const APIRequest = __webpack_require__(119);
+const routeBuilder = __webpack_require__(120);
 const { Error } = __webpack_require__(4);
 const Constants = __webpack_require__(0);
 
@@ -16256,8 +16311,8 @@ module.exports = MessageCollector;
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = {
-  search: __webpack_require__(123),
-  sendMessage: __webpack_require__(129),
+  search: __webpack_require__(122),
+  sendMessage: __webpack_require__(128),
 };
 
 
@@ -16267,7 +16322,7 @@ module.exports = {
 
 const Channel = __webpack_require__(15);
 const TextBasedChannel = __webpack_require__(26);
-const MessageStore = __webpack_require__(32);
+const MessageStore = __webpack_require__(33);
 
 /**
  * Represents a direct message channel between two users.
@@ -16490,80 +16545,6 @@ module.exports = MessageMentions;
 
 /***/ }),
 /* 65 */
-/***/ (function(module, exports) {
-
-/**
- * Represents an attachment in a message.
- */
-class MessageAttachment {
-  constructor(message, data) {
-    /**
-     * The client that instantiated this MessageAttachment
-     * @name MessageAttachment#client
-     * @type {Client}
-     * @readonly
-     */
-    Object.defineProperty(this, 'client', { value: message.client });
-
-    /**
-     * The message this attachment is part of
-     * @type {Message}
-     */
-    this.message = message;
-
-    this.setup(data);
-  }
-
-  setup(data) {
-    /**
-     * The ID of this attachment
-     * @type {Snowflake}
-     */
-    this.id = data.id;
-
-    /**
-     * The file name of this attachment
-     * @type {string}
-     */
-    this.filename = data.filename;
-
-    /**
-     * The size of this attachment in bytes
-     * @type {number}
-     */
-    this.filesize = data.size;
-
-    /**
-     * The URL to this attachment
-     * @type {string}
-     */
-    this.url = data.url;
-
-    /**
-     * The Proxy URL to this attachment
-     * @type {string}
-     */
-    this.proxyURL = data.proxy_url;
-
-    /**
-     * The height of this attachment (if an image)
-     * @type {?number}
-     */
-    this.height = data.height;
-
-    /**
-     * The width of this attachment (if an image)
-     * @type {?number}
-     */
-    this.width = data.width;
-  }
-}
-
-module.exports = MessageAttachment;
-
-
-/***/ }),
-/* 66 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Collector = __webpack_require__(42);
@@ -16684,7 +16665,7 @@ module.exports = ReactionCollector;
 
 
 /***/ }),
-/* 67 */
+/* 66 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Collection = __webpack_require__(3);
@@ -16810,13 +16791,13 @@ module.exports = MessageReaction;
 
 
 /***/ }),
-/* 68 */
+/* 67 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Channel = __webpack_require__(15);
 const TextBasedChannel = __webpack_require__(26);
 const Collection = __webpack_require__(3);
-const MessageStore = __webpack_require__(32);
+const MessageStore = __webpack_require__(33);
 
 /*
 { type: 3,
@@ -17051,14 +17032,14 @@ module.exports = GroupDMChannel;
 
 
 /***/ }),
-/* 69 */
+/* 68 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const GuildChannel = __webpack_require__(27);
+const GuildChannel = __webpack_require__(28);
 const Webhook = __webpack_require__(21);
 const TextBasedChannel = __webpack_require__(26);
 const Collection = __webpack_require__(3);
-const MessageStore = __webpack_require__(32);
+const MessageStore = __webpack_require__(33);
 
 /**
  * Represents a guild text channel on Discord.
@@ -17147,7 +17128,7 @@ module.exports = TextChannel;
 
 
 /***/ }),
-/* 70 */
+/* 69 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Permissions = __webpack_require__(12);
@@ -17213,10 +17194,10 @@ module.exports = PermissionOverwrites;
 
 
 /***/ }),
-/* 71 */
+/* 70 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const GuildChannel = __webpack_require__(27);
+const GuildChannel = __webpack_require__(28);
 const Collection = __webpack_require__(3);
 const { Error } = __webpack_require__(4);
 
@@ -17354,7 +17335,7 @@ module.exports = VoiceChannel;
 
 
 /***/ }),
-/* 72 */
+/* 71 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Collection = __webpack_require__(3);
@@ -17657,7 +17638,7 @@ module.exports = GuildAuditLogs;
 
 
 /***/ }),
-/* 73 */
+/* 72 */
 /***/ (function(module, exports) {
 
 /**
@@ -17713,7 +17694,7 @@ module.exports = VoiceRegion;
 
 
 /***/ }),
-/* 74 */
+/* 73 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const DataStore = __webpack_require__(11);
@@ -17734,16 +17715,16 @@ module.exports = PresenceStore;
 
 
 /***/ }),
-/* 75 */
+/* 74 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const User = __webpack_require__(25);
 const Collection = __webpack_require__(3);
-const ClientUserSettings = __webpack_require__(76);
-const ClientUserGuildSettings = __webpack_require__(77);
+const ClientUserSettings = __webpack_require__(75);
+const ClientUserGuildSettings = __webpack_require__(76);
 const Constants = __webpack_require__(0);
 const Util = __webpack_require__(7);
-const Guild = __webpack_require__(28);
+const Guild = __webpack_require__(29);
 
 /**
  * Represents the logged in client's Discord user.
@@ -18069,7 +18050,7 @@ module.exports = ClientUser;
 
 
 /***/ }),
-/* 76 */
+/* 75 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Constants = __webpack_require__(0);
@@ -18155,12 +18136,12 @@ module.exports = ClientUserSettings;
 
 
 /***/ }),
-/* 77 */
+/* 76 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Constants = __webpack_require__(0);
 const Collection = __webpack_require__(3);
-const ClientUserChannelOverride = __webpack_require__(139);
+const ClientUserChannelOverride = __webpack_require__(138);
 
 /**
  * A wrapper around the ClientUser's guild settings.
@@ -18221,25 +18202,25 @@ module.exports = ClientUserGuildSettings;
 
 
 /***/ }),
-/* 78 */
+/* 77 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(Buffer) {const browser = typeof window !== 'undefined';
-const zlib = __webpack_require__(30);
-const querystring = __webpack_require__(31);
+const zlib = __webpack_require__(31);
+const querystring = __webpack_require__(32);
 
 if (browser) {
   exports.WebSocket = window.WebSocket; // eslint-disable-line no-undef
 } else {
   try {
-    exports.WebSocket = __webpack_require__(176);
+    exports.WebSocket = __webpack_require__(175);
   } catch (err) {
-    exports.WebSocket = __webpack_require__(177);
+    exports.WebSocket = __webpack_require__(176);
   }
 }
 
 try {
-  var erlpack = __webpack_require__(178);
+  var erlpack = __webpack_require__(177);
   if (!erlpack.pack) erlpack = null;
 } catch (err) {} // eslint-disable-line no-empty
 
@@ -18268,13 +18249,13 @@ for (const state of ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED']) exports[state] 
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(5).Buffer))
 
 /***/ }),
-/* 79 */
+/* 78 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const browser = typeof window !== 'undefined';
 const webpack = !!"true";
 
-const Discord = __webpack_require__(80);
+const Discord = __webpack_require__(79);
 
 module.exports = Discord;
 if (browser && webpack) window.Discord = Discord; // eslint-disable-line no-undef
@@ -18283,7 +18264,7 @@ else if (!browser) console.warn('Warning: Attempting to use browser version of D
 
 
 /***/ }),
-/* 80 */
+/* 79 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Util = __webpack_require__(7);
@@ -18291,11 +18272,11 @@ const Util = __webpack_require__(7);
 module.exports = {
   // "Root" classes (starting points)
   BaseClient: __webpack_require__(41),
-  Client: __webpack_require__(132),
-  Shard: __webpack_require__(214),
-  ShardClientUtil: __webpack_require__(215),
-  ShardingManager: __webpack_require__(216),
-  WebhookClient: __webpack_require__(217),
+  Client: __webpack_require__(131),
+  Shard: __webpack_require__(213),
+  ShardClientUtil: __webpack_require__(214),
+  ShardingManager: __webpack_require__(215),
+  WebhookClient: __webpack_require__(216),
 
   // Utilities
   Collection: __webpack_require__(3),
@@ -18316,42 +18297,41 @@ module.exports = {
 
   // Structures
   Activity: __webpack_require__(19).Activity,
-  Attachment: __webpack_require__(33),
   Channel: __webpack_require__(15),
-  ClientUser: __webpack_require__(75),
-  ClientUserSettings: __webpack_require__(76),
+  ClientUser: __webpack_require__(74),
+  ClientUserSettings: __webpack_require__(75),
   Collector: __webpack_require__(42),
   DMChannel: __webpack_require__(63),
   Emoji: __webpack_require__(34),
-  GroupDMChannel: __webpack_require__(68),
-  Guild: __webpack_require__(28),
-  GuildAuditLogs: __webpack_require__(72),
-  GuildChannel: __webpack_require__(27),
+  GroupDMChannel: __webpack_require__(67),
+  Guild: __webpack_require__(29),
+  GuildAuditLogs: __webpack_require__(71),
+  GuildChannel: __webpack_require__(28),
   GuildMember: __webpack_require__(17),
   Invite: __webpack_require__(35),
   Message: __webpack_require__(44),
-  MessageAttachment: __webpack_require__(65),
+  MessageAttachment: __webpack_require__(27),
   MessageCollector: __webpack_require__(61),
   MessageEmbed: __webpack_require__(20),
   MessageMentions: __webpack_require__(64),
-  MessageReaction: __webpack_require__(67),
+  MessageReaction: __webpack_require__(66),
   ClientApplication: __webpack_require__(45),
-  PermissionOverwrites: __webpack_require__(70),
+  PermissionOverwrites: __webpack_require__(69),
   Presence: __webpack_require__(19).Presence,
   ReactionEmoji: __webpack_require__(46),
-  ReactionCollector: __webpack_require__(66),
+  ReactionCollector: __webpack_require__(65),
   Role: __webpack_require__(18),
-  TextChannel: __webpack_require__(69),
+  TextChannel: __webpack_require__(68),
   User: __webpack_require__(25),
-  VoiceChannel: __webpack_require__(71),
+  VoiceChannel: __webpack_require__(70),
   Webhook: __webpack_require__(21),
 
-  WebSocket: __webpack_require__(78),
+  WebSocket: __webpack_require__(77),
 };
 
 
 /***/ }),
-/* 81 */
+/* 80 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18472,7 +18452,7 @@ function fromByteArray (uint8) {
 
 
 /***/ }),
-/* 82 */
+/* 81 */
 /***/ (function(module, exports) {
 
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
@@ -18562,19 +18542,19 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 
 
 /***/ }),
-/* 83 */
+/* 82 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(Buffer) {__webpack_require__(37);
-const zlib = __webpack_require__(30);
-const qs = __webpack_require__(31);
+const zlib = __webpack_require__(31);
+const qs = __webpack_require__(32);
 const http = __webpack_require__(53);
-const https = __webpack_require__(104);
+const https = __webpack_require__(103);
 const URL = __webpack_require__(55);
-const Package = __webpack_require__(105);
+const Package = __webpack_require__(104);
 const Stream = __webpack_require__(37);
-const FormData = __webpack_require__(106);
-const fileLoader = __webpack_require__(109);
+const FormData = __webpack_require__(105);
+const fileLoader = __webpack_require__(108);
 
 /**
  * Snekfetch
@@ -18893,13 +18873,13 @@ function makeURLFromRequest(request) {
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(5).Buffer))
 
 /***/ }),
-/* 84 */
+/* 83 */
 /***/ (function(module, exports) {
 
 /* (ignored) */
 
 /***/ }),
-/* 85 */
+/* 84 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18979,7 +18959,7 @@ module.exports = function () {
 }();
 
 /***/ }),
-/* 86 */
+/* 85 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var apply = Function.prototype.apply;
@@ -19032,13 +19012,13 @@ exports._unrefActive = exports.active = function(item) {
 };
 
 // setimmediate attaches itself to the global object
-__webpack_require__(87);
+__webpack_require__(86);
 exports.setImmediate = setImmediate;
 exports.clearImmediate = clearImmediate;
 
 
 /***/ }),
-/* 87 */
+/* 86 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(global, process) {(function (global, undefined) {
@@ -19231,7 +19211,7 @@ exports.clearImmediate = clearImmediate;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(6), __webpack_require__(8)))
 
 /***/ }),
-/* 88 */
+/* 87 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(global) {
@@ -19305,7 +19285,7 @@ function config (name) {
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(6)))
 
 /***/ }),
-/* 89 */
+/* 88 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -19358,35 +19338,35 @@ PassThrough.prototype._transform = function (chunk, encoding, cb) {
 };
 
 /***/ }),
-/* 90 */
+/* 89 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = __webpack_require__(39);
 
 
 /***/ }),
-/* 91 */
+/* 90 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = __webpack_require__(16);
 
 
 /***/ }),
-/* 92 */
+/* 91 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = __webpack_require__(22).Transform
 
 
 /***/ }),
-/* 93 */
+/* 92 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = __webpack_require__(22).PassThrough
 
 
 /***/ }),
-/* 94 */
+/* 93 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -19477,7 +19457,7 @@ var isArray = Array.isArray || function (xs) {
 
 
 /***/ }),
-/* 95 */
+/* 94 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -19569,14 +19549,14 @@ var objectKeys = Object.keys || function (obj) {
 
 
 /***/ }),
-/* 96 */
+/* 95 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(Buffer, global, process) {var capability = __webpack_require__(54)
 var inherits = __webpack_require__(14)
-var response = __webpack_require__(97)
+var response = __webpack_require__(96)
 var stream = __webpack_require__(22)
-var toArrayBuffer = __webpack_require__(98)
+var toArrayBuffer = __webpack_require__(97)
 
 var IncomingMessage = response.IncomingMessage
 var rStates = response.readyStates
@@ -19882,7 +19862,7 @@ var unsafeHeaders = [
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(5).Buffer, __webpack_require__(6), __webpack_require__(8)))
 
 /***/ }),
-/* 97 */
+/* 96 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(process, Buffer, global) {var capability = __webpack_require__(54)
@@ -20071,7 +20051,7 @@ IncomingMessage.prototype._onXHRProgress = function () {
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(8), __webpack_require__(5).Buffer, __webpack_require__(6)))
 
 /***/ }),
-/* 98 */
+/* 97 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var Buffer = __webpack_require__(5).Buffer
@@ -20104,7 +20084,7 @@ module.exports = function (buf) {
 
 
 /***/ }),
-/* 99 */
+/* 98 */
 /***/ (function(module, exports) {
 
 module.exports = extend
@@ -20129,7 +20109,7 @@ function extend() {
 
 
 /***/ }),
-/* 100 */
+/* 99 */
 /***/ (function(module, exports) {
 
 module.exports = {
@@ -20199,7 +20179,7 @@ module.exports = {
 
 
 /***/ }),
-/* 101 */
+/* 100 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(module, global) {var __WEBPACK_AMD_DEFINE_RESULT__;/*! https://mths.be/punycode v1.4.1 by @mathias */
@@ -20735,10 +20715,10 @@ module.exports = {
 
 }(this));
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(102)(module), __webpack_require__(6)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(101)(module), __webpack_require__(6)))
 
 /***/ }),
-/* 102 */
+/* 101 */
 /***/ (function(module, exports) {
 
 module.exports = function(module) {
@@ -20766,7 +20746,7 @@ module.exports = function(module) {
 
 
 /***/ }),
-/* 103 */
+/* 102 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -20789,7 +20769,7 @@ module.exports = {
 
 
 /***/ }),
-/* 104 */
+/* 103 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var http = __webpack_require__(53);
@@ -20809,13 +20789,13 @@ https.request = function (params, cb) {
 
 
 /***/ }),
-/* 105 */
+/* 104 */
 /***/ (function(module, exports) {
 
 module.exports = {"_from":"snekfetch@^3.0.0","_id":"snekfetch@3.2.9","_inBundle":false,"_integrity":"sha512-0ZYxGRMtgBska6uQ616F0jcPYad/sLe+uBJJ2vewD62ftEFnh6rY5mza05KoUS5UWcclMuiUfAZSf10ZYnkOZA==","_location":"/snekfetch","_phantomChildren":{},"_requested":{"type":"range","registry":true,"raw":"snekfetch@^3.0.0","name":"snekfetch","escapedName":"snekfetch","rawSpec":"^3.0.0","saveSpec":null,"fetchSpec":"^3.0.0"},"_requiredBy":["/"],"_resolved":"https://registry.npmjs.org/snekfetch/-/snekfetch-3.2.9.tgz","_shasum":"cdd28c7e88c889d86b9ff289a8e985a2f484f206","_spec":"snekfetch@^3.0.0","_where":"/home/travis/build/hydrabolt/discord.js","author":{"name":"Gus Caplan","email":"me@gus.host"},"bugs":{"url":"https://github.com/devsnek/snekfetch/issues"},"bundleDependencies":false,"dependencies":{},"deprecated":false,"description":"Just do http requests without all that weird nastiness from other libs","devDependencies":{},"homepage":"https://github.com/devsnek/snekfetch#readme","license":"MIT","main":"index.js","name":"snekfetch","repository":{"type":"git","url":"git+https://github.com/devsnek/snekfetch.git"},"version":"3.2.9"}
 
 /***/ }),
-/* 106 */
+/* 105 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(Buffer) {const path = __webpack_require__(24);
@@ -20867,13 +20847,13 @@ module.exports = FormData;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(5).Buffer))
 
 /***/ }),
-/* 107 */
+/* 106 */
 /***/ (function(module, exports) {
 
 module.exports = {"123":"application/vnd.lotus-1-2-3","ez":"application/andrew-inset","aw":"application/applixware","atom":"application/atom+xml","atomcat":"application/atomcat+xml","atomsvc":"application/atomsvc+xml","bdoc":"application/x-bdoc","ccxml":"application/ccxml+xml","cdmia":"application/cdmi-capability","cdmic":"application/cdmi-container","cdmid":"application/cdmi-domain","cdmio":"application/cdmi-object","cdmiq":"application/cdmi-queue","cu":"application/cu-seeme","mpd":"application/dash+xml","davmount":"application/davmount+xml","dbk":"application/docbook+xml","dssc":"application/dssc+der","xdssc":"application/dssc+xml","ecma":"application/ecmascript","emma":"application/emma+xml","epub":"application/epub+zip","exi":"application/exi","pfr":"application/font-tdpfr","woff":"application/font-woff","woff2":"application/font-woff2","geojson":"application/geo+json","gml":"application/gml+xml","gpx":"application/gpx+xml","gxf":"application/gxf","stk":"application/hyperstudio","ink":"application/inkml+xml","inkml":"application/inkml+xml","ipfix":"application/ipfix","jar":"application/java-archive","war":"application/java-archive","ear":"application/java-archive","ser":"application/java-serialized-object","class":"application/java-vm","js":"application/javascript","json":"application/json","map":"application/json","json5":"application/json5","jsonml":"application/jsonml+json","jsonld":"application/ld+json","lostxml":"application/lost+xml","hqx":"application/mac-binhex40","cpt":"application/mac-compactpro","mads":"application/mads+xml","webmanifest":"application/manifest+json","mrc":"application/marc","mrcx":"application/marcxml+xml","ma":"application/mathematica","nb":"application/mathematica","mb":"application/mathematica","mathml":"application/mathml+xml","mbox":"application/mbox","mscml":"application/mediaservercontrol+xml","metalink":"application/metalink+xml","meta4":"application/metalink4+xml","mets":"application/mets+xml","mods":"application/mods+xml","m21":"application/mp21","mp21":"application/mp21","mp4s":"application/mp4","m4p":"application/mp4","doc":"application/msword","dot":"application/msword","mxf":"application/mxf","bin":"application/octet-stream","dms":"application/octet-stream","lrf":"application/octet-stream","mar":"application/octet-stream","so":"application/octet-stream","dist":"application/octet-stream","distz":"application/octet-stream","pkg":"application/octet-stream","bpk":"application/octet-stream","dump":"application/octet-stream","elc":"application/octet-stream","deploy":"application/octet-stream","exe":"application/x-msdownload","dll":"application/x-msdownload","deb":"application/x-debian-package","dmg":"application/x-apple-diskimage","iso":"application/x-iso9660-image","img":"application/octet-stream","msi":"application/x-msdownload","msp":"application/octet-stream","msm":"application/octet-stream","buffer":"application/octet-stream","oda":"application/oda","opf":"application/oebps-package+xml","ogx":"application/ogg","omdoc":"application/omdoc+xml","onetoc":"application/onenote","onetoc2":"application/onenote","onetmp":"application/onenote","onepkg":"application/onenote","oxps":"application/oxps","xer":"application/patch-ops-error+xml","pdf":"application/pdf","pgp":"application/pgp-encrypted","asc":"application/pgp-signature","sig":"application/pgp-signature","prf":"application/pics-rules","p10":"application/pkcs10","p7m":"application/pkcs7-mime","p7c":"application/pkcs7-mime","p7s":"application/pkcs7-signature","p8":"application/pkcs8","ac":"application/pkix-attr-cert","cer":"application/pkix-cert","crl":"application/pkix-crl","pkipath":"application/pkix-pkipath","pki":"application/pkixcmp","pls":"application/pls+xml","ai":"application/postscript","eps":"application/postscript","ps":"application/postscript","cww":"application/prs.cww","pskcxml":"application/pskc+xml","rdf":"application/rdf+xml","rif":"application/reginfo+xml","rnc":"application/relax-ng-compact-syntax","rl":"application/resource-lists+xml","rld":"application/resource-lists-diff+xml","rs":"application/rls-services+xml","gbr":"application/rpki-ghostbusters","mft":"application/rpki-manifest","roa":"application/rpki-roa","rsd":"application/rsd+xml","rss":"application/rss+xml","rtf":"text/rtf","sbml":"application/sbml+xml","scq":"application/scvp-cv-request","scs":"application/scvp-cv-response","spq":"application/scvp-vp-request","spp":"application/scvp-vp-response","sdp":"application/sdp","setpay":"application/set-payment-initiation","setreg":"application/set-registration-initiation","shf":"application/shf+xml","smi":"application/smil+xml","smil":"application/smil+xml","rq":"application/sparql-query","srx":"application/sparql-results+xml","gram":"application/srgs","grxml":"application/srgs+xml","sru":"application/sru+xml","ssdl":"application/ssdl+xml","ssml":"application/ssml+xml","tei":"application/tei+xml","teicorpus":"application/tei+xml","tfi":"application/thraud+xml","tsd":"application/timestamped-data","plb":"application/vnd.3gpp.pic-bw-large","psb":"application/vnd.3gpp.pic-bw-small","pvb":"application/vnd.3gpp.pic-bw-var","tcap":"application/vnd.3gpp2.tcap","pwn":"application/vnd.3m.post-it-notes","aso":"application/vnd.accpac.simply.aso","imp":"application/vnd.accpac.simply.imp","acu":"application/vnd.acucobol","atc":"application/vnd.acucorp","acutc":"application/vnd.acucorp","air":"application/vnd.adobe.air-application-installer-package+zip","fcdt":"application/vnd.adobe.formscentral.fcdt","fxp":"application/vnd.adobe.fxp","fxpl":"application/vnd.adobe.fxp","xdp":"application/vnd.adobe.xdp+xml","xfdf":"application/vnd.adobe.xfdf","ahead":"application/vnd.ahead.space","azf":"application/vnd.airzip.filesecure.azf","azs":"application/vnd.airzip.filesecure.azs","azw":"application/vnd.amazon.ebook","acc":"application/vnd.americandynamics.acc","ami":"application/vnd.amiga.ami","apk":"application/vnd.android.package-archive","cii":"application/vnd.anser-web-certificate-issue-initiation","fti":"application/vnd.anser-web-funds-transfer-initiation","atx":"application/vnd.antix.game-component","mpkg":"application/vnd.apple.installer+xml","m3u8":"application/vnd.apple.mpegurl","pkpass":"application/vnd.apple.pkpass","swi":"application/vnd.aristanetworks.swi","iota":"application/vnd.astraea-software.iota","aep":"application/vnd.audiograph","mpm":"application/vnd.blueice.multipass","bmi":"application/vnd.bmi","rep":"application/vnd.businessobjects","cdxml":"application/vnd.chemdraw+xml","mmd":"application/vnd.chipnuts.karaoke-mmd","cdy":"application/vnd.cinderella","cla":"application/vnd.claymore","rp9":"application/vnd.cloanto.rp9","c4g":"application/vnd.clonk.c4group","c4d":"application/vnd.clonk.c4group","c4f":"application/vnd.clonk.c4group","c4p":"application/vnd.clonk.c4group","c4u":"application/vnd.clonk.c4group","c11amc":"application/vnd.cluetrust.cartomobile-config","c11amz":"application/vnd.cluetrust.cartomobile-config-pkg","csp":"application/vnd.commonspace","cdbcmsg":"application/vnd.contact.cmsg","cmc":"application/vnd.cosmocaller","clkx":"application/vnd.crick.clicker","clkk":"application/vnd.crick.clicker.keyboard","clkp":"application/vnd.crick.clicker.palette","clkt":"application/vnd.crick.clicker.template","clkw":"application/vnd.crick.clicker.wordbank","wbs":"application/vnd.criticaltools.wbs+xml","pml":"application/vnd.ctc-posml","ppd":"application/vnd.cups-ppd","car":"application/vnd.curl.car","pcurl":"application/vnd.curl.pcurl","dart":"application/vnd.dart","rdz":"application/vnd.data-vision.rdz","uvf":"application/vnd.dece.data","uvvf":"application/vnd.dece.data","uvd":"application/vnd.dece.data","uvvd":"application/vnd.dece.data","uvt":"application/vnd.dece.ttml+xml","uvvt":"application/vnd.dece.ttml+xml","uvx":"application/vnd.dece.unspecified","uvvx":"application/vnd.dece.unspecified","uvz":"application/vnd.dece.zip","uvvz":"application/vnd.dece.zip","fe_launch":"application/vnd.denovo.fcselayout-link","dna":"application/vnd.dna","mlp":"application/vnd.dolby.mlp","dpg":"application/vnd.dpgraph","dfac":"application/vnd.dreamfactory","kpxx":"application/vnd.ds-keypoint","ait":"application/vnd.dvb.ait","svc":"application/vnd.dvb.service","geo":"application/vnd.dynageo","mag":"application/vnd.ecowin.chart","nml":"application/vnd.enliven","esf":"application/vnd.epson.esf","msf":"application/vnd.epson.msf","qam":"application/vnd.epson.quickanime","slt":"application/vnd.epson.salt","ssf":"application/vnd.epson.ssf","es3":"application/vnd.eszigno3+xml","et3":"application/vnd.eszigno3+xml","ez2":"application/vnd.ezpix-album","ez3":"application/vnd.ezpix-package","fdf":"application/vnd.fdf","mseed":"application/vnd.fdsn.mseed","seed":"application/vnd.fdsn.seed","dataless":"application/vnd.fdsn.seed","gph":"application/vnd.flographit","ftc":"application/vnd.fluxtime.clip","fm":"application/vnd.framemaker","frame":"application/vnd.framemaker","maker":"application/vnd.framemaker","book":"application/vnd.framemaker","fnc":"application/vnd.frogans.fnc","ltf":"application/vnd.frogans.ltf","fsc":"application/vnd.fsc.weblaunch","oas":"application/vnd.fujitsu.oasys","oa2":"application/vnd.fujitsu.oasys2","oa3":"application/vnd.fujitsu.oasys3","fg5":"application/vnd.fujitsu.oasysgp","bh2":"application/vnd.fujitsu.oasysprs","ddd":"application/vnd.fujixerox.ddd","xdw":"application/vnd.fujixerox.docuworks","xbd":"application/vnd.fujixerox.docuworks.binder","fzs":"application/vnd.fuzzysheet","txd":"application/vnd.genomatix.tuxedo","ggb":"application/vnd.geogebra.file","ggt":"application/vnd.geogebra.tool","gex":"application/vnd.geometry-explorer","gre":"application/vnd.geometry-explorer","gxt":"application/vnd.geonext","g2w":"application/vnd.geoplan","g3w":"application/vnd.geospace","gmx":"application/vnd.gmx","gdoc":"application/vnd.google-apps.document","gslides":"application/vnd.google-apps.presentation","gsheet":"application/vnd.google-apps.spreadsheet","kml":"application/vnd.google-earth.kml+xml","kmz":"application/vnd.google-earth.kmz","gqf":"application/vnd.grafeq","gqs":"application/vnd.grafeq","gac":"application/vnd.groove-account","ghf":"application/vnd.groove-help","gim":"application/vnd.groove-identity-message","grv":"application/vnd.groove-injector","gtm":"application/vnd.groove-tool-message","tpl":"application/vnd.groove-tool-template","vcg":"application/vnd.groove-vcard","hal":"application/vnd.hal+xml","zmm":"application/vnd.handheld-entertainment+xml","hbci":"application/vnd.hbci","les":"application/vnd.hhe.lesson-player","hpgl":"application/vnd.hp-hpgl","hpid":"application/vnd.hp-hpid","hps":"application/vnd.hp-hps","jlt":"application/vnd.hp-jlyt","pcl":"application/vnd.hp-pcl","pclxl":"application/vnd.hp-pclxl","sfd-hdstx":"application/vnd.hydrostatix.sof-data","mpy":"application/vnd.ibm.minipay","afp":"application/vnd.ibm.modcap","listafp":"application/vnd.ibm.modcap","list3820":"application/vnd.ibm.modcap","irm":"application/vnd.ibm.rights-management","sc":"application/vnd.ibm.secure-container","icc":"application/vnd.iccprofile","icm":"application/vnd.iccprofile","igl":"application/vnd.igloader","ivp":"application/vnd.immervision-ivp","ivu":"application/vnd.immervision-ivu","igm":"application/vnd.insors.igm","xpw":"application/vnd.intercon.formnet","xpx":"application/vnd.intercon.formnet","i2g":"application/vnd.intergeo","qbo":"application/vnd.intu.qbo","qfx":"application/vnd.intu.qfx","rcprofile":"application/vnd.ipunplugged.rcprofile","irp":"application/vnd.irepository.package+xml","xpr":"application/vnd.is-xpr","fcs":"application/vnd.isac.fcs","jam":"application/vnd.jam","rms":"application/vnd.jcp.javame.midlet-rms","jisp":"application/vnd.jisp","joda":"application/vnd.joost.joda-archive","ktz":"application/vnd.kahootz","ktr":"application/vnd.kahootz","karbon":"application/vnd.kde.karbon","chrt":"application/vnd.kde.kchart","kfo":"application/vnd.kde.kformula","flw":"application/vnd.kde.kivio","kon":"application/vnd.kde.kontour","kpr":"application/vnd.kde.kpresenter","kpt":"application/vnd.kde.kpresenter","ksp":"application/vnd.kde.kspread","kwd":"application/vnd.kde.kword","kwt":"application/vnd.kde.kword","htke":"application/vnd.kenameaapp","kia":"application/vnd.kidspiration","kne":"application/vnd.kinar","knp":"application/vnd.kinar","skp":"application/vnd.koan","skd":"application/vnd.koan","skt":"application/vnd.koan","skm":"application/vnd.koan","sse":"application/vnd.kodak-descriptor","lasxml":"application/vnd.las.las+xml","lbd":"application/vnd.llamagraphics.life-balance.desktop","lbe":"application/vnd.llamagraphics.life-balance.exchange+xml","apr":"application/vnd.lotus-approach","pre":"application/vnd.lotus-freelance","nsf":"application/vnd.lotus-notes","org":"application/vnd.lotus-organizer","scm":"application/vnd.lotus-screencam","lwp":"application/vnd.lotus-wordpro","portpkg":"application/vnd.macports.portpkg","mcd":"application/vnd.mcd","mc1":"application/vnd.medcalcdata","cdkey":"application/vnd.mediastation.cdkey","mwf":"application/vnd.mfer","mfm":"application/vnd.mfmp","flo":"application/vnd.micrografx.flo","igx":"application/vnd.micrografx.igx","mif":"application/vnd.mif","daf":"application/vnd.mobius.daf","dis":"application/vnd.mobius.dis","mbk":"application/vnd.mobius.mbk","mqy":"application/vnd.mobius.mqy","msl":"application/vnd.mobius.msl","plc":"application/vnd.mobius.plc","txf":"application/vnd.mobius.txf","mpn":"application/vnd.mophun.application","mpc":"application/vnd.mophun.certificate","xul":"application/vnd.mozilla.xul+xml","cil":"application/vnd.ms-artgalry","cab":"application/vnd.ms-cab-compressed","xls":"application/vnd.ms-excel","xlm":"application/vnd.ms-excel","xla":"application/vnd.ms-excel","xlc":"application/vnd.ms-excel","xlt":"application/vnd.ms-excel","xlw":"application/vnd.ms-excel","xlam":"application/vnd.ms-excel.addin.macroenabled.12","xlsb":"application/vnd.ms-excel.sheet.binary.macroenabled.12","xlsm":"application/vnd.ms-excel.sheet.macroenabled.12","xltm":"application/vnd.ms-excel.template.macroenabled.12","eot":"application/vnd.ms-fontobject","chm":"application/vnd.ms-htmlhelp","ims":"application/vnd.ms-ims","lrm":"application/vnd.ms-lrm","thmx":"application/vnd.ms-officetheme","cat":"application/vnd.ms-pki.seccat","stl":"application/vnd.ms-pki.stl","ppt":"application/vnd.ms-powerpoint","pps":"application/vnd.ms-powerpoint","pot":"application/vnd.ms-powerpoint","ppam":"application/vnd.ms-powerpoint.addin.macroenabled.12","pptm":"application/vnd.ms-powerpoint.presentation.macroenabled.12","sldm":"application/vnd.ms-powerpoint.slide.macroenabled.12","ppsm":"application/vnd.ms-powerpoint.slideshow.macroenabled.12","potm":"application/vnd.ms-powerpoint.template.macroenabled.12","mpp":"application/vnd.ms-project","mpt":"application/vnd.ms-project","docm":"application/vnd.ms-word.document.macroenabled.12","dotm":"application/vnd.ms-word.template.macroenabled.12","wps":"application/vnd.ms-works","wks":"application/vnd.ms-works","wcm":"application/vnd.ms-works","wdb":"application/vnd.ms-works","wpl":"application/vnd.ms-wpl","xps":"application/vnd.ms-xpsdocument","mseq":"application/vnd.mseq","mus":"application/vnd.musician","msty":"application/vnd.muvee.style","taglet":"application/vnd.mynfc","nlu":"application/vnd.neurolanguage.nlu","ntf":"application/vnd.nitf","nitf":"application/vnd.nitf","nnd":"application/vnd.noblenet-directory","nns":"application/vnd.noblenet-sealer","nnw":"application/vnd.noblenet-web","ngdat":"application/vnd.nokia.n-gage.data","n-gage":"application/vnd.nokia.n-gage.symbian.install","rpst":"application/vnd.nokia.radio-preset","rpss":"application/vnd.nokia.radio-presets","edm":"application/vnd.novadigm.edm","edx":"application/vnd.novadigm.edx","ext":"application/vnd.novadigm.ext","odc":"application/vnd.oasis.opendocument.chart","otc":"application/vnd.oasis.opendocument.chart-template","odb":"application/vnd.oasis.opendocument.database","odf":"application/vnd.oasis.opendocument.formula","odft":"application/vnd.oasis.opendocument.formula-template","odg":"application/vnd.oasis.opendocument.graphics","otg":"application/vnd.oasis.opendocument.graphics-template","odi":"application/vnd.oasis.opendocument.image","oti":"application/vnd.oasis.opendocument.image-template","odp":"application/vnd.oasis.opendocument.presentation","otp":"application/vnd.oasis.opendocument.presentation-template","ods":"application/vnd.oasis.opendocument.spreadsheet","ots":"application/vnd.oasis.opendocument.spreadsheet-template","odt":"application/vnd.oasis.opendocument.text","odm":"application/vnd.oasis.opendocument.text-master","ott":"application/vnd.oasis.opendocument.text-template","oth":"application/vnd.oasis.opendocument.text-web","xo":"application/vnd.olpc-sugar","dd2":"application/vnd.oma.dd2+xml","oxt":"application/vnd.openofficeorg.extension","pptx":"application/vnd.openxmlformats-officedocument.presentationml.presentation","sldx":"application/vnd.openxmlformats-officedocument.presentationml.slide","ppsx":"application/vnd.openxmlformats-officedocument.presentationml.slideshow","potx":"application/vnd.openxmlformats-officedocument.presentationml.template","xlsx":"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","xltx":"application/vnd.openxmlformats-officedocument.spreadsheetml.template","docx":"application/vnd.openxmlformats-officedocument.wordprocessingml.document","dotx":"application/vnd.openxmlformats-officedocument.wordprocessingml.template","mgp":"application/vnd.osgeo.mapguide.package","dp":"application/vnd.osgi.dp","esa":"application/vnd.osgi.subsystem","pdb":"application/x-pilot","pqa":"application/vnd.palm","oprc":"application/vnd.palm","paw":"application/vnd.pawaafile","str":"application/vnd.pg.format","ei6":"application/vnd.pg.osasli","efif":"application/vnd.picsel","wg":"application/vnd.pmi.widget","plf":"application/vnd.pocketlearn","pbd":"application/vnd.powerbuilder6","box":"application/vnd.previewsystems.box","mgz":"application/vnd.proteus.magazine","qps":"application/vnd.publishare-delta-tree","ptid":"application/vnd.pvi.ptid1","qxd":"application/vnd.quark.quarkxpress","qxt":"application/vnd.quark.quarkxpress","qwd":"application/vnd.quark.quarkxpress","qwt":"application/vnd.quark.quarkxpress","qxl":"application/vnd.quark.quarkxpress","qxb":"application/vnd.quark.quarkxpress","bed":"application/vnd.realvnc.bed","mxl":"application/vnd.recordare.musicxml","musicxml":"application/vnd.recordare.musicxml+xml","cryptonote":"application/vnd.rig.cryptonote","cod":"application/vnd.rim.cod","rm":"application/vnd.rn-realmedia","rmvb":"application/vnd.rn-realmedia-vbr","link66":"application/vnd.route66.link66+xml","st":"application/vnd.sailingtracker.track","see":"application/vnd.seemail","sema":"application/vnd.sema","semd":"application/vnd.semd","semf":"application/vnd.semf","ifm":"application/vnd.shana.informed.formdata","itp":"application/vnd.shana.informed.formtemplate","iif":"application/vnd.shana.informed.interchange","ipk":"application/vnd.shana.informed.package","twd":"application/vnd.simtech-mindmapper","twds":"application/vnd.simtech-mindmapper","mmf":"application/vnd.smaf","teacher":"application/vnd.smart.teacher","sdkm":"application/vnd.solent.sdkm+xml","sdkd":"application/vnd.solent.sdkm+xml","dxp":"application/vnd.spotfire.dxp","sfs":"application/vnd.spotfire.sfs","sdc":"application/vnd.stardivision.calc","sda":"application/vnd.stardivision.draw","sdd":"application/vnd.stardivision.impress","smf":"application/vnd.stardivision.math","sdw":"application/vnd.stardivision.writer","vor":"application/vnd.stardivision.writer","sgl":"application/vnd.stardivision.writer-global","smzip":"application/vnd.stepmania.package","sm":"application/vnd.stepmania.stepchart","sxc":"application/vnd.sun.xml.calc","stc":"application/vnd.sun.xml.calc.template","sxd":"application/vnd.sun.xml.draw","std":"application/vnd.sun.xml.draw.template","sxi":"application/vnd.sun.xml.impress","sti":"application/vnd.sun.xml.impress.template","sxm":"application/vnd.sun.xml.math","sxw":"application/vnd.sun.xml.writer","sxg":"application/vnd.sun.xml.writer.global","stw":"application/vnd.sun.xml.writer.template","sus":"application/vnd.sus-calendar","susp":"application/vnd.sus-calendar","svd":"application/vnd.svd","sis":"application/vnd.symbian.install","sisx":"application/vnd.symbian.install","xsm":"application/vnd.syncml+xml","bdm":"application/vnd.syncml.dm+wbxml","xdm":"application/vnd.syncml.dm+xml","tao":"application/vnd.tao.intent-module-archive","pcap":"application/vnd.tcpdump.pcap","cap":"application/vnd.tcpdump.pcap","dmp":"application/vnd.tcpdump.pcap","tmo":"application/vnd.tmobile-livetv","tpt":"application/vnd.trid.tpt","mxs":"application/vnd.triscape.mxs","tra":"application/vnd.trueapp","ufd":"application/vnd.ufdl","ufdl":"application/vnd.ufdl","utz":"application/vnd.uiq.theme","umj":"application/vnd.umajin","unityweb":"application/vnd.unity","uoml":"application/vnd.uoml+xml","vcx":"application/vnd.vcx","vsd":"application/vnd.visio","vst":"application/vnd.visio","vss":"application/vnd.visio","vsw":"application/vnd.visio","vis":"application/vnd.visionary","vsf":"application/vnd.vsf","wbxml":"application/vnd.wap.wbxml","wmlc":"application/vnd.wap.wmlc","wmlsc":"application/vnd.wap.wmlscriptc","wtb":"application/vnd.webturbo","nbp":"application/vnd.wolfram.player","wpd":"application/vnd.wordperfect","wqd":"application/vnd.wqd","stf":"application/vnd.wt.stf","xar":"application/vnd.xara","xfdl":"application/vnd.xfdl","hvd":"application/vnd.yamaha.hv-dic","hvs":"application/vnd.yamaha.hv-script","hvp":"application/vnd.yamaha.hv-voice","osf":"application/vnd.yamaha.openscoreformat","osfpvg":"application/vnd.yamaha.openscoreformat.osfpvg+xml","saf":"application/vnd.yamaha.smaf-audio","spf":"application/vnd.yamaha.smaf-phrase","cmp":"application/vnd.yellowriver-custom-menu","zir":"application/vnd.zul","zirz":"application/vnd.zul","zaz":"application/vnd.zzazz.deck+xml","vxml":"application/voicexml+xml","wgt":"application/widget","hlp":"application/winhlp","wsdl":"application/wsdl+xml","wspolicy":"application/wspolicy+xml","7z":"application/x-7z-compressed","abw":"application/x-abiword","ace":"application/x-ace-compressed","aab":"application/x-authorware-bin","x32":"application/x-authorware-bin","u32":"application/x-authorware-bin","vox":"application/x-authorware-bin","aam":"application/x-authorware-map","aas":"application/x-authorware-seg","bcpio":"application/x-bcpio","torrent":"application/x-bittorrent","blb":"application/x-blorb","blorb":"application/x-blorb","bz":"application/x-bzip","bz2":"application/x-bzip2","boz":"application/x-bzip2","cbr":"application/x-cbr","cba":"application/x-cbr","cbt":"application/x-cbr","cbz":"application/x-cbr","cb7":"application/x-cbr","vcd":"application/x-cdlink","cfs":"application/x-cfs-compressed","chat":"application/x-chat","pgn":"application/x-chess-pgn","crx":"application/x-chrome-extension","cco":"application/x-cocoa","nsc":"application/x-conference","cpio":"application/x-cpio","csh":"application/x-csh","udeb":"application/x-debian-package","dgc":"application/x-dgc-compressed","dir":"application/x-director","dcr":"application/x-director","dxr":"application/x-director","cst":"application/x-director","cct":"application/x-director","cxt":"application/x-director","w3d":"application/x-director","fgd":"application/x-director","swa":"application/x-director","wad":"application/x-doom","ncx":"application/x-dtbncx+xml","dtb":"application/x-dtbook+xml","res":"application/x-dtbresource+xml","dvi":"application/x-dvi","evy":"application/x-envoy","eva":"application/x-eva","bdf":"application/x-font-bdf","gsf":"application/x-font-ghostscript","psf":"application/x-font-linux-psf","otf":"font/opentype","pcf":"application/x-font-pcf","snf":"application/x-font-snf","ttf":"application/x-font-ttf","ttc":"application/x-font-ttf","pfa":"application/x-font-type1","pfb":"application/x-font-type1","pfm":"application/x-font-type1","afm":"application/x-font-type1","arc":"application/x-freearc","spl":"application/x-futuresplash","gca":"application/x-gca-compressed","ulx":"application/x-glulx","gnumeric":"application/x-gnumeric","gramps":"application/x-gramps-xml","gtar":"application/x-gtar","hdf":"application/x-hdf","php":"application/x-httpd-php","install":"application/x-install-instructions","jardiff":"application/x-java-archive-diff","jnlp":"application/x-java-jnlp-file","latex":"application/x-latex","luac":"application/x-lua-bytecode","lzh":"application/x-lzh-compressed","lha":"application/x-lzh-compressed","run":"application/x-makeself","mie":"application/x-mie","prc":"application/x-pilot","mobi":"application/x-mobipocket-ebook","application":"application/x-ms-application","lnk":"application/x-ms-shortcut","wmd":"application/x-ms-wmd","wmz":"application/x-msmetafile","xbap":"application/x-ms-xbap","mdb":"application/x-msaccess","obd":"application/x-msbinder","crd":"application/x-mscardfile","clp":"application/x-msclip","com":"application/x-msdownload","bat":"application/x-msdownload","mvb":"application/x-msmediaview","m13":"application/x-msmediaview","m14":"application/x-msmediaview","wmf":"application/x-msmetafile","emf":"application/x-msmetafile","emz":"application/x-msmetafile","mny":"application/x-msmoney","pub":"application/x-mspublisher","scd":"application/x-msschedule","trm":"application/x-msterminal","wri":"application/x-mswrite","nc":"application/x-netcdf","cdf":"application/x-netcdf","pac":"application/x-ns-proxy-autoconfig","nzb":"application/x-nzb","pl":"application/x-perl","pm":"application/x-perl","p12":"application/x-pkcs12","pfx":"application/x-pkcs12","p7b":"application/x-pkcs7-certificates","spc":"application/x-pkcs7-certificates","p7r":"application/x-pkcs7-certreqresp","rar":"application/x-rar-compressed","rpm":"application/x-redhat-package-manager","ris":"application/x-research-info-systems","sea":"application/x-sea","sh":"application/x-sh","shar":"application/x-shar","swf":"application/x-shockwave-flash","xap":"application/x-silverlight-app","sql":"application/x-sql","sit":"application/x-stuffit","sitx":"application/x-stuffitx","srt":"application/x-subrip","sv4cpio":"application/x-sv4cpio","sv4crc":"application/x-sv4crc","t3":"application/x-t3vm-image","gam":"application/x-tads","tar":"application/x-tar","tcl":"application/x-tcl","tk":"application/x-tcl","tex":"application/x-tex","tfm":"application/x-tex-tfm","texinfo":"application/x-texinfo","texi":"application/x-texinfo","obj":"application/x-tgif","ustar":"application/x-ustar","src":"application/x-wais-source","webapp":"application/x-web-app-manifest+json","der":"application/x-x509-ca-cert","crt":"application/x-x509-ca-cert","pem":"application/x-x509-ca-cert","fig":"application/x-xfig","xlf":"application/x-xliff+xml","xpi":"application/x-xpinstall","xz":"application/x-xz","z1":"application/x-zmachine","z2":"application/x-zmachine","z3":"application/x-zmachine","z4":"application/x-zmachine","z5":"application/x-zmachine","z6":"application/x-zmachine","z7":"application/x-zmachine","z8":"application/x-zmachine","xaml":"application/xaml+xml","xdf":"application/xcap-diff+xml","xenc":"application/xenc+xml","xhtml":"application/xhtml+xml","xht":"application/xhtml+xml","xml":"text/xml","xsl":"application/xml","xsd":"application/xml","rng":"application/xml","dtd":"application/xml-dtd","xop":"application/xop+xml","xpl":"application/xproc+xml","xslt":"application/xslt+xml","xspf":"application/xspf+xml","mxml":"application/xv+xml","xhvml":"application/xv+xml","xvml":"application/xv+xml","xvm":"application/xv+xml","yang":"application/yang","yin":"application/yin+xml","zip":"application/zip","3gpp":"video/3gpp","adp":"audio/adpcm","au":"audio/basic","snd":"audio/basic","mid":"audio/midi","midi":"audio/midi","kar":"audio/midi","rmi":"audio/midi","mp3":"audio/mpeg","m4a":"audio/x-m4a","mp4a":"audio/mp4","mpga":"audio/mpeg","mp2":"audio/mpeg","mp2a":"audio/mpeg","m2a":"audio/mpeg","m3a":"audio/mpeg","oga":"audio/ogg","ogg":"audio/ogg","spx":"audio/ogg","s3m":"audio/s3m","sil":"audio/silk","uva":"audio/vnd.dece.audio","uvva":"audio/vnd.dece.audio","eol":"audio/vnd.digital-winds","dra":"audio/vnd.dra","dts":"audio/vnd.dts","dtshd":"audio/vnd.dts.hd","lvp":"audio/vnd.lucent.voice","pya":"audio/vnd.ms-playready.media.pya","ecelp4800":"audio/vnd.nuera.ecelp4800","ecelp7470":"audio/vnd.nuera.ecelp7470","ecelp9600":"audio/vnd.nuera.ecelp9600","rip":"audio/vnd.rip","wav":"audio/x-wav","weba":"audio/webm","aac":"audio/x-aac","aif":"audio/x-aiff","aiff":"audio/x-aiff","aifc":"audio/x-aiff","caf":"audio/x-caf","flac":"audio/x-flac","mka":"audio/x-matroska","m3u":"audio/x-mpegurl","wax":"audio/x-ms-wax","wma":"audio/x-ms-wma","ram":"audio/x-pn-realaudio","ra":"audio/x-realaudio","rmp":"audio/x-pn-realaudio-plugin","xm":"audio/xm","cdx":"chemical/x-cdx","cif":"chemical/x-cif","cmdf":"chemical/x-cmdf","cml":"chemical/x-cml","csml":"chemical/x-csml","xyz":"chemical/x-xyz","bmp":"image/x-ms-bmp","cgm":"image/cgm","g3":"image/g3fax","gif":"image/gif","ief":"image/ief","jpeg":"image/jpeg","jpg":"image/jpeg","jpe":"image/jpeg","ktx":"image/ktx","png":"image/png","btif":"image/prs.btif","sgi":"image/sgi","svg":"image/svg+xml","svgz":"image/svg+xml","tiff":"image/tiff","tif":"image/tiff","psd":"image/vnd.adobe.photoshop","uvi":"image/vnd.dece.graphic","uvvi":"image/vnd.dece.graphic","uvg":"image/vnd.dece.graphic","uvvg":"image/vnd.dece.graphic","djvu":"image/vnd.djvu","djv":"image/vnd.djvu","sub":"text/vnd.dvb.subtitle","dwg":"image/vnd.dwg","dxf":"image/vnd.dxf","fbs":"image/vnd.fastbidsheet","fpx":"image/vnd.fpx","fst":"image/vnd.fst","mmr":"image/vnd.fujixerox.edmics-mmr","rlc":"image/vnd.fujixerox.edmics-rlc","mdi":"image/vnd.ms-modi","wdp":"image/vnd.ms-photo","npx":"image/vnd.net-fpx","wbmp":"image/vnd.wap.wbmp","xif":"image/vnd.xiff","webp":"image/webp","3ds":"image/x-3ds","ras":"image/x-cmu-raster","cmx":"image/x-cmx","fh":"image/x-freehand","fhc":"image/x-freehand","fh4":"image/x-freehand","fh5":"image/x-freehand","fh7":"image/x-freehand","ico":"image/x-icon","jng":"image/x-jng","sid":"image/x-mrsid-image","pcx":"image/x-pcx","pic":"image/x-pict","pct":"image/x-pict","pnm":"image/x-portable-anymap","pbm":"image/x-portable-bitmap","pgm":"image/x-portable-graymap","ppm":"image/x-portable-pixmap","rgb":"image/x-rgb","tga":"image/x-tga","xbm":"image/x-xbitmap","xpm":"image/x-xpixmap","xwd":"image/x-xwindowdump","eml":"message/rfc822","mime":"message/rfc822","igs":"model/iges","iges":"model/iges","msh":"model/mesh","mesh":"model/mesh","silo":"model/mesh","dae":"model/vnd.collada+xml","dwf":"model/vnd.dwf","gdl":"model/vnd.gdl","gtw":"model/vnd.gtw","mts":"model/vnd.mts","vtu":"model/vnd.vtu","wrl":"model/vrml","vrml":"model/vrml","x3db":"model/x3d+binary","x3dbz":"model/x3d+binary","x3dv":"model/x3d+vrml","x3dvz":"model/x3d+vrml","x3d":"model/x3d+xml","x3dz":"model/x3d+xml","appcache":"text/cache-manifest","manifest":"text/cache-manifest","ics":"text/calendar","ifb":"text/calendar","coffee":"text/coffeescript","litcoffee":"text/coffeescript","css":"text/css","csv":"text/csv","hjson":"text/hjson","html":"text/html","htm":"text/html","shtml":"text/html","jade":"text/jade","jsx":"text/jsx","less":"text/less","mml":"text/mathml","n3":"text/n3","txt":"text/plain","text":"text/plain","conf":"text/plain","def":"text/plain","list":"text/plain","log":"text/plain","in":"text/plain","ini":"text/plain","dsc":"text/prs.lines.tag","rtx":"text/richtext","sgml":"text/sgml","sgm":"text/sgml","slim":"text/slim","slm":"text/slim","stylus":"text/stylus","styl":"text/stylus","tsv":"text/tab-separated-values","t":"text/troff","tr":"text/troff","roff":"text/troff","man":"text/troff","me":"text/troff","ms":"text/troff","ttl":"text/turtle","uri":"text/uri-list","uris":"text/uri-list","urls":"text/uri-list","vcard":"text/vcard","curl":"text/vnd.curl","dcurl":"text/vnd.curl.dcurl","mcurl":"text/vnd.curl.mcurl","scurl":"text/vnd.curl.scurl","fly":"text/vnd.fly","flx":"text/vnd.fmi.flexstor","gv":"text/vnd.graphviz","3dml":"text/vnd.in3d.3dml","spot":"text/vnd.in3d.spot","jad":"text/vnd.sun.j2me.app-descriptor","wml":"text/vnd.wap.wml","wmls":"text/vnd.wap.wmlscript","vtt":"text/vtt","s":"text/x-asm","asm":"text/x-asm","c":"text/x-c","cc":"text/x-c","cxx":"text/x-c","cpp":"text/x-c","h":"text/x-c","hh":"text/x-c","dic":"text/x-c","htc":"text/x-component","f":"text/x-fortran","for":"text/x-fortran","f77":"text/x-fortran","f90":"text/x-fortran","hbs":"text/x-handlebars-template","java":"text/x-java-source","lua":"text/x-lua","markdown":"text/x-markdown","md":"text/x-markdown","mkd":"text/x-markdown","nfo":"text/x-nfo","opml":"text/x-opml","p":"text/x-pascal","pas":"text/x-pascal","pde":"text/x-processing","sass":"text/x-sass","scss":"text/x-scss","etx":"text/x-setext","sfv":"text/x-sfv","ymp":"text/x-suse-ymp","uu":"text/x-uuencode","vcs":"text/x-vcalendar","vcf":"text/x-vcard","yaml":"text/yaml","yml":"text/yaml","3gp":"video/3gpp","3g2":"video/3gpp2","h261":"video/h261","h263":"video/h263","h264":"video/h264","jpgv":"video/jpeg","jpm":"video/jpm","jpgm":"video/jpm","mj2":"video/mj2","mjp2":"video/mj2","ts":"video/mp2t","mp4":"video/mp4","mp4v":"video/mp4","mpg4":"video/mp4","mpeg":"video/mpeg","mpg":"video/mpeg","mpe":"video/mpeg","m1v":"video/mpeg","m2v":"video/mpeg","ogv":"video/ogg","qt":"video/quicktime","mov":"video/quicktime","uvh":"video/vnd.dece.hd","uvvh":"video/vnd.dece.hd","uvm":"video/vnd.dece.mobile","uvvm":"video/vnd.dece.mobile","uvp":"video/vnd.dece.pd","uvvp":"video/vnd.dece.pd","uvs":"video/vnd.dece.sd","uvvs":"video/vnd.dece.sd","uvv":"video/vnd.dece.video","uvvv":"video/vnd.dece.video","dvb":"video/vnd.dvb.file","fvt":"video/vnd.fvt","mxu":"video/vnd.mpegurl","m4u":"video/vnd.mpegurl","pyv":"video/vnd.ms-playready.media.pyv","uvu":"video/vnd.uvvu.mp4","uvvu":"video/vnd.uvvu.mp4","viv":"video/vnd.vivo","webm":"video/webm","f4v":"video/x-f4v","fli":"video/x-fli","flv":"video/x-flv","m4v":"video/x-m4v","mkv":"video/x-matroska","mk3d":"video/x-matroska","mks":"video/x-matroska","mng":"video/x-mng","asf":"video/x-ms-asf","asx":"video/x-ms-asf","vob":"video/x-ms-vob","wm":"video/x-ms-wm","wmv":"video/x-ms-wmv","wmx":"video/x-ms-wmx","wvx":"video/x-ms-wvx","avi":"video/x-msvideo","movie":"video/x-sgi-movie","smv":"video/x-smv","ice":"x-conference/x-cooltalk"}
 
 /***/ }),
-/* 108 */
+/* 107 */
 /***/ (function(module, exports) {
 
 /* eslint complexity: 0 */
@@ -21425,10 +21405,10 @@ module.exports = mimeOfBuffer;
 
 
 /***/ }),
-/* 109 */
+/* 108 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const fs = __webpack_require__(30);
+const fs = __webpack_require__(31);
 const path = __webpack_require__(24);
 const mime = __webpack_require__(56);
 const EventEmitter = __webpack_require__(13);
@@ -21558,7 +21538,7 @@ module.exports = {
 
 
 /***/ }),
-/* 110 */
+/* 109 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -22056,7 +22036,7 @@ var objectKeys = Object.keys || function (obj) {
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(6)))
 
 /***/ }),
-/* 111 */
+/* 110 */
 /***/ (function(module, exports) {
 
 module.exports = function isBuffer(arg) {
@@ -22067,7 +22047,7 @@ module.exports = function isBuffer(arg) {
 }
 
 /***/ }),
-/* 112 */
+/* 111 */
 /***/ (function(module, exports) {
 
 if (typeof Object.create === 'function') {
@@ -22096,7 +22076,7 @@ if (typeof Object.create === 'function') {
 
 
 /***/ }),
-/* 113 */
+/* 112 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const { register } = __webpack_require__(58);
@@ -22197,7 +22177,7 @@ for (const [name, message] of Object.entries(Messages)) register(name, message);
 
 
 /***/ }),
-/* 114 */
+/* 113 */
 /***/ (function(module, exports) {
 
 exports.endianness = function () { return 'LE' };
@@ -22248,7 +22228,7 @@ exports.EOL = '\n';
 
 
 /***/ }),
-/* 115 */
+/* 114 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(process) {const Constants = __webpack_require__(0);
@@ -22280,18 +22260,18 @@ module.exports = UserAgentManager;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(8)))
 
 /***/ }),
-/* 116 */
+/* 115 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = {
-  sequential: __webpack_require__(117),
-  burst: __webpack_require__(118),
-  RequestHandler: __webpack_require__(119),
+  sequential: __webpack_require__(116),
+  burst: __webpack_require__(117),
+  RequestHandler: __webpack_require__(118),
 };
 
 
 /***/ }),
-/* 117 */
+/* 116 */
 /***/ (function(module, exports) {
 
 module.exports = function sequential() {
@@ -22313,7 +22293,7 @@ module.exports = function sequential() {
 
 
 /***/ }),
-/* 118 */
+/* 117 */
 /***/ (function(module, exports) {
 
 module.exports = function burst() {
@@ -22332,7 +22312,7 @@ module.exports = function burst() {
 
 
 /***/ }),
-/* 119 */
+/* 118 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const DiscordAPIError = __webpack_require__(60);
@@ -22408,10 +22388,10 @@ module.exports = RequestHandler;
 
 
 /***/ }),
-/* 120 */
+/* 119 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const querystring = __webpack_require__(31);
+const querystring = __webpack_require__(32);
 const snekfetch = __webpack_require__(36);
 
 class APIRequest {
@@ -22454,7 +22434,7 @@ module.exports = APIRequest;
 
 
 /***/ }),
-/* 121 */
+/* 120 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const util = __webpack_require__(40);
@@ -22495,17 +22475,17 @@ module.exports = buildRoute;
 
 
 /***/ }),
-/* 122 */
+/* 121 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(Buffer) {const path = __webpack_require__(24);
-const fs = __webpack_require__(30);
+const fs = __webpack_require__(31);
 const snekfetch = __webpack_require__(36);
 
 const Util = __webpack_require__(7);
 const User = __webpack_require__(25);
 const Message = __webpack_require__(44);
-const Guild = __webpack_require__(28);
+const Guild = __webpack_require__(29);
 const Channel = __webpack_require__(15);
 const GuildMember = __webpack_require__(17);
 const Role = __webpack_require__(18);
@@ -22784,7 +22764,7 @@ module.exports = ClientDataResolver;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(5).Buffer))
 
 /***/ }),
-/* 123 */
+/* 122 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const long = __webpack_require__(43);
@@ -22872,7 +22852,7 @@ module.exports = function search(target, options) {
 
   // Lazy load these because some of them use util
   const Channel = __webpack_require__(15);
-  const Guild = __webpack_require__(28);
+  const Guild = __webpack_require__(29);
 
   if (!(target instanceof Channel || target instanceof Guild)) throw new TypeError('SEARCH_CHANNEL_TYPE');
 
@@ -22890,11 +22870,11 @@ module.exports = function search(target, options) {
 
 
 /***/ }),
-/* 124 */
+/* 123 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const DataStore = __webpack_require__(11);
-const MessageReaction = __webpack_require__(67);
+const MessageReaction = __webpack_require__(66);
 /**
  * Stores reactions.
  * @private
@@ -22923,7 +22903,7 @@ module.exports = ReactionStore;
 
 
 /***/ }),
-/* 125 */
+/* 124 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const DataStore = __webpack_require__(11);
@@ -23047,7 +23027,7 @@ module.exports = GuildMemberStore;
 
 
 /***/ }),
-/* 126 */
+/* 125 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const DataStore = __webpack_require__(11);
@@ -23078,7 +23058,7 @@ module.exports = RoleStore;
 
 
 /***/ }),
-/* 127 */
+/* 126 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const DataStore = __webpack_require__(11);
@@ -23111,7 +23091,7 @@ module.exports = EmojiStore;
 
 
 /***/ }),
-/* 128 */
+/* 127 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const DataStore = __webpack_require__(11);
@@ -23140,7 +23120,7 @@ module.exports = GuildChannelStore;
 
 
 /***/ }),
-/* 129 */
+/* 128 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Util = __webpack_require__(7);
@@ -23211,12 +23191,12 @@ module.exports = function sendMessage(channel, options) { // eslint-disable-line
 
 
 /***/ }),
-/* 130 */
+/* 129 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Collection = __webpack_require__(3);
 const { UserFlags } = __webpack_require__(0);
-const UserConnection = __webpack_require__(131);
+const UserConnection = __webpack_require__(130);
 const Base = __webpack_require__(10);
 
 /**
@@ -23296,7 +23276,7 @@ module.exports = UserProfile;
 
 
 /***/ }),
-/* 131 */
+/* 130 */
 /***/ (function(module, exports) {
 
 /**
@@ -23350,27 +23330,27 @@ module.exports = UserConnection;
 
 
 /***/ }),
-/* 132 */
+/* 131 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(process) {const BaseClient = __webpack_require__(41);
 const Permissions = __webpack_require__(12);
 const RESTManager = __webpack_require__(59);
-const ClientManager = __webpack_require__(133);
-const ClientVoiceManager = __webpack_require__(134);
-const WebSocketManager = __webpack_require__(135);
-const ActionsManager = __webpack_require__(179);
+const ClientManager = __webpack_require__(132);
+const ClientVoiceManager = __webpack_require__(133);
+const WebSocketManager = __webpack_require__(134);
+const ActionsManager = __webpack_require__(178);
 const Collection = __webpack_require__(3);
-const VoiceRegion = __webpack_require__(73);
+const VoiceRegion = __webpack_require__(72);
 const Webhook = __webpack_require__(21);
 const Invite = __webpack_require__(35);
 const ClientApplication = __webpack_require__(45);
-const ShardClientUtil = __webpack_require__(208);
-const VoiceBroadcast = __webpack_require__(209);
-const UserStore = __webpack_require__(210);
-const ChannelStore = __webpack_require__(211);
-const GuildStore = __webpack_require__(212);
-const ClientPresenceStore = __webpack_require__(213);
+const ShardClientUtil = __webpack_require__(207);
+const VoiceBroadcast = __webpack_require__(208);
+const UserStore = __webpack_require__(209);
+const ChannelStore = __webpack_require__(210);
+const GuildStore = __webpack_require__(211);
+const ClientPresenceStore = __webpack_require__(212);
 const Constants = __webpack_require__(0);
 const { Error, TypeError, RangeError } = __webpack_require__(4);
 
@@ -23828,7 +23808,7 @@ module.exports = Client;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(8)))
 
 /***/ }),
-/* 133 */
+/* 132 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Constants = __webpack_require__(0);
@@ -23906,18 +23886,18 @@ module.exports = ClientManager;
 
 
 /***/ }),
-/* 134 */
+/* 133 */
 /***/ (function(module, exports) {
 
 /* (ignored) */
 
 /***/ }),
-/* 135 */
+/* 134 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const EventEmitter = __webpack_require__(13);
 const Constants = __webpack_require__(0);
-const WebSocketConnection = __webpack_require__(136);
+const WebSocketConnection = __webpack_require__(135);
 
 /**
  * WebSocket Manager of the client.
@@ -24008,13 +23988,13 @@ module.exports = WebSocketManager;
 
 
 /***/ }),
-/* 136 */
+/* 135 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const EventEmitter = __webpack_require__(13);
 const Constants = __webpack_require__(0);
-const PacketManager = __webpack_require__(137);
-const WebSocket = __webpack_require__(78);
+const PacketManager = __webpack_require__(136);
+const WebSocket = __webpack_require__(77);
 
 /**
  * Abstracts a WebSocket connection with decoding/encoding for the Discord gateway.
@@ -24470,7 +24450,7 @@ module.exports = WebSocketConnection;
 
 
 /***/ }),
-/* 137 */
+/* 136 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Constants = __webpack_require__(0);
@@ -24491,43 +24471,43 @@ class WebSocketPacketManager {
     this.handlers = {};
     this.queue = [];
 
-    this.register(Constants.WSEvents.READY, __webpack_require__(138));
-    this.register(Constants.WSEvents.RESUMED, __webpack_require__(140));
-    this.register(Constants.WSEvents.GUILD_CREATE, __webpack_require__(141));
-    this.register(Constants.WSEvents.GUILD_DELETE, __webpack_require__(142));
-    this.register(Constants.WSEvents.GUILD_UPDATE, __webpack_require__(143));
-    this.register(Constants.WSEvents.GUILD_BAN_ADD, __webpack_require__(144));
-    this.register(Constants.WSEvents.GUILD_BAN_REMOVE, __webpack_require__(145));
-    this.register(Constants.WSEvents.GUILD_MEMBER_ADD, __webpack_require__(146));
-    this.register(Constants.WSEvents.GUILD_MEMBER_REMOVE, __webpack_require__(147));
-    this.register(Constants.WSEvents.GUILD_MEMBER_UPDATE, __webpack_require__(148));
-    this.register(Constants.WSEvents.GUILD_ROLE_CREATE, __webpack_require__(149));
-    this.register(Constants.WSEvents.GUILD_ROLE_DELETE, __webpack_require__(150));
-    this.register(Constants.WSEvents.GUILD_ROLE_UPDATE, __webpack_require__(151));
-    this.register(Constants.WSEvents.GUILD_EMOJIS_UPDATE, __webpack_require__(152));
-    this.register(Constants.WSEvents.GUILD_MEMBERS_CHUNK, __webpack_require__(153));
-    this.register(Constants.WSEvents.CHANNEL_CREATE, __webpack_require__(154));
-    this.register(Constants.WSEvents.CHANNEL_DELETE, __webpack_require__(155));
-    this.register(Constants.WSEvents.CHANNEL_UPDATE, __webpack_require__(156));
-    this.register(Constants.WSEvents.CHANNEL_PINS_UPDATE, __webpack_require__(157));
-    this.register(Constants.WSEvents.PRESENCE_UPDATE, __webpack_require__(158));
-    this.register(Constants.WSEvents.USER_UPDATE, __webpack_require__(159));
-    this.register(Constants.WSEvents.USER_NOTE_UPDATE, __webpack_require__(160));
-    this.register(Constants.WSEvents.USER_SETTINGS_UPDATE, __webpack_require__(161));
-    this.register(Constants.WSEvents.USER_GUILD_SETTINGS_UPDATE, __webpack_require__(162));
-    this.register(Constants.WSEvents.VOICE_STATE_UPDATE, __webpack_require__(163));
-    this.register(Constants.WSEvents.TYPING_START, __webpack_require__(164));
-    this.register(Constants.WSEvents.MESSAGE_CREATE, __webpack_require__(165));
-    this.register(Constants.WSEvents.MESSAGE_DELETE, __webpack_require__(166));
-    this.register(Constants.WSEvents.MESSAGE_UPDATE, __webpack_require__(167));
-    this.register(Constants.WSEvents.MESSAGE_DELETE_BULK, __webpack_require__(168));
-    this.register(Constants.WSEvents.VOICE_SERVER_UPDATE, __webpack_require__(169));
-    this.register(Constants.WSEvents.GUILD_SYNC, __webpack_require__(170));
-    this.register(Constants.WSEvents.RELATIONSHIP_ADD, __webpack_require__(171));
-    this.register(Constants.WSEvents.RELATIONSHIP_REMOVE, __webpack_require__(172));
-    this.register(Constants.WSEvents.MESSAGE_REACTION_ADD, __webpack_require__(173));
-    this.register(Constants.WSEvents.MESSAGE_REACTION_REMOVE, __webpack_require__(174));
-    this.register(Constants.WSEvents.MESSAGE_REACTION_REMOVE_ALL, __webpack_require__(175));
+    this.register(Constants.WSEvents.READY, __webpack_require__(137));
+    this.register(Constants.WSEvents.RESUMED, __webpack_require__(139));
+    this.register(Constants.WSEvents.GUILD_CREATE, __webpack_require__(140));
+    this.register(Constants.WSEvents.GUILD_DELETE, __webpack_require__(141));
+    this.register(Constants.WSEvents.GUILD_UPDATE, __webpack_require__(142));
+    this.register(Constants.WSEvents.GUILD_BAN_ADD, __webpack_require__(143));
+    this.register(Constants.WSEvents.GUILD_BAN_REMOVE, __webpack_require__(144));
+    this.register(Constants.WSEvents.GUILD_MEMBER_ADD, __webpack_require__(145));
+    this.register(Constants.WSEvents.GUILD_MEMBER_REMOVE, __webpack_require__(146));
+    this.register(Constants.WSEvents.GUILD_MEMBER_UPDATE, __webpack_require__(147));
+    this.register(Constants.WSEvents.GUILD_ROLE_CREATE, __webpack_require__(148));
+    this.register(Constants.WSEvents.GUILD_ROLE_DELETE, __webpack_require__(149));
+    this.register(Constants.WSEvents.GUILD_ROLE_UPDATE, __webpack_require__(150));
+    this.register(Constants.WSEvents.GUILD_EMOJIS_UPDATE, __webpack_require__(151));
+    this.register(Constants.WSEvents.GUILD_MEMBERS_CHUNK, __webpack_require__(152));
+    this.register(Constants.WSEvents.CHANNEL_CREATE, __webpack_require__(153));
+    this.register(Constants.WSEvents.CHANNEL_DELETE, __webpack_require__(154));
+    this.register(Constants.WSEvents.CHANNEL_UPDATE, __webpack_require__(155));
+    this.register(Constants.WSEvents.CHANNEL_PINS_UPDATE, __webpack_require__(156));
+    this.register(Constants.WSEvents.PRESENCE_UPDATE, __webpack_require__(157));
+    this.register(Constants.WSEvents.USER_UPDATE, __webpack_require__(158));
+    this.register(Constants.WSEvents.USER_NOTE_UPDATE, __webpack_require__(159));
+    this.register(Constants.WSEvents.USER_SETTINGS_UPDATE, __webpack_require__(160));
+    this.register(Constants.WSEvents.USER_GUILD_SETTINGS_UPDATE, __webpack_require__(161));
+    this.register(Constants.WSEvents.VOICE_STATE_UPDATE, __webpack_require__(162));
+    this.register(Constants.WSEvents.TYPING_START, __webpack_require__(163));
+    this.register(Constants.WSEvents.MESSAGE_CREATE, __webpack_require__(164));
+    this.register(Constants.WSEvents.MESSAGE_DELETE, __webpack_require__(165));
+    this.register(Constants.WSEvents.MESSAGE_UPDATE, __webpack_require__(166));
+    this.register(Constants.WSEvents.MESSAGE_DELETE_BULK, __webpack_require__(167));
+    this.register(Constants.WSEvents.VOICE_SERVER_UPDATE, __webpack_require__(168));
+    this.register(Constants.WSEvents.GUILD_SYNC, __webpack_require__(169));
+    this.register(Constants.WSEvents.RELATIONSHIP_ADD, __webpack_require__(170));
+    this.register(Constants.WSEvents.RELATIONSHIP_REMOVE, __webpack_require__(171));
+    this.register(Constants.WSEvents.MESSAGE_REACTION_ADD, __webpack_require__(172));
+    this.register(Constants.WSEvents.MESSAGE_REACTION_REMOVE, __webpack_require__(173));
+    this.register(Constants.WSEvents.MESSAGE_REACTION_REMOVE_ALL, __webpack_require__(174));
   }
 
   get client() {
@@ -24584,12 +24564,12 @@ module.exports = WebSocketPacketManager;
 
 
 /***/ }),
-/* 138 */
+/* 137 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
 const Constants = __webpack_require__(0);
-const ClientUser = __webpack_require__(75);
+const ClientUser = __webpack_require__(74);
 
 class ReadyHandler extends AbstractHandler {
   handle(packet) {
@@ -24667,7 +24647,7 @@ module.exports = ReadyHandler;
 
 
 /***/ }),
-/* 139 */
+/* 138 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Constants = __webpack_require__(0);
@@ -24701,7 +24681,7 @@ module.exports = ClientUserChannelOverride;
 
 
 /***/ }),
-/* 140 */
+/* 139 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -24735,7 +24715,7 @@ module.exports = ResumedHandler;
 
 
 /***/ }),
-/* 141 */
+/* 140 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -24774,7 +24754,7 @@ module.exports = GuildCreateHandler;
 
 
 /***/ }),
-/* 142 */
+/* 141 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -24796,7 +24776,7 @@ module.exports = GuildDeleteHandler;
 
 
 /***/ }),
-/* 143 */
+/* 142 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -24813,7 +24793,7 @@ module.exports = GuildUpdateHandler;
 
 
 /***/ }),
-/* 144 */
+/* 143 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // ##untested handler##
@@ -24842,7 +24822,7 @@ module.exports = GuildBanAddHandler;
 
 
 /***/ }),
-/* 145 */
+/* 144 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // ##untested handler##
@@ -24868,7 +24848,7 @@ module.exports = GuildBanRemoveHandler;
 
 
 /***/ }),
-/* 146 */
+/* 145 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // ##untested handler##
@@ -24901,7 +24881,7 @@ module.exports = GuildMemberAddHandler;
 
 
 /***/ }),
-/* 147 */
+/* 146 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // ##untested handler##
@@ -24920,7 +24900,7 @@ module.exports = GuildMemberRemoveHandler;
 
 
 /***/ }),
-/* 148 */
+/* 147 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // ##untested handler##
@@ -24955,7 +24935,7 @@ module.exports = GuildMemberUpdateHandler;
 
 
 /***/ }),
-/* 149 */
+/* 148 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -24972,7 +24952,7 @@ module.exports = GuildRoleCreateHandler;
 
 
 /***/ }),
-/* 150 */
+/* 149 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -24989,7 +24969,7 @@ module.exports = GuildRoleDeleteHandler;
 
 
 /***/ }),
-/* 151 */
+/* 150 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -25006,7 +24986,7 @@ module.exports = GuildRoleUpdateHandler;
 
 
 /***/ }),
-/* 152 */
+/* 151 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -25023,7 +25003,7 @@ module.exports = GuildEmojisUpdate;
 
 
 /***/ }),
-/* 153 */
+/* 152 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -25057,7 +25037,7 @@ module.exports = GuildMembersChunkHandler;
 
 
 /***/ }),
-/* 154 */
+/* 153 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -25078,7 +25058,7 @@ module.exports = ChannelCreateHandler;
 
 
 /***/ }),
-/* 155 */
+/* 154 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -25093,7 +25073,7 @@ module.exports = ChannelDeleteHandler;
 
 
 /***/ }),
-/* 156 */
+/* 155 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -25119,7 +25099,7 @@ module.exports = ChannelUpdateHandler;
 
 
 /***/ }),
-/* 157 */
+/* 156 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -25156,7 +25136,7 @@ module.exports = ChannelPinsUpdate;
 
 
 /***/ }),
-/* 158 */
+/* 157 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -25236,7 +25216,7 @@ module.exports = PresenceUpdateHandler;
 
 
 /***/ }),
-/* 159 */
+/* 158 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -25253,7 +25233,7 @@ module.exports = UserUpdateHandler;
 
 
 /***/ }),
-/* 160 */
+/* 159 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -25271,7 +25251,7 @@ module.exports = UserNoteUpdateHandler;
 
 
 /***/ }),
-/* 161 */
+/* 160 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -25295,12 +25275,12 @@ module.exports = UserSettingsUpdateHandler;
 
 
 /***/ }),
-/* 162 */
+/* 161 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
 const Constants = __webpack_require__(0);
-const ClientUserGuildSettings = __webpack_require__(77);
+const ClientUserGuildSettings = __webpack_require__(76);
 
 class UserGuildSettingsUpdateHandler extends AbstractHandler {
   handle(packet) {
@@ -25322,7 +25302,7 @@ module.exports = UserGuildSettingsUpdateHandler;
 
 
 /***/ }),
-/* 163 */
+/* 162 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -25364,7 +25344,7 @@ module.exports = VoiceStateUpdateHandler;
 
 
 /***/ }),
-/* 164 */
+/* 163 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -25438,7 +25418,7 @@ module.exports = TypingStartHandler;
 
 
 /***/ }),
-/* 165 */
+/* 164 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -25453,7 +25433,7 @@ module.exports = MessageCreateHandler;
 
 
 /***/ }),
-/* 166 */
+/* 165 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -25468,7 +25448,7 @@ module.exports = MessageDeleteHandler;
 
 
 /***/ }),
-/* 167 */
+/* 166 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -25494,7 +25474,7 @@ module.exports = MessageUpdateHandler;
 
 
 /***/ }),
-/* 168 */
+/* 167 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -25509,7 +25489,7 @@ module.exports = MessageDeleteBulkHandler;
 
 
 /***/ }),
-/* 169 */
+/* 168 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -25534,7 +25514,7 @@ module.exports = VoiceServerUpdate;
 
 
 /***/ }),
-/* 170 */
+/* 169 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -25551,7 +25531,7 @@ module.exports = GuildSyncHandler;
 
 
 /***/ }),
-/* 171 */
+/* 170 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -25576,7 +25556,7 @@ module.exports = RelationshipAddHandler;
 
 
 /***/ }),
-/* 172 */
+/* 171 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -25601,7 +25581,7 @@ module.exports = RelationshipRemoveHandler;
 
 
 /***/ }),
-/* 173 */
+/* 172 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -25620,7 +25600,7 @@ module.exports = MessageReactionAddHandler;
 
 
 /***/ }),
-/* 174 */
+/* 173 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -25637,7 +25617,7 @@ module.exports = MessageReactionRemove;
 
 
 /***/ }),
-/* 175 */
+/* 174 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -25654,6 +25634,12 @@ module.exports = MessageReactionRemoveAll;
 
 
 /***/ }),
+/* 175 */
+/***/ (function(module, exports) {
+
+/* (ignored) */
+
+/***/ }),
 /* 176 */
 /***/ (function(module, exports) {
 
@@ -25667,18 +25653,13 @@ module.exports = MessageReactionRemoveAll;
 
 /***/ }),
 /* 178 */
-/***/ (function(module, exports) {
-
-/* (ignored) */
-
-/***/ }),
-/* 179 */
 /***/ (function(module, exports, __webpack_require__) {
 
 class ActionsManager {
   constructor(client) {
     this.client = client;
 
+    this.register(__webpack_require__(179));
     this.register(__webpack_require__(180));
     this.register(__webpack_require__(181));
     this.register(__webpack_require__(182));
@@ -25706,7 +25687,6 @@ class ActionsManager {
     this.register(__webpack_require__(204));
     this.register(__webpack_require__(205));
     this.register(__webpack_require__(206));
-    this.register(__webpack_require__(207));
   }
 
   register(Action) {
@@ -25718,7 +25698,7 @@ module.exports = ActionsManager;
 
 
 /***/ }),
-/* 180 */
+/* 179 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -25763,7 +25743,7 @@ module.exports = MessageCreateAction;
 
 
 /***/ }),
-/* 181 */
+/* 180 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -25797,7 +25777,7 @@ module.exports = MessageDeleteAction;
 
 
 /***/ }),
-/* 182 */
+/* 181 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -25834,7 +25814,7 @@ module.exports = MessageDeleteBulkAction;
 
 
 /***/ }),
-/* 183 */
+/* 182 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -25863,7 +25843,7 @@ module.exports = MessageUpdateAction;
 
 
 /***/ }),
-/* 184 */
+/* 183 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -25908,7 +25888,7 @@ module.exports = MessageReactionAdd;
 
 
 /***/ }),
-/* 185 */
+/* 184 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -25954,7 +25934,7 @@ module.exports = MessageReactionRemove;
 
 
 /***/ }),
-/* 186 */
+/* 185 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -25985,7 +25965,7 @@ module.exports = MessageReactionRemoveAll;
 
 
 /***/ }),
-/* 187 */
+/* 186 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -26007,7 +25987,7 @@ module.exports = ChannelCreateAction;
 
 
 /***/ }),
-/* 188 */
+/* 187 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -26042,7 +26022,7 @@ module.exports = ChannelDeleteAction;
 
 
 /***/ }),
-/* 189 */
+/* 188 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -26068,7 +26048,7 @@ module.exports = ChannelUpdateAction;
 
 
 /***/ }),
-/* 190 */
+/* 189 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -26128,7 +26108,7 @@ module.exports = GuildDeleteAction;
 
 
 /***/ }),
-/* 191 */
+/* 190 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -26166,7 +26146,7 @@ module.exports = GuildUpdateAction;
 
 
 /***/ }),
-/* 192 */
+/* 191 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -26182,7 +26162,7 @@ module.exports = GuildMemberGetAction;
 
 
 /***/ }),
-/* 193 */
+/* 192 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -26215,7 +26195,7 @@ module.exports = GuildMemberRemoveAction;
 
 
 /***/ }),
-/* 194 */
+/* 193 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -26234,7 +26214,7 @@ module.exports = GuildBanRemove;
 
 
 /***/ }),
-/* 195 */
+/* 194 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -26264,7 +26244,7 @@ module.exports = GuildRoleCreate;
 
 
 /***/ }),
-/* 196 */
+/* 195 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -26298,7 +26278,7 @@ module.exports = GuildRoleDeleteAction;
 
 
 /***/ }),
-/* 197 */
+/* 196 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -26342,7 +26322,7 @@ module.exports = GuildRoleUpdateAction;
 
 
 /***/ }),
-/* 198 */
+/* 197 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -26359,7 +26339,7 @@ module.exports = UserGetAction;
 
 
 /***/ }),
-/* 199 */
+/* 198 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -26396,7 +26376,7 @@ module.exports = UserUpdateAction;
 
 
 /***/ }),
-/* 200 */
+/* 199 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -26432,7 +26412,7 @@ module.exports = UserNoteUpdateAction;
 
 
 /***/ }),
-/* 201 */
+/* 200 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -26467,7 +26447,7 @@ module.exports = GuildSync;
 
 
 /***/ }),
-/* 202 */
+/* 201 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -26491,7 +26471,7 @@ module.exports = GuildEmojiCreateAction;
 
 
 /***/ }),
-/* 203 */
+/* 202 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -26515,7 +26495,7 @@ module.exports = GuildEmojiDeleteAction;
 
 
 /***/ }),
-/* 204 */
+/* 203 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -26540,7 +26520,7 @@ module.exports = GuildEmojiUpdateAction;
 
 
 /***/ }),
-/* 205 */
+/* 204 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -26584,7 +26564,7 @@ module.exports = GuildEmojisUpdateAction;
 
 
 /***/ }),
-/* 206 */
+/* 205 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -26609,7 +26589,7 @@ module.exports = GuildRolesPositionUpdate;
 
 
 /***/ }),
-/* 207 */
+/* 206 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -26634,6 +26614,12 @@ module.exports = GuildChannelsPositionUpdate;
 
 
 /***/ }),
+/* 207 */
+/***/ (function(module, exports) {
+
+/* (ignored) */
+
+/***/ }),
 /* 208 */
 /***/ (function(module, exports) {
 
@@ -26641,12 +26627,6 @@ module.exports = GuildChannelsPositionUpdate;
 
 /***/ }),
 /* 209 */
-/***/ (function(module, exports) {
-
-/* (ignored) */
-
-/***/ }),
-/* 210 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const DataStore = __webpack_require__(11);
@@ -26685,7 +26665,7 @@ module.exports = UserStore;
 
 
 /***/ }),
-/* 211 */
+/* 210 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const DataStore = __webpack_require__(11);
@@ -26768,11 +26748,11 @@ module.exports = ChannelStore;
 
 
 /***/ }),
-/* 212 */
+/* 211 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const DataStore = __webpack_require__(11);
-const Guild = __webpack_require__(28);
+const Guild = __webpack_require__(29);
 /**
  * Stores guilds.
  * @private
@@ -26794,10 +26774,10 @@ module.exports = GuildStore;
 
 
 /***/ }),
-/* 213 */
+/* 212 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const PresenceStore = __webpack_require__(74);
+const PresenceStore = __webpack_require__(73);
 const Collection = __webpack_require__(3);
 const Constants = __webpack_require__(0);
 const { Presence } = __webpack_require__(19);
@@ -26862,6 +26842,12 @@ module.exports = ClientPresenceStore;
 
 
 /***/ }),
+/* 213 */
+/***/ (function(module, exports) {
+
+/* (ignored) */
+
+/***/ }),
 /* 214 */
 /***/ (function(module, exports) {
 
@@ -26875,12 +26861,6 @@ module.exports = ClientPresenceStore;
 
 /***/ }),
 /* 216 */
-/***/ (function(module, exports) {
-
-/* (ignored) */
-
-/***/ }),
-/* 217 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Webhook = __webpack_require__(21);
@@ -26899,15 +26879,17 @@ class WebhookClient extends BaseClient {
    * @example
    * // Create a new webhook and send a message
    * const hook = new Discord.WebhookClient('1234', 'abcdef');
-   * hook.sendMessage('This will send a message').catch(console.error);
+   * hook.send('This will send a message').catch(console.error);
    */
   constructor(id, token, options) {
     super(options);
-    Webhook.call(this, null, id, token);
+    Object.defineProperty(this, 'client', { value: this });
+    this.id = id;
+    this.token = token;
   }
 }
 
-Object.assign(WebhookClient.prototype, Object.create(Webhook.prototype));
+Webhook.applyToClass(WebhookClient);
 
 module.exports = WebhookClient;
 
