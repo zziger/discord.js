@@ -1242,10 +1242,10 @@ class Collection extends Map {
   }
 
   /**
-   * The sort() method sorts the elements of a collection in place and returns the collection.
+   * The sort() method sorts the elements of a collection and returns it.
    * The sort is not necessarily stable. The default sort order is according to string Unicode code points.
    * @param {Function} [compareFunction] Specifies a function that defines the sort order.
-   * if omitted, the collection is sorted according to each character's Unicode code point value,
+   * If omitted, the collection is sorted according to each character's Unicode code point value,
    * according to the string conversion of each element.
    * @returns {Collection}
    */
@@ -8299,7 +8299,7 @@ class Guild extends Base {
    * @param {Snowflake|GuildAuditLogsEntry} [options.after] Limit to entries from after specified entry
    * @param {number} [options.limit] Limit number of entries
    * @param {UserResolvable} [options.user] Only show entries involving this user
-   * @param {string|number} [options.type] Only show entries involving this action type
+   * @param {ActionType|number} [options.type] Only show entries involving this action type
    * @returns {Promise<GuildAuditLogs>}
    */
   fetchAuditLogs(options = {}) {
@@ -17422,6 +17422,19 @@ class GuildAuditLogs {
   }
 
   /**
+   * The target type of an entry, e.g. `GUILD`. Here are the available types:
+   * * GUILD
+   * * CHANNEL
+   * * USER
+   * * ROLE
+   * * INVITE
+   * * WEBHOOK
+   * * EMOJI
+   * * MESSAGE
+   * @typedef {string} TargetType
+   */
+
+  /**
    * Find target type from entry action.
    * @param {number} target The action target
    * @returns {?string}
@@ -17438,6 +17451,13 @@ class GuildAuditLogs {
     return Targets.UNKNOWN;
   }
 
+  /**
+   * The action type of an entry, e.g. `CREATE`. Here are the available types:
+   * * CREATE
+   * * DELETE
+   * * UPDATE
+   * @typedef {string} ActionType
+   */
 
   /**
    * Find action type from entry action.
@@ -17492,13 +17512,13 @@ class GuildAuditLogsEntry {
     const targetType = GuildAuditLogs.targetType(data.action_type);
     /**
      * The target type of this entry
-     * @type {string}
+     * @type {TargetType}
      */
     this.targetType = targetType;
 
     /**
      * The action type of this entry
-     * @type {string}
+     * @type {ActionType}
      */
     this.actionType = GuildAuditLogs.actionType(data.action_type);
 
@@ -17576,7 +17596,7 @@ class GuildAuditLogsEntry {
     if (targetType === Targets.UNKNOWN) {
       /**
        * The target of this entry
-       * @type {Snowflake|Guild|User|Role|Emoji|Invite|Webhook}
+       * @type {TargetType}
        */
       this.target = this.changes.reduce((o, c) => {
         o[c.key] = c.new || c.old;
@@ -25045,13 +25065,13 @@ class ChannelCreateHandler extends AbstractHandler {
   }
 }
 
+module.exports = ChannelCreateHandler;
+
 /**
  * Emitted whenever a channel is created.
  * @event Client#channelCreate
- * @param {Channel} channel The channel that was created
+ * @param {DMChannel|GroupDMChannel|GuildChannel} channel The channel that was created
  */
-
-module.exports = ChannelCreateHandler;
 
 
 /***/ }),
@@ -25090,8 +25110,8 @@ module.exports = ChannelUpdateHandler;
 /**
  * Emitted whenever a channel is updated - e.g. name change, topic change.
  * @event Client#channelUpdate
- * @param {Channel} oldChannel The channel before the update
- * @param {Channel} newChannel The channel after the update
+ * @param {DMChannel|GroupDMChannel|GuildChannel} oldChannel The channel before the update
+ * @param {DMChannel|GroupDMChannel|GuildChannel} newChannel The channel after the update
  */
 
 
@@ -25121,15 +25141,15 @@ class ChannelPinsUpdate extends AbstractHandler {
   }
 }
 
+module.exports = ChannelPinsUpdate;
+
 /**
  * Emitted whenever the pins of a channel are updated. Due to the nature of the WebSocket event, not much information
  * can be provided easily here - you need to manually check the pins yourself.
  * @event Client#channelPinsUpdate
- * @param {Channel} channel The channel that the pins update occured in
+ * @param {DMChannel|GroupDMChannel|TextChannel} channel The channel that the pins update occured in
  * @param {Date} time The time of the pins update
  */
-
-module.exports = ChannelPinsUpdate;
 
 
 /***/ }),
@@ -26012,7 +26032,7 @@ class ChannelDeleteAction extends Action {
 /**
  * Emitted whenever a channel is deleted.
  * @event Client#channelDelete
- * @param {Channel} channel The channel that was deleted
+ * @param {GroupDMChannel|GuildChannel} channel The channel that was deleted
  */
 
 module.exports = ChannelDeleteAction;
