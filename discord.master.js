@@ -8133,17 +8133,19 @@ class MessageStore extends DataStore {
    */
 
   /**
-	* Resolves a MessageResolvable to a Message object.
-	* @method resolve
-	* @memberof MessageStore
+    * Resolves a MessageResolvable to a Message object.
+    * @method resolve
+    * @memberof MessageStore
+    * @instance
     * @param {MessageResolvable} message The message resolvable to resolve
     * @returns {?Message}
     */
 
   /**
-	* Resolves a MessageResolvable to a Message ID string.
-	* @method MessageStore
-	* @memberof PresenceStore
+    * Resolves a MessageResolvable to a Message ID string.
+    * @method MessageStore
+    * @memberof PresenceStore
+    * @instance
     * @param {MessageResolvable} message The message resolvable to resolve
     * @returns {?string}
     */
@@ -24161,17 +24163,19 @@ class ReactionStore extends DataStore {
    */
 
   /**
-	* Resolves a MessageReactionResolvable to a MessageReaction object.
-	* @method resolve
-	* @memberof ReactionStore
+    * Resolves a MessageReactionResolvable to a MessageReaction object.
+    * @method resolve
+    * @memberof ReactionStore
+    * @instance
     * @param {MessageReactionResolvable} reaction The MessageReaction to resolve
     * @returns {?MessageReaction}
     */
 
   /**
-	* Resolves a MessageReactionResolvable to a MessageReaction ID string.
-	* @method resolveID
-	* @memberof ReactionStore
+    * Resolves a MessageReactionResolvable to a MessageReaction ID string.
+    * @method resolveID
+    * @memberof ReactionStore
+    * @instance
     * @param {MessageReactionResolvable} role The role resolvable to resolve
     * @returns {?string}
     */
@@ -24360,17 +24364,19 @@ class RoleStore extends DataStore {
    */
 
   /**
-	* Resolves a RoleResolvable to a Role object.
-	* @method resolve
-	* @memberof RoleStore
+    * Resolves a RoleResolvable to a Role object.
+    * @method resolve
+    * @memberof RoleStore
+    * @instance
     * @param {RoleResolvable} role The role resolvable to resolve
     * @returns {?Role}
     */
 
   /**
-	* Resolves a RoleResolvable to a role ID string.
-	* @method resolveID
-	* @memberof RoleStore
+    * Resolves a RoleResolvable to a role ID string.
+    * @method resolveID
+    * @memberof RoleStore
+    * @instance
     * @param {RoleResolvable} role The role resolvable to resolve
     * @returns {?string}
     */
@@ -24493,6 +24499,7 @@ class GuildChannelStore extends DataStore {
    * Resolves a GuildChannelResolvable to a Channel object.
    * @method resolve
    * @memberof GuildChannelStore
+   * @instance
    * @param {GuildChannelResolvable} channel The GuildChannel resolvable to resolve
    * @returns {?Channel}
    */
@@ -24501,6 +24508,7 @@ class GuildChannelStore extends DataStore {
    * Resolves a GuildChannelResolvable to a channel ID string.
    * @method resolveID
    * @memberof GuildChannelStore
+   * @instance
    * @param {GuildChannelResolvable} channel The GuildChannel resolvable to resolve
    * @returns {?string}
    */
@@ -26855,6 +26863,7 @@ class ChannelStore extends DataStore {
    * Resolves a ChannelResolvable to a Channel object.
    * @method resolve
    * @memberof ChannelStore
+   * @instance
    * @param {ChannelResolvable} channel The channel resolvable to resolve
    * @returns {?Channel}
    */
@@ -26863,6 +26872,7 @@ class ChannelStore extends DataStore {
    * Resolves a ChannelResolvable to a channel ID string.
    * @method resolveID
    * @memberof ChannelStore
+   * @instance
    * @param {ChannelResolvable} channel The channel resolvable to resolve
    * @returns {?string}
    */
@@ -26899,6 +26909,7 @@ class GuildStore extends DataStore {
    * Resolves a GuildResolvable to a Guild object.
    * @method resolve
    * @memberof GuildStore
+   * @instance
    * @param {GuildResolvable} guild The guild resolvable to identify
    * @returns {?Guild}
    */
@@ -26907,6 +26918,7 @@ class GuildStore extends DataStore {
    * Resolves a GuildResolvable to a Guild ID string.
    * @method resolveID
    * @memberof GuildStore
+   * @instance
    * @param {GuildResolvable} guild The guild resolvable to identify
    * @returns {?string}
    */
