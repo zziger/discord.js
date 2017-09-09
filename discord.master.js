@@ -5505,7 +5505,7 @@ class MessageEmbed {
      * @property {string} value The value of this field
      * @property {boolean} inline If this field will be displayed inline
      */
-    this.fields = data.fields ? data.fields.map(Util.cloneObject) : [];
+    this.fields = data.fields || [];
 
     /**
      * The thumbnail of this embed (if there is one)
@@ -5589,13 +5589,8 @@ class MessageEmbed {
      * @property {Array<FileOptions|string|MessageAttachment>} files Files to attach
      */
     if (data.files) {
-      this.files = data.files.map(file => {
-        if (file instanceof MessageAttachment) {
-          return typeof file.file === 'string' ? file.file : Util.cloneObject(file.file);
-        }
-        return file;
-      });
-    }
+      for (let file of data.files) if (file instanceof MessageAttachment) file = file.file;
+    } else { data.files = null; }
   }
 
   /**
