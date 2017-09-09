@@ -5505,7 +5505,7 @@ class MessageEmbed {
      * @property {string} value The value of this field
      * @property {boolean} inline If this field will be displayed inline
      */
-    this.fields = data.fields || [];
+    this.fields = data.fields ? data.fields.map(Util.cloneObject) : [];
 
     /**
      * The thumbnail of this embed (if there is one)
@@ -5589,8 +5589,13 @@ class MessageEmbed {
      * @property {Array<FileOptions|string|MessageAttachment>} files Files to attach
      */
     if (data.files) {
-      for (let file of data.files) if (file instanceof MessageAttachment) file = file.file;
-    } else { data.files = null; }
+      this.files = data.files.map(file => {
+        if (file instanceof MessageAttachment) {
+          return typeof file.file === 'string' ? file.file : Util.cloneObject(file.file);
+        }
+        return file;
+      });
+    }
   }
 
   /**
@@ -9523,10 +9528,9 @@ class Guild extends Base {
   }
 
   _sortedChannels(channel) {
-    if (channel.type === Constants.ChannelTypes.CATEGORY) {
-      return Util.discordSort(this.channels.filter(c => c.type === Constants.ChannelTypes.CATEGORY));
-    }
-    return Util.discordSort(this.channels.filter(c => c.parent === channel.parent));
+    const category = channel.type === Constants.ChannelTypes.CATEGORY;
+    return Util.discordSort(this.channels.filter(c =>
+      c.type === channel.type && (category || c.parent === channel.parent)));
   }
 }
 
