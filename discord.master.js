@@ -8193,8 +8193,8 @@ class MessageStore extends DataStore {
 
   /**
     * Resolves a MessageResolvable to a Message ID string.
-    * @method MessageStore
-    * @memberof PresenceStore
+    * @method resolveID
+    * @memberof MessageStore
     * @instance
     * @param {MessageResolvable} message The message resolvable to resolve
     * @returns {?string}
@@ -18347,6 +18347,11 @@ module.exports = EmojiStore;
 const DataStore = __webpack_require__(11);
 const { Presence } = __webpack_require__(20);
 
+/**
+ * Stores presences.
+ * @private
+ * @extends {DataStore}
+ */
 class PresenceStore extends DataStore {
   constructor(client, iterable) {
     super(client, iterable, Presence);
@@ -18377,12 +18382,11 @@ class PresenceStore extends DataStore {
     return super.resolve(UserResolveable) || null;
   }
 
-
   /**
     * Resolves a PresenceResolvable to a Presence ID string.
     * @param {PresenceResolvable} presence The presence resolvable to resolve
     * @returns {?string}
-	*/
+    */
   resolveID(presence) {
     const presenceResolveable = super.resolveID(presence);
     if (presenceResolveable) return presenceResolveable;
