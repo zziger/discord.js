@@ -3799,31 +3799,43 @@ class Permissions {
   }
 
   /**
-   * Adds permissions to this one, creating a new instance to represent the new bitfield.
-   * @param {...PermissionResolvable} permissions Permissions to add
-   * @returns {Permissions}
+   * Freezes the permission making it immutable.
+   * @returns {Permissions} This permissions
    */
-  add(...permissions) {
-    let total = 0;
-    for (let p = 0; p < permissions.length; p++) {
-      const perm = this.constructor.resolve(permissions[p]);
-      if ((this.bitfield & perm) !== perm) total |= perm;
-    }
-    return new this.constructor(this.member, this.bitfield | total);
+  freeze() {
+    return Object.freeze(this);
   }
 
   /**
-   * Removes permissions to this one, creating a new instance to represent the new bitfield.
+   * Adds permissions to this one.
+   * @param {...PermissionResolvable} permissions Permissions to add
+   * @returns {Permissions} This permissions or new permissions if the instance is frozen.
+   */
+  add(...permissions) {
+    let total = 0;
+    for (let p = permissions.length - 1; p >= 0; p--) {
+      const perm = this.constructor.resolve(permissions[p]);
+      if ((this.bitfield & perm) !== perm) total |= perm;
+    }
+    if (Object.isFrozen(this)) return new this.constructor(this.bitfield | total);
+    this.bitfield |= total;
+    return this;
+  }
+
+  /**
+   * Removes permissions from this one.
    * @param {...PermissionResolvable} permissions Permissions to remove
-   * @returns {Permissions}
+   * @returns {Permissions} This permissions or new permissions if the instance is frozen.
    */
   remove(...permissions) {
     let total = 0;
-    for (let p = 0; p < permissions.length; p++) {
+    for (let p = permissions.length - 1; p >= 0; p--) {
       const perm = this.constructor.resolve(permissions[p]);
       if ((this.bitfield & perm) === perm) total |= perm;
     }
-    return new this.constructor(this.member, this.bitfield & ~total);
+    if (Object.isFrozen(this)) return new this.constructor(this.bitfield & ~total);
+    this.bitfield &= ~total;
+    return this;
   }
 
   /**
@@ -3842,7 +3854,8 @@ class Permissions {
    * Data that can be resolved to give a permission number. This can be:
    * * A string (see {@link Permissions.FLAGS})
    * * A permission number
-   * @typedef {string|number} PermissionResolvable
+   * * An instance of Permissions
+   * @typedef {string|number|Permissions} PermissionResolvable
    */
 
   /**
@@ -3851,10 +3864,11 @@ class Permissions {
    * @returns {number}
    */
   static resolve(permission) {
+    if (typeof permission === 'number' && permission >= 0) return permission;
+    if (permission instanceof Permissions) return permission.bitfield;
     if (permission instanceof Array) return permission.map(p => this.resolve(p)).reduce((prev, p) => prev | p, 0);
-    if (typeof permission === 'string') permission = this.FLAGS[permission];
-    if (typeof permission !== 'number' || permission < 1) throw new RangeError('PERMISSION_INVALID');
-    return permission;
+    if (typeof permission === 'string') return this.FLAGS[permission];
+    throw new RangeError('PERMISSIONS_INVALID');
   }
 }
 
@@ -4903,13 +4917,8 @@ class GuildMember extends Base {
    * @readonly
    */
   get permissions() {
-    if (this.user.id === this.guild.ownerID) return new Permissions(Permissions.ALL);
-
-    let permissions = 0;
-    const roles = this.roles;
-    for (const role of roles.values()) permissions |= role.permissions;
-
-    return new Permissions(permissions);
+    if (this.user.id === this.guild.ownerID) return new Permissions(Permissions.ALL).freeze();
+    return new Permissions(this.roles.map(role => role.permissions)).freeze();
   }
 
   /**
@@ -4975,7 +4984,7 @@ class GuildMember extends Base {
    * @returns {PermissionResolvable[]}
    */
   missingPermissions(permissions, explicit = false) {
-    return permissions.missing(permissions, explicit);
+    return this.permissions.missing(permissions, explicit);
   }
 
   /**
@@ -5304,34 +5313,23 @@ class GuildChannel extends Channel {
   permissionsFor(member) {
     member = this.guild.members.resolve(member);
     if (!member) return null;
-    if (member.id === this.guild.ownerID) return new Permissions(Permissions.ALL);
+    if (member.id === this.guild.ownerID) return new Permissions(Permissions.ALL).freeze();
 
-    let resolved = this.guild.roles.get(this.guild.id).permissions;
+    const roles = member.roles;
+    const permissions = new Permissions(roles.map(role => role.permissions));
 
-    const overwrites = this.overwritesFor(member, true);
-    if (overwrites.everyone) {
-      resolved &= ~overwrites.everyone._denied;
-      resolved |= overwrites.everyone._allowed;
-    }
+    if (permissions.has(Permissions.FLAGS.ADMINISTRATOR)) return new Permissions(Permissions.ALL).freeze();
 
-    let allows = 0;
-    let denies = 0;
-    for (const overwrite of overwrites.roles) {
-      allows |= overwrite._allowed;
-      denies |= overwrite._denied;
-    }
-    resolved &= ~denies;
-    resolved |= allows;
+    const overwrites = this.overwritesFor(member, true, roles);
 
-    if (overwrites.member) {
-      resolved &= ~overwrites.member._denied;
-      resolved |= overwrites.member._allowed;
-    }
-
-    const admin = Boolean(resolved & Permissions.FLAGS.ADMINISTRATOR);
-    if (admin) resolved = Permissions.ALL;
-
-    return new Permissions(resolved);
+    return permissions
+      .remove(overwrites.everyone ? overwrites.everyone.denied : 0)
+      .add(overwrites.everyone ? overwrites.everyone.allowed : 0)
+      .remove(overwrites.roles.length > 0 ? overwrites.roles.map(role => role.denied) : 0)
+      .add(overwrites.roles.length > 0 ? overwrites.roles.map(role => role.allowed) : 0)
+      .remove(overwrites.member ? overwrites.member.denied : 0)
+      .add(overwrites.member ? overwrites.member.allowed : 0)
+      .freeze();
   }
 
   overwritesFor(member, verified = false, roles = null) {
@@ -5387,46 +5385,43 @@ class GuildChannel extends Channel {
    *   .catch(console.error);
    */
   overwritePermissions(userOrRole, options, reason) {
-    const payload = {
-      allow: 0,
-      deny: 0,
-    };
+    const allow = new Permissions(0);
+    const deny = new Permissions(0);
+    let type;
 
     const role = this.guild.roles.get(userOrRole);
 
     if (role || userOrRole instanceof Role) {
       userOrRole = role || userOrRole;
-      payload.type = 'role';
+      type = 'role';
     } else {
       userOrRole = this.client.users.resolve(userOrRole);
-      payload.type = 'member';
+      type = 'member';
       if (!userOrRole) return Promise.reject(new TypeError('INVALID_TYPE', 'parameter', 'User nor a Role', true));
     }
-
-    payload.id = userOrRole.id;
 
     const prevOverwrite = this.permissionOverwrites.get(userOrRole.id);
 
     if (prevOverwrite) {
-      payload.allow = prevOverwrite._allowed;
-      payload.deny = prevOverwrite._denied;
+      allow.add(prevOverwrite.allowed);
+      deny.add(prevOverwrite.denied);
     }
 
     for (const perm in options) {
       if (options[perm] === true) {
-        payload.allow |= Permissions.FLAGS[perm] || 0;
-        payload.deny &= ~(Permissions.FLAGS[perm] || 0);
+        allow.add(Permissions.FLAGS[perm] || 0);
+        deny.remove(Permissions.FLAGS[perm] || 0);
       } else if (options[perm] === false) {
-        payload.allow &= ~(Permissions.FLAGS[perm] || 0);
-        payload.deny |= Permissions.FLAGS[perm] || 0;
+        allow.remove(Permissions.FLAGS[perm] || 0);
+        deny.add(Permissions.FLAGS[perm] || 0);
       } else if (options[perm] === null) {
-        payload.allow &= ~(Permissions.FLAGS[perm] || 0);
-        payload.deny &= ~(Permissions.FLAGS[perm] || 0);
+        allow.remove(Permissions.FLAGS[perm] || 0);
+        deny.remove(Permissions.FLAGS[perm] || 0);
       }
     }
 
-    return this.client.api.channels(this.id).permissions[payload.id]
-      .put({ data: payload, reason })
+    return this.client.api.channels(this.id).permissions[userOrRole.id]
+      .put({ data: { id: userOrRole.id, type, allow: allow.bitfield, deny: deny.bitfield }, reason })
       .then(() => this);
   }
 
@@ -7299,10 +7294,10 @@ class Role extends Base {
     this.position = data.position;
 
     /**
-     * The permissions bitfield of the role
-     * @type {number}
+     * The permissions of the role
+     * @type {Permissions}
      */
-    this.permissions = data.permissions;
+    this.permissions = new Permissions(data.permissions).freeze();
 
     /**
      * Whether or not the role is managed by an external service
@@ -7385,7 +7380,7 @@ class Role extends Base {
    * console.log(role.serialize());
    */
   serialize() {
-    return new Permissions(this.permissions).serialize();
+    return this.permissions.serialize();
   }
 
   /**
@@ -7405,7 +7400,7 @@ class Role extends Base {
    * }
    */
   hasPermission(permission, explicit = false, checkAdmin) {
-    return new Permissions(this.permissions).has(
+    return this.permissions.has(
       permission, typeof checkAdmin !== 'undefined' ? checkAdmin : !explicit
     );
   }
@@ -7446,7 +7441,7 @@ class Role extends Base {
    */
   edit(data, reason) {
     if (data.permissions) data.permissions = Permissions.resolve(data.permissions);
-    else data.permissions = this.permissions;
+    else data.permissions = this.permissions.bitfield;
     return this.client.api.guilds[this.guild.id].roles[this.id].patch({
       data: {
         name: data.name || this.name,
@@ -7587,7 +7582,7 @@ class Role extends Base {
       this.color === role.color &&
       this.hoist === role.hoist &&
       this.position === role.position &&
-      this.permissions === role.permissions &&
+      this.permissions.bitfield === role.permissions.bitfield &&
       this.managed === role.managed;
   }
 
@@ -9275,8 +9270,8 @@ class Guild extends Base {
   createChannel(name, type, { overwrites, reason } = {}) {
     if (overwrites instanceof Collection || overwrites instanceof Array) {
       overwrites = overwrites.map(overwrite => {
-        let allow = overwrite.allow || overwrite._allowed;
-        let deny = overwrite.deny || overwrite._denied;
+        let allow = overwrite.allow || overwrite.allowed.bitfield;
+        let deny = overwrite.deny || overwrite.denied.bitfield;
         if (allow instanceof Array) allow = Permissions.resolve(allow);
         if (deny instanceof Array) deny = Permissions.resolve(deny);
 
@@ -17712,20 +17707,17 @@ class PermissionOverwrites {
      */
     this.type = data.type;
 
-    this._denied = data.deny;
-    this._allowed = data.allow;
-
     /**
      * The permissions that are denied for the user or role.
      * @type {Permissions}
      */
-    this.denied = new Permissions(this._denied);
+    this.denied = new Permissions(data.deny).freeze();
 
     /**
      * The permissions that are allowed for the user or role.
      * @type {Permissions}
      */
-    this.allowed = new Permissions(this._allowed);
+    this.allowed = new Permissions(data.allow).freeze();
   }
 
   /**
