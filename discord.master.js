@@ -3833,7 +3833,7 @@ class Permissions {
     let total = 0;
     for (let p = permissions.length - 1; p >= 0; p--) {
       const perm = this.constructor.resolve(permissions[p]);
-      if ((this.bitfield & perm) !== perm) total |= perm;
+      total |= perm;
     }
     if (Object.isFrozen(this)) return new this.constructor(this.bitfield | total);
     this.bitfield |= total;
@@ -3849,7 +3849,7 @@ class Permissions {
     let total = 0;
     for (let p = permissions.length - 1; p >= 0; p--) {
       const perm = this.constructor.resolve(permissions[p]);
-      if ((this.bitfield & perm) === perm) total |= perm;
+      total |= perm;
     }
     if (Object.isFrozen(this)) return new this.constructor(this.bitfield & ~total);
     this.bitfield &= ~total;
