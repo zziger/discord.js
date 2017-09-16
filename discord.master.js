@@ -22428,6 +22428,7 @@ const Messages = {
 
   FEATURE_USER_ONLY: 'Only user accounts are able to make use of this feature.',
 
+  WS_CONNECTION_TIMEOUT: 'The connection to the gateway timed out.',
   WS_CONNECTION_EXISTS: 'There is already an existing WebSocket connection.',
   WS_NOT_OPEN: (data = 'data') => `Websocket not open to send ${data}`,
 
@@ -23337,11 +23338,12 @@ class ClientManager {
   connectToWebSocket(token, resolve, reject) {
     this.client.emit(Events.DEBUG, `Authenticated using token ${token}`);
     this.client.token = token;
-    const timeout = this.client.setTimeout(() => reject(new Error('TOKEN_INVALID')), 1000 * 300);
+    const timeout = this.client.setTimeout(() => reject(new Error('WS_CONNECTION_TIMEOUT')), 1000 * 300);
     this.client.api.gateway.get().then(res => {
       const gateway = `${res.url}/`;
       this.client.emit(Events.DEBUG, `Using gateway ${gateway}`);
       this.client.ws.connect(gateway);
+      this.client.ws.connection.ws.once('error', reject);
       this.client.ws.connection.once('close', event => {
         if (event.code === 4004) reject(new Error('TOKEN_INVALID'));
         if (event.code === 4010) reject(new Error('SHARDING_INVALID'));
