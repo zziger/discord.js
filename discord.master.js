@@ -3069,8 +3069,7 @@ function isnan (val) {
 
 /* WEBPACK VAR INJECTION */(function(Buffer) {const Long = __webpack_require__(36);
 const snekfetch = __webpack_require__(37);
-const Constants = __webpack_require__(0);
-const ConstantsHttp = Constants.DefaultOptions.http;
+const { Colors, DefaultOptions, Endpoints } = __webpack_require__(0);
 const { Error: DiscordError, RangeError, TypeError } = __webpack_require__(4);
 const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
 
@@ -3129,7 +3128,7 @@ class Util {
   static fetchRecommendedShards(token, guildsPerShard = 1000) {
     return new Promise((resolve, reject) => {
       if (!token) throw new DiscordError('TOKEN_MISSING');
-      snekfetch.get(`${ConstantsHttp.api}/v${ConstantsHttp.version}${Constants.Endpoints.botGateway}`)
+      snekfetch.get(`${DefaultOptions.http.api}/v${DefaultOptions.http.version}${Endpoints.botGateway}`)
         .set('Authorization', `Bot ${token.replace(/^Bot\s*/i, '')}`)
         .end((err, res) => {
           if (err) reject(err);
@@ -3347,7 +3346,7 @@ class Util {
   static resolveColor(color) {
     if (typeof color === 'string') {
       if (color === 'RANDOM') return Math.floor(Math.random() * (0xFFFFFF + 1));
-      color = Constants.Colors[color] || parseInt(color.replace('#', ''), 16);
+      color = Colors[color] || parseInt(color.replace('#', ''), 16);
     } else if (color instanceof Array) {
       color = (color[0] << 16) + (color[1] << 8) + color[2];
     }
@@ -4576,7 +4575,7 @@ function forEach(xs, f) {
 
 const Snowflake = __webpack_require__(9);
 const Base = __webpack_require__(10);
-const Constants = __webpack_require__(0);
+const { ChannelTypes } = __webpack_require__(0);
 
 /**
  * Represents any channel on Discord.
@@ -4586,7 +4585,7 @@ class Channel extends Base {
   constructor(client, data) {
     super(client);
 
-    const type = Object.keys(Constants.ChannelTypes)[data.type];
+    const type = Object.keys(ChannelTypes)[data.type];
     /**
      * The type of the channel, either:
      * * `dm` - a DM channel
@@ -4648,23 +4647,22 @@ class Channel extends Base {
     const VoiceChannel = __webpack_require__(72);
     const CategoryChannel = __webpack_require__(132);
     const GuildChannel = __webpack_require__(21);
-    const types = Constants.ChannelTypes;
     let channel;
-    if (data.type === types.DM) {
+    if (data.type === ChannelTypes.DM) {
       channel = new DMChannel(client, data);
-    } else if (data.type === types.GROUP) {
+    } else if (data.type === ChannelTypes.GROUP) {
       channel = new GroupDMChannel(client, data);
     } else {
       guild = guild || client.guilds.get(data.guild_id);
       if (guild) {
         switch (data.type) {
-          case types.TEXT:
+          case ChannelTypes.TEXT:
             channel = new TextChannel(guild, data);
             break;
-          case types.VOICE:
+          case ChannelTypes.VOICE:
             channel = new VoiceChannel(guild, data);
             break;
-          case types.CATEGORY:
+          case ChannelTypes.CATEGORY:
             channel = new CategoryChannel(guild, data);
             break;
           default:
@@ -5245,7 +5243,7 @@ module.exports = GuildMember;
 /* 19 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Constants = __webpack_require__(0);
+const { ActivityTypes } = __webpack_require__(0);
 
 /**
  * Represents a user's presence.
@@ -5314,7 +5312,7 @@ class Activity {
      * The type of the activity status
      * @type {ActivityType}
      */
-    this.type = Constants.ActivityTypes[data.type];
+    this.type = ActivityTypes[data.type];
 
     /**
      * If the activity is being streamed, a link to the stream
@@ -5800,7 +5798,7 @@ const PermissionOverwrites = __webpack_require__(71);
 const Util = __webpack_require__(6);
 const Permissions = __webpack_require__(12);
 const Collection = __webpack_require__(3);
-const Constants = __webpack_require__(0);
+const { MessageNotificationTypes } = __webpack_require__(0);
 const { Error, TypeError } = __webpack_require__(4);
 
 /**
@@ -6269,7 +6267,7 @@ class GuildChannel extends Channel {
     try {
       return this.client.user.guildSettings.get(this.guild.id).channelOverrides.get(this.id).messageNotifications;
     } catch (err) {
-      return Constants.MessageNotificationTypes[3];
+      return MessageNotificationTypes[3];
     }
   }
 
@@ -8275,7 +8273,7 @@ module.exports = Role;
 /* 34 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Constants = __webpack_require__(0);
+const { Endpoints } = __webpack_require__(0);
 const Base = __webpack_require__(10);
 
 /**
@@ -8404,7 +8402,7 @@ class Invite extends Base {
    * @readonly
    */
   get url() {
-    return Constants.Endpoints.invite(this.client.options.http.invite, this.code);
+    return Endpoints.invite(this.client.options.http.invite, this.code);
   }
 
   /**
@@ -8440,7 +8438,7 @@ const GuildAuditLogs = __webpack_require__(73);
 const Webhook = __webpack_require__(22);
 const GuildMember = __webpack_require__(18);
 const VoiceRegion = __webpack_require__(74);
-const Constants = __webpack_require__(0);
+const { ChannelTypes, Events } = __webpack_require__(0);
 const Collection = __webpack_require__(3);
 const Util = __webpack_require__(6);
 const DataResolver = __webpack_require__(13);
@@ -9360,7 +9358,7 @@ class Guild extends Base {
     return this.client.api.guilds(this.id).channels.post({
       data: {
         name,
-        type: Constants.ChannelTypes[type.toUpperCase()],
+        type: ChannelTypes[type.toUpperCase()],
         permission_overwrites: overwrites,
       },
       reason,
@@ -9565,7 +9563,7 @@ class Guild extends Base {
        * @param {GuildMember} member The member that started/stopped speaking
        * @param {boolean} speaking Whether or not the member is speaking
        */
-      this.client.emit(Constants.Events.GUILD_MEMBER_SPEAKING, member, speaking);
+      this.client.emit(Events.GUILD_MEMBER_SPEAKING, member, speaking);
     }
   }
 
@@ -9574,7 +9572,7 @@ class Guild extends Base {
   }
 
   _sortedChannels(channel) {
-    const category = channel.type === Constants.ChannelTypes.CATEGORY;
+    const category = channel.type === ChannelTypes.CATEGORY;
     return Util.discordSort(this.channels.filter(c =>
       c.type === channel.type && (category || c.parent === channel.parent)));
   }
@@ -12303,7 +12301,7 @@ function hasOwnProperty(obj, prop) {
 const EventEmitter = __webpack_require__(14);
 const RESTManager = __webpack_require__(60);
 const Util = __webpack_require__(6);
-const Constants = __webpack_require__(0);
+const { DefaultOptions } = __webpack_require__(0);
 
 /**
  * The base class for all clients.
@@ -12317,7 +12315,7 @@ class BaseClient extends EventEmitter {
      * The options the client was instantiated with
      * @type {ClientOptions}
      */
-    this.options = Util.mergeDefault(Constants.DefaultOptions, options);
+    this.options = Util.mergeDefault(DefaultOptions, options);
 
     /**
      * The REST manager of the client
@@ -12646,7 +12644,7 @@ const ClientApplication = __webpack_require__(45);
 const Util = __webpack_require__(6);
 const Collection = __webpack_require__(3);
 const ReactionStore = __webpack_require__(131);
-const Constants = __webpack_require__(0);
+const { MessageTypes } = __webpack_require__(0);
 const Permissions = __webpack_require__(12);
 const GuildMember = __webpack_require__(18);
 const Base = __webpack_require__(10);
@@ -12680,7 +12678,7 @@ class Message extends Base {
      * The type of the message
      * @type {MessageType}
      */
-    this.type = Constants.MessageTypes[data.type];
+    this.type = MessageTypes[data.type];
 
     /**
      * The content of the message
@@ -13217,7 +13215,7 @@ module.exports = Message;
 /***/ (function(module, exports, __webpack_require__) {
 
 const Snowflake = __webpack_require__(9);
-const Constants = __webpack_require__(0);
+const { ClientApplicationAssetTypes, Endpoints } = __webpack_require__(0);
 const DataResolver = __webpack_require__(13);
 const Base = __webpack_require__(10);
 
@@ -13358,7 +13356,7 @@ class ClientApplication extends Base {
    */
   coverImage({ format, size } = {}) {
     if (!this.cover) return null;
-    return Constants.Endpoints
+    return Endpoints
       .CDN(this.client.options.http.cdn)
       .AppIcon(this.id, this.cover, { format, size });
   }
@@ -13372,7 +13370,7 @@ class ClientApplication extends Base {
       .then(assets => assets.map(a => ({
         id: a.id,
         name: a.name,
-        type: Object.keys(Constants.ClientApplicationAssetTypes)[a.type - 1],
+        type: Object.keys(ClientApplicationAssetTypes)[a.type - 1],
       })));
   }
 
@@ -13388,7 +13386,7 @@ class ClientApplication extends Base {
       this.client.api.applications(this.id).assets.post({ data: {
         name,
         data: b64,
-        type: Constants.ClientApplicationAssetTypes[type.toUpperCase()],
+        type: ClientApplicationAssetTypes[type.toUpperCase()],
       } }));
   }
 
@@ -16288,7 +16286,7 @@ const handlers = __webpack_require__(117);
 const APIRequest = __webpack_require__(121);
 const routeBuilder = __webpack_require__(122);
 const { Error } = __webpack_require__(4);
-const Constants = __webpack_require__(0);
+const { Endpoints } = __webpack_require__(0);
 
 class RESTManager {
   constructor(client, tokenPrefix = 'Bot') {
@@ -16314,7 +16312,7 @@ class RESTManager {
   }
 
   get cdn() {
-    return Constants.Endpoints.CDN(this.client.options.http.cdn);
+    return Endpoints.CDN(this.client.options.http.cdn);
   }
 
   destroy() {
@@ -16426,7 +16424,7 @@ const User = __webpack_require__(31);
 const Collection = __webpack_require__(3);
 const ClientUserSettings = __webpack_require__(77);
 const ClientUserGuildSettings = __webpack_require__(78);
-const Constants = __webpack_require__(0);
+const { Events } = __webpack_require__(0);
 const Util = __webpack_require__(6);
 const DataResolver = __webpack_require__(13);
 const Guild = __webpack_require__(35);
@@ -16702,15 +16700,15 @@ class ClientUser extends User {
 
             const handleGuild = guild => {
               if (guild.id === data.id) {
-                this.client.removeListener(Constants.Events.GUILD_CREATE, handleGuild);
+                this.client.removeListener(Events.GUILD_CREATE, handleGuild);
                 this.client.clearTimeout(timeout);
                 resolve(guild);
               }
             };
-            this.client.on(Constants.Events.GUILD_CREATE, handleGuild);
+            this.client.on(Events.GUILD_CREATE, handleGuild);
 
             const timeout = this.client.setTimeout(() => {
-              this.client.removeListener(Constants.Events.GUILD_CREATE, handleGuild);
+              this.client.removeListener(Events.GUILD_CREATE, handleGuild);
               resolve(this.client.guilds.create(data));
             }, 10000);
             return undefined;
@@ -16759,6 +16757,7 @@ module.exports = ClientUser;
 /***/ (function(module, exports, __webpack_require__) {
 
 const Collector = __webpack_require__(43);
+const { Events } = __webpack_require__(0);
 
 /**
  * @typedef {CollectorOptions} MessageCollectorOptions
@@ -16796,14 +16795,14 @@ class MessageCollector extends Collector {
       for (const message of messages.values()) this.handleDispose(message);
     }).bind(this);
 
-    this.client.on('message', this.handleCollect);
-    this.client.on('messageDelete', this.handleDispose);
-    this.client.on('messageDeleteBulk', bulkDeleteListener);
+    this.client.on(Events.MESSAGE_CREATE, this.handleCollect);
+    this.client.on(Events.MESSAGE_DELETE, this.handleDispose);
+    this.client.on(Events.MESSAGE_BULK_DELETE, bulkDeleteListener);
 
     this.once('end', () => {
-      this.client.removeListener('message', this.handleCollect);
-      this.client.removeListener('messageDelete', this.handleDispose);
-      this.client.removeListener('messageDeleteBulk', bulkDeleteListener);
+      this.client.removeListener(Events.MESSAGE_CREATE, this.handleCollect);
+      this.client.removeListener(Events.MESSAGE_DELETE, this.handleDispose);
+      this.client.removeListener(Events.MESSAGE_BULK_DELETE, bulkDeleteListener);
     });
   }
 
@@ -17089,6 +17088,7 @@ module.exports = MessageMentions;
 
 const Collector = __webpack_require__(43);
 const Collection = __webpack_require__(3);
+const { Events } = __webpack_require__(0);
 
 /**
  * @typedef {CollectorOptions} ReactionCollectorOptions
@@ -17130,14 +17130,14 @@ class ReactionCollector extends Collector {
 
     this.empty = this.empty.bind(this);
 
-    this.client.on('messageReactionAdd', this.handleCollect);
-    this.client.on('messageReactionRemove', this.handleDispose);
-    this.client.on('messageReactionRemoveAll', this.empty);
+    this.client.on(Events.MESSAGE_REACTION_ADD, this.handleCollect);
+    this.client.on(Events.MESSAGE_REACTION_REMOVE, this.handleDispose);
+    this.client.on(Events.MESSAGE_REACTION_REMOVE_ALL, this.empty);
 
     this.once('end', () => {
-      this.client.removeListener('messageReactionAdd', this.handleCollect);
-      this.client.removeListener('messageReactionRemove', this.handleDispose);
-      this.client.removeListener('messageReactionRemoveAll', this.empty);
+      this.client.removeListener(Events.MESSAGE_REACTION_ADD, this.handleCollect);
+      this.client.removeListener(Events.MESSAGE_REACTION_REMOVE, this.handleDispose);
+      this.client.removeListener(Events.MESSAGE_REACTION_REMOVE_ALL, this.empty);
     });
 
     this.on('collect', (collected, reaction, user) => {
@@ -18391,7 +18391,7 @@ module.exports = PresenceStore;
 /* 77 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Constants = __webpack_require__(0);
+const { UserSettingsMap } = __webpack_require__(0);
 const Util = __webpack_require__(6);
 const { Error } = __webpack_require__(4);
 
@@ -18410,7 +18410,7 @@ class ClientUserSettings {
    * @private
    */
   patch(data) {
-    for (const [key, value] of Object.entries(Constants.UserSettingsMap)) {
+    for (const [key, value] of Object.entries(UserSettingsMap)) {
       if (!data.hasOwnProperty(key)) continue;
       if (typeof value === 'function') {
         this[value.name] = value(data[key]);
@@ -18477,7 +18477,7 @@ module.exports = ClientUserSettings;
 /* 78 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Constants = __webpack_require__(0);
+const { UserGuildSettingsMap } = __webpack_require__(0);
 const Collection = __webpack_require__(3);
 const ClientUserChannelOverride = __webpack_require__(139);
 
@@ -18508,7 +18508,7 @@ class ClientUserGuildSettings {
    * @private
    */
   patch(data) {
-    for (const [key, value] of Object.entries(Constants.UserGuildSettingsMap)) {
+    for (const [key, value] of Object.entries(UserGuildSettingsMap)) {
       if (!data.hasOwnProperty(key)) continue;
       if (key === 'channel_overrides') {
         for (const channel of data[key]) {
@@ -22571,7 +22571,7 @@ exports.EOL = '\n';
 /* 116 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(process) {const Constants = __webpack_require__(0);
+/* WEBPACK VAR INJECTION */(function(process) {const { Package } = __webpack_require__(0);
 
 class UserAgentManager {
   constructor() {
@@ -22591,8 +22591,8 @@ class UserAgentManager {
 }
 
 UserAgentManager.DEFAULT = {
-  url: Constants.Package.homepage.split('#')[0],
-  version: Constants.Package.version,
+  url: Package.homepage.split('#')[0],
+  version: Package.version,
 };
 
 module.exports = UserAgentManager;
@@ -22837,7 +22837,7 @@ const ChannelStore = __webpack_require__(211);
 const GuildStore = __webpack_require__(212);
 const ClientPresenceStore = __webpack_require__(213);
 const EmojiStore = __webpack_require__(75);
-const Constants = __webpack_require__(0);
+const { Events } = __webpack_require__(0);
 const DataResolver = __webpack_require__(13);
 const { Error, TypeError, RangeError } = __webpack_require__(4);
 
@@ -23154,7 +23154,7 @@ class Client extends BaseClient {
       throw new TypeError('CLIENT_INVALID_OPTION', 'Lifetime', 'a number');
     }
     if (lifetime <= 0) {
-      this.emit(Constants.Events.DEBUG, 'Didn\'t sweep messages - lifetime is unlimited');
+      this.emit(Events.DEBUG, 'Didn\'t sweep messages - lifetime is unlimited');
       return -1;
     }
 
@@ -23175,7 +23175,7 @@ class Client extends BaseClient {
       }
     }
 
-    this.emit(Constants.Events.DEBUG,
+    this.emit(Events.DEBUG,
       `Swept ${messages} messages older than ${lifetime} seconds in ${channels} text-based channels`);
     return messages;
   }
@@ -23298,7 +23298,7 @@ module.exports = Client;
 /* 124 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Constants = __webpack_require__(0);
+const { Events, Status } = __webpack_require__(0);
 const { Error } = __webpack_require__(4);
 
 /**
@@ -23325,7 +23325,7 @@ class ClientManager {
    * @type {number}
    */
   get status() {
-    return this.connection ? this.connection.status : Constants.Status.IDLE;
+    return this.connection ? this.connection.status : Status.IDLE;
   }
 
   /**
@@ -23335,19 +23335,19 @@ class ClientManager {
    * @param {Function} reject Function to run when connection fails
    */
   connectToWebSocket(token, resolve, reject) {
-    this.client.emit(Constants.Events.DEBUG, `Authenticated using token ${token}`);
+    this.client.emit(Events.DEBUG, `Authenticated using token ${token}`);
     this.client.token = token;
     const timeout = this.client.setTimeout(() => reject(new Error('TOKEN_INVALID')), 1000 * 300);
     this.client.api.gateway.get().then(res => {
       const gateway = `${res.url}/`;
-      this.client.emit(Constants.Events.DEBUG, `Using gateway ${gateway}`);
+      this.client.emit(Events.DEBUG, `Using gateway ${gateway}`);
       this.client.ws.connect(gateway);
       this.client.ws.connection.once('close', event => {
         if (event.code === 4004) reject(new Error('TOKEN_INVALID'));
         if (event.code === 4010) reject(new Error('SHARDING_INVALID'));
         if (event.code === 4011) reject(new Error('SHARDING_REQUIRED'));
       });
-      this.client.once(Constants.Events.READY, () => {
+      this.client.once(Events.READY, () => {
         resolve(token);
         this.client.clearTimeout(timeout);
       });
@@ -23383,7 +23383,7 @@ module.exports = ClientManager;
 /***/ (function(module, exports, __webpack_require__) {
 
 const EventEmitter = __webpack_require__(14);
-const Constants = __webpack_require__(0);
+const { Events, Status } = __webpack_require__(0);
 const WebSocketConnection = __webpack_require__(127);
 
 /**
@@ -23421,7 +23421,7 @@ class WebSocketManager extends EventEmitter {
    * @returns {void}
    */
   debug(message) {
-    return this.client.emit(Constants.Events.DEBUG, `[ws] ${message}`);
+    return this.client.emit(Events.DEBUG, `[ws] ${message}`);
   }
 
   /**
@@ -23460,8 +23460,8 @@ class WebSocketManager extends EventEmitter {
       return true;
     }
     switch (this.connection.status) {
-      case Constants.Status.IDLE:
-      case Constants.Status.DISCONNECTED:
+      case Status.IDLE:
+      case Status.DISCONNECTED:
         this.connection.connect(gateway, 5500);
         return true;
       default:
@@ -23479,7 +23479,7 @@ module.exports = WebSocketManager;
 /***/ (function(module, exports, __webpack_require__) {
 
 const EventEmitter = __webpack_require__(14);
-const Constants = __webpack_require__(0);
+const { DefaultOptions, Events, OPCodes, Status, WSCodes } = __webpack_require__(0);
 const PacketManager = __webpack_require__(128);
 const WebSocket = __webpack_require__(79);
 
@@ -23522,7 +23522,7 @@ class WebSocketConnection extends EventEmitter {
      * The current status of the client
      * @type {number}
      */
-    this.status = Constants.Status.IDLE;
+    this.status = Status.IDLE;
 
     /**
      * The Packet Manager of the connection
@@ -23573,7 +23573,7 @@ class WebSocketConnection extends EventEmitter {
    * @returns {void}
    */
   triggerReady() {
-    if (this.status === Constants.Status.READY) {
+    if (this.status === Status.READY) {
       this.debug('Tried to mark self as ready, but already ready');
       return;
     }
@@ -23581,8 +23581,8 @@ class WebSocketConnection extends EventEmitter {
      * Emitted when the client becomes ready to start working.
      * @event Client#ready
      */
-    this.status = Constants.Status.READY;
-    this.client.emit(Constants.Events.READY);
+    this.status = Status.READY;
+    this.client.emit(Events.READY);
     this.packetManager.handleQueue();
   }
 
@@ -23591,13 +23591,13 @@ class WebSocketConnection extends EventEmitter {
    * @returns {void}
    */
   checkIfReady() {
-    if (this.status === Constants.Status.READY || this.status === Constants.Status.NEARLY) return false;
+    if (this.status === Status.READY || this.status === Status.NEARLY) return false;
     let unavailableGuilds = 0;
     for (const guild of this.client.guilds.values()) {
       if (!guild.available) unavailableGuilds++;
     }
     if (unavailableGuilds === 0) {
-      this.status = Constants.Status.NEARLY;
+      this.status = Status.NEARLY;
       if (!this.client.options.fetchAllMembers) return this.triggerReady();
       // Fetch all members before marking self as ready
       const promises = this.client.guilds.map(g => g.members.fetch());
@@ -23688,12 +23688,12 @@ class WebSocketConnection extends EventEmitter {
     this.expectingClose = false;
     this.gateway = gateway;
     this.debug(`Connecting to ${gateway}`);
-    const ws = this.ws = WebSocket.create(gateway, { v: Constants.DefaultOptions.ws.version });
+    const ws = this.ws = WebSocket.create(gateway, { v: DefaultOptions.ws.version });
     ws.onmessage = this.onMessage.bind(this);
     ws.onopen = this.onOpen.bind(this);
     ws.onerror = this.onError.bind(this);
     ws.onclose = this.onClose.bind(this);
-    this.status = Constants.Status.CONNECTING;
+    this.status = Status.CONNECTING;
     return true;
   }
 
@@ -23712,7 +23712,7 @@ class WebSocketConnection extends EventEmitter {
     ws.close(1000);
     this.packetManager.handleQueue();
     this.ws = null;
-    this.status = Constants.Status.DISCONNECTED;
+    this.status = Status.DISCONNECTED;
     this.ratelimit.remaining = this.ratelimit.total;
     return true;
   }
@@ -23753,18 +23753,18 @@ class WebSocketConnection extends EventEmitter {
       return false;
     }
     switch (packet.op) {
-      case Constants.OPCodes.HELLO:
+      case OPCodes.HELLO:
         return this.heartbeat(packet.d.heartbeat_interval);
-      case Constants.OPCodes.RECONNECT:
+      case OPCodes.RECONNECT:
         return this.reconnect();
-      case Constants.OPCodes.INVALID_SESSION:
+      case OPCodes.INVALID_SESSION:
         if (!packet.d) this.sessionID = null;
         this.sequence = -1;
         this.debug('Session invalidated -- will identify with a new session');
         return this.identify(packet.d ? 2500 : 0);
-      case Constants.OPCodes.HEARTBEAT_ACK:
+      case OPCodes.HEARTBEAT_ACK:
         return this.ackHeartbeat();
-      case Constants.OPCodes.HEARTBEAT:
+      case OPCodes.HEARTBEAT:
         return this.heartbeat();
       default:
         return this.packetManager.handle(packet);
@@ -23790,7 +23790,7 @@ class WebSocketConnection extends EventEmitter {
      * Emitted whenever the client tries to reconnect to the WebSocket.
      * @event Client#reconnecting
      */
-    this.client.emit(Constants.Events.RECONNECTING);
+    this.client.emit(Events.RECONNECTING);
     this.connect(this.gateway, 5500, true);
   }
 
@@ -23808,7 +23808,7 @@ class WebSocketConnection extends EventEmitter {
      * @event Client#error
      * @param {Error} error The encountered error
      */
-    this.client.emit(Constants.Events.ERROR, error);
+    this.client.emit(Events.ERROR, error);
   }
 
   /**
@@ -23827,15 +23827,15 @@ class WebSocketConnection extends EventEmitter {
     this.emit('close', event);
     this.heartbeat(-1);
     // Should we reconnect?
-    if (event.code === 1000 ? this.expectingClose : Constants.WSCodes[event.code]) {
+    if (event.code === 1000 ? this.expectingClose : WSCodes[event.code]) {
       this.expectingClose = false;
       /**
        * Emitted when the client's WebSocket disconnects and will no longer attempt to reconnect.
        * @event Client#disconnect
        * @param {CloseEvent} event The WebSocket close event
        */
-      this.client.emit(Constants.Events.DISCONNECT, event);
-      this.debug(Constants.WSCodes[event.code]);
+      this.client.emit(Events.DISCONNECT, event);
+      this.debug(WSCodes[event.code]);
       this.destroy();
       return;
     }
@@ -23872,7 +23872,7 @@ class WebSocketConnection extends EventEmitter {
     this.debug('Sending a heartbeat');
     this.lastPingTimestamp = Date.now();
     this.send({
-      op: Constants.OPCodes.HEARTBEAT,
+      op: OPCodes.HEARTBEAT,
       d: this.sequence,
     });
   }
@@ -23906,7 +23906,7 @@ class WebSocketConnection extends EventEmitter {
 
     // Send the payload
     this.debug('Identifying as a new session');
-    this.send({ op: Constants.OPCodes.IDENTIFY, d });
+    this.send({ op: OPCodes.IDENTIFY, d });
   }
 
   /**
@@ -23927,7 +23927,7 @@ class WebSocketConnection extends EventEmitter {
     };
 
     return this.send({
-      op: Constants.OPCodes.RESUME,
+      op: OPCodes.RESUME,
       d,
     });
   }
@@ -23940,16 +23940,16 @@ module.exports = WebSocketConnection;
 /* 128 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Constants = __webpack_require__(0);
+const { OPCodes, Status, WSEvents } = __webpack_require__(0);
 
 const BeforeReadyWhitelist = [
-  Constants.WSEvents.READY,
-  Constants.WSEvents.RESUMED,
-  Constants.WSEvents.GUILD_CREATE,
-  Constants.WSEvents.GUILD_DELETE,
-  Constants.WSEvents.GUILD_MEMBERS_CHUNK,
-  Constants.WSEvents.GUILD_MEMBER_ADD,
-  Constants.WSEvents.GUILD_MEMBER_REMOVE,
+  WSEvents.READY,
+  WSEvents.RESUMED,
+  WSEvents.GUILD_CREATE,
+  WSEvents.GUILD_DELETE,
+  WSEvents.GUILD_MEMBERS_CHUNK,
+  WSEvents.GUILD_MEMBER_ADD,
+  WSEvents.GUILD_MEMBER_REMOVE,
 ];
 
 class WebSocketPacketManager {
@@ -23958,43 +23958,43 @@ class WebSocketPacketManager {
     this.handlers = {};
     this.queue = [];
 
-    this.register(Constants.WSEvents.READY, __webpack_require__(129));
-    this.register(Constants.WSEvents.RESUMED, __webpack_require__(140));
-    this.register(Constants.WSEvents.GUILD_CREATE, __webpack_require__(141));
-    this.register(Constants.WSEvents.GUILD_DELETE, __webpack_require__(142));
-    this.register(Constants.WSEvents.GUILD_UPDATE, __webpack_require__(143));
-    this.register(Constants.WSEvents.GUILD_BAN_ADD, __webpack_require__(144));
-    this.register(Constants.WSEvents.GUILD_BAN_REMOVE, __webpack_require__(145));
-    this.register(Constants.WSEvents.GUILD_MEMBER_ADD, __webpack_require__(146));
-    this.register(Constants.WSEvents.GUILD_MEMBER_REMOVE, __webpack_require__(147));
-    this.register(Constants.WSEvents.GUILD_MEMBER_UPDATE, __webpack_require__(148));
-    this.register(Constants.WSEvents.GUILD_ROLE_CREATE, __webpack_require__(149));
-    this.register(Constants.WSEvents.GUILD_ROLE_DELETE, __webpack_require__(150));
-    this.register(Constants.WSEvents.GUILD_ROLE_UPDATE, __webpack_require__(151));
-    this.register(Constants.WSEvents.GUILD_EMOJIS_UPDATE, __webpack_require__(152));
-    this.register(Constants.WSEvents.GUILD_MEMBERS_CHUNK, __webpack_require__(153));
-    this.register(Constants.WSEvents.CHANNEL_CREATE, __webpack_require__(154));
-    this.register(Constants.WSEvents.CHANNEL_DELETE, __webpack_require__(155));
-    this.register(Constants.WSEvents.CHANNEL_UPDATE, __webpack_require__(156));
-    this.register(Constants.WSEvents.CHANNEL_PINS_UPDATE, __webpack_require__(157));
-    this.register(Constants.WSEvents.PRESENCE_UPDATE, __webpack_require__(158));
-    this.register(Constants.WSEvents.USER_UPDATE, __webpack_require__(159));
-    this.register(Constants.WSEvents.USER_NOTE_UPDATE, __webpack_require__(160));
-    this.register(Constants.WSEvents.USER_SETTINGS_UPDATE, __webpack_require__(161));
-    this.register(Constants.WSEvents.USER_GUILD_SETTINGS_UPDATE, __webpack_require__(162));
-    this.register(Constants.WSEvents.VOICE_STATE_UPDATE, __webpack_require__(163));
-    this.register(Constants.WSEvents.TYPING_START, __webpack_require__(164));
-    this.register(Constants.WSEvents.MESSAGE_CREATE, __webpack_require__(165));
-    this.register(Constants.WSEvents.MESSAGE_DELETE, __webpack_require__(166));
-    this.register(Constants.WSEvents.MESSAGE_UPDATE, __webpack_require__(167));
-    this.register(Constants.WSEvents.MESSAGE_DELETE_BULK, __webpack_require__(168));
-    this.register(Constants.WSEvents.VOICE_SERVER_UPDATE, __webpack_require__(169));
-    this.register(Constants.WSEvents.GUILD_SYNC, __webpack_require__(170));
-    this.register(Constants.WSEvents.RELATIONSHIP_ADD, __webpack_require__(171));
-    this.register(Constants.WSEvents.RELATIONSHIP_REMOVE, __webpack_require__(172));
-    this.register(Constants.WSEvents.MESSAGE_REACTION_ADD, __webpack_require__(173));
-    this.register(Constants.WSEvents.MESSAGE_REACTION_REMOVE, __webpack_require__(174));
-    this.register(Constants.WSEvents.MESSAGE_REACTION_REMOVE_ALL, __webpack_require__(175));
+    this.register(WSEvents.READY, __webpack_require__(129));
+    this.register(WSEvents.RESUMED, __webpack_require__(140));
+    this.register(WSEvents.GUILD_CREATE, __webpack_require__(141));
+    this.register(WSEvents.GUILD_DELETE, __webpack_require__(142));
+    this.register(WSEvents.GUILD_UPDATE, __webpack_require__(143));
+    this.register(WSEvents.GUILD_BAN_ADD, __webpack_require__(144));
+    this.register(WSEvents.GUILD_BAN_REMOVE, __webpack_require__(145));
+    this.register(WSEvents.GUILD_MEMBER_ADD, __webpack_require__(146));
+    this.register(WSEvents.GUILD_MEMBER_REMOVE, __webpack_require__(147));
+    this.register(WSEvents.GUILD_MEMBER_UPDATE, __webpack_require__(148));
+    this.register(WSEvents.GUILD_ROLE_CREATE, __webpack_require__(149));
+    this.register(WSEvents.GUILD_ROLE_DELETE, __webpack_require__(150));
+    this.register(WSEvents.GUILD_ROLE_UPDATE, __webpack_require__(151));
+    this.register(WSEvents.GUILD_EMOJIS_UPDATE, __webpack_require__(152));
+    this.register(WSEvents.GUILD_MEMBERS_CHUNK, __webpack_require__(153));
+    this.register(WSEvents.CHANNEL_CREATE, __webpack_require__(154));
+    this.register(WSEvents.CHANNEL_DELETE, __webpack_require__(155));
+    this.register(WSEvents.CHANNEL_UPDATE, __webpack_require__(156));
+    this.register(WSEvents.CHANNEL_PINS_UPDATE, __webpack_require__(157));
+    this.register(WSEvents.PRESENCE_UPDATE, __webpack_require__(158));
+    this.register(WSEvents.USER_UPDATE, __webpack_require__(159));
+    this.register(WSEvents.USER_NOTE_UPDATE, __webpack_require__(160));
+    this.register(WSEvents.USER_SETTINGS_UPDATE, __webpack_require__(161));
+    this.register(WSEvents.USER_GUILD_SETTINGS_UPDATE, __webpack_require__(162));
+    this.register(WSEvents.VOICE_STATE_UPDATE, __webpack_require__(163));
+    this.register(WSEvents.TYPING_START, __webpack_require__(164));
+    this.register(WSEvents.MESSAGE_CREATE, __webpack_require__(165));
+    this.register(WSEvents.MESSAGE_DELETE, __webpack_require__(166));
+    this.register(WSEvents.MESSAGE_UPDATE, __webpack_require__(167));
+    this.register(WSEvents.MESSAGE_DELETE_BULK, __webpack_require__(168));
+    this.register(WSEvents.VOICE_SERVER_UPDATE, __webpack_require__(169));
+    this.register(WSEvents.GUILD_SYNC, __webpack_require__(170));
+    this.register(WSEvents.RELATIONSHIP_ADD, __webpack_require__(171));
+    this.register(WSEvents.RELATIONSHIP_REMOVE, __webpack_require__(172));
+    this.register(WSEvents.MESSAGE_REACTION_ADD, __webpack_require__(173));
+    this.register(WSEvents.MESSAGE_REACTION_REMOVE, __webpack_require__(174));
+    this.register(WSEvents.MESSAGE_REACTION_REMOVE_ALL, __webpack_require__(175));
   }
 
   get client() {
@@ -24013,19 +24013,19 @@ class WebSocketPacketManager {
   }
 
   handle(packet, queue = false) {
-    if (packet.op === Constants.OPCodes.HEARTBEAT_ACK) {
+    if (packet.op === OPCodes.HEARTBEAT_ACK) {
       this.ws.client._pong(this.ws.client._pingTimestamp);
       this.ws.lastHeartbeatAck = true;
       this.ws.client.emit('debug', 'Heartbeat acknowledged');
-    } else if (packet.op === Constants.OPCodes.HEARTBEAT) {
+    } else if (packet.op === OPCodes.HEARTBEAT) {
       this.client.ws.send({
-        op: Constants.OPCodes.HEARTBEAT,
+        op: OPCodes.HEARTBEAT,
         d: this.client.ws.sequence,
       });
       this.ws.client.emit('debug', 'Received gateway heartbeat');
     }
 
-    if (this.ws.status === Constants.Status.RECONNECTING) {
+    if (this.ws.status === Status.RECONNECTING) {
       this.ws.reconnecting = false;
       this.ws.checkIfReady();
     }
@@ -24034,7 +24034,7 @@ class WebSocketPacketManager {
 
     if (this.ws.disabledEvents[packet.t] !== undefined) return false;
 
-    if (this.ws.status !== Constants.Status.READY) {
+    if (this.ws.status !== Status.READY) {
       if (BeforeReadyWhitelist.indexOf(packet.t) === -1) {
         this.queue.push(packet);
         return false;
@@ -24055,7 +24055,7 @@ module.exports = WebSocketPacketManager;
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
-const Constants = __webpack_require__(0);
+const { Events } = __webpack_require__(0);
 const ClientUser = __webpack_require__(62);
 
 class ReadyHandler extends AbstractHandler {
@@ -24125,7 +24125,7 @@ class ReadyHandler extends AbstractHandler {
 
     ws.sessionID = data.session_id;
     ws._trace = data._trace;
-    client.emit(Constants.Events.DEBUG, `READY ${ws._trace.join(' -> ')} ${ws.sessionID}`);
+    client.emit(Events.DEBUG, `READY ${ws._trace.join(' -> ')} ${ws.sessionID}`);
     ws.checkIfReady();
   }
 }
@@ -24320,7 +24320,7 @@ module.exports = CategoryChannel;
 
 const DataStore = __webpack_require__(11);
 const GuildMember = __webpack_require__(18);
-const Constants = __webpack_require__(0);
+const { Events, OPCodes } = __webpack_require__(0);
 const Collection = __webpack_require__(3);
 const { Error } = __webpack_require__(4);
 
@@ -24432,7 +24432,7 @@ class GuildMemberStore extends DataStore {
         return;
       }
       this.guild.client.ws.send({
-        op: Constants.OPCodes.REQUEST_GUILD_MEMBERS,
+        op: OPCodes.REQUEST_GUILD_MEMBERS,
         d: {
           guild_id: this.guild.id,
           query,
@@ -24448,13 +24448,13 @@ class GuildMemberStore extends DataStore {
         if (this.guild.memberCount <= this.size ||
           ((query || limit) && members.size < 1000) ||
           (limit && fetchedMembers.size >= limit)) {
-          this.guild.client.removeListener(Constants.Events.GUILD_MEMBERS_CHUNK, handler);
+          this.guild.client.removeListener(Events.GUILD_MEMBERS_CHUNK, handler);
           resolve(query || limit ? fetchedMembers : this);
         }
       };
-      this.guild.client.on(Constants.Events.GUILD_MEMBERS_CHUNK, handler);
+      this.guild.client.on(Events.GUILD_MEMBERS_CHUNK, handler);
       this.guild.client.setTimeout(() => {
-        this.guild.client.removeListener(Constants.Events.GUILD_MEMBERS_CHUNK, handler);
+        this.guild.client.removeListener(Events.GUILD_MEMBERS_CHUNK, handler);
         reject(new Error('GUILD_MEMBERS_TIMEOUT'));
       }, 120e3);
     });
@@ -24784,7 +24784,7 @@ module.exports = UserConnection;
 /* 139 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Constants = __webpack_require__(0);
+const { UserChannelOverrideMap } = __webpack_require__(0);
 
 /**
  * A wrapper around the ClientUser's channel overrides.
@@ -24800,7 +24800,7 @@ class ClientUserChannelOverride {
    * @private
    */
   patch(data) {
-    for (const [key, value] of Object.entries(Constants.UserChannelOverrideMap)) {
+    for (const [key, value] of Object.entries(UserChannelOverrideMap)) {
       if (!data.hasOwnProperty(key)) continue;
       if (typeof value === 'function') {
         this[value.name] = value(data[key]);
@@ -24819,7 +24819,7 @@ module.exports = ClientUserChannelOverride;
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
-const Constants = __webpack_require__(0);
+const { Events, Status } = __webpack_require__(0);
 
 class ResumedHandler extends AbstractHandler {
   handle(packet) {
@@ -24828,13 +24828,13 @@ class ResumedHandler extends AbstractHandler {
 
     ws._trace = packet.d._trace;
 
-    ws.status = Constants.Status.READY;
+    ws.status = Status.READY;
     this.packetManager.handleQueue();
 
     const replayed = ws.sequence - ws.closeSequence;
 
     ws.debug(`RESUMED ${ws._trace.join(' -> ')} | replayed ${replayed} events.`);
-    client.emit(Constants.Events.RESUMED, replayed);
+    client.emit(Events.RESUMED, replayed);
     ws.heartbeat();
   }
 }
@@ -24853,7 +24853,7 @@ module.exports = ResumedHandler;
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
-const Constants = __webpack_require__(0);
+const { Events, Status } = __webpack_require__(0);
 
 class GuildCreateHandler extends AbstractHandler {
   async handle(packet) {
@@ -24870,7 +24870,7 @@ class GuildCreateHandler extends AbstractHandler {
     } else {
       // A new guild
       guild = client.guilds.create(data);
-      const emitEvent = client.ws.connection.status === Constants.Status.READY;
+      const emitEvent = client.ws.connection.status === Status.READY;
       if (emitEvent) {
         /**
          * Emitted whenever the client joins a guild.
@@ -24878,7 +24878,7 @@ class GuildCreateHandler extends AbstractHandler {
          * @param {Guild} guild The created guild
          */
         if (client.options.fetchAllMembers) await guild.members.fetch();
-        client.emit(Constants.Events.GUILD_CREATE, guild);
+        client.emit(Events.GUILD_CREATE, guild);
       }
     }
   }
@@ -24933,7 +24933,7 @@ module.exports = GuildUpdateHandler;
 // ##untested handler##
 
 const AbstractHandler = __webpack_require__(1);
-const Constants = __webpack_require__(0);
+const { Events } = __webpack_require__(0);
 
 class GuildBanAddHandler extends AbstractHandler {
   handle(packet) {
@@ -24941,7 +24941,7 @@ class GuildBanAddHandler extends AbstractHandler {
     const data = packet.d;
     const guild = client.guilds.get(data.guild_id);
     const user = client.users.get(data.user.id);
-    if (guild && user) client.emit(Constants.Events.GUILD_BAN_ADD, guild, user);
+    if (guild && user) client.emit(Events.GUILD_BAN_ADD, guild, user);
   }
 }
 
@@ -24988,7 +24988,7 @@ module.exports = GuildBanRemoveHandler;
 // ##untested handler##
 
 const AbstractHandler = __webpack_require__(1);
-const Constants = __webpack_require__(0);
+const { Events, Status } = __webpack_require__(0);
 
 class GuildMemberAddHandler extends AbstractHandler {
   handle(packet) {
@@ -24998,8 +24998,8 @@ class GuildMemberAddHandler extends AbstractHandler {
     if (guild) {
       guild.memberCount++;
       const member = guild.members.create(data);
-      if (client.ws.connection.status === Constants.Status.READY) {
-        client.emit(Constants.Events.GUILD_MEMBER_ADD, member);
+      if (client.ws.connection.status === Status.READY) {
+        client.emit(Events.GUILD_MEMBER_ADD, member);
       }
     }
   }
@@ -25040,7 +25040,7 @@ module.exports = GuildMemberRemoveHandler;
 // ##untested handler##
 
 const AbstractHandler = __webpack_require__(1);
-const Constants = __webpack_require__(0);
+const { Events, Status } = __webpack_require__(0);
 
 class GuildMemberUpdateHandler extends AbstractHandler {
   handle(packet) {
@@ -25051,14 +25051,14 @@ class GuildMemberUpdateHandler extends AbstractHandler {
       const member = guild.members.get(data.user.id);
       if (member) {
         const old = member._update(data);
-        if (client.ws.connection.status === Constants.Status.READY) {
+        if (client.ws.connection.status === Status.READY) {
           /**
            * Emitted whenever a guild member changes - i.e. new role, removed role, nickname.
            * @event Client#guildMemberUpdate
            * @param {GuildMember} oldMember The member before the update
            * @param {GuildMember} newMember The member after the update
            */
-          client.emit(Constants.Events.GUILD_MEMBER_UPDATE, old, member);
+          client.emit(Events.GUILD_MEMBER_UPDATE, old, member);
         }
       }
     }
@@ -25141,7 +25141,7 @@ module.exports = GuildEmojisUpdate;
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
-const Constants = __webpack_require__(0);
+const { Events } = __webpack_require__(0);
 const Collection = __webpack_require__(3);
 
 class GuildMembersChunkHandler extends AbstractHandler {
@@ -25154,7 +25154,7 @@ class GuildMembersChunkHandler extends AbstractHandler {
 
     for (const member of data.members) members.set(member.user.id, guild.members.create(member));
 
-    client.emit(Constants.Events.GUILD_MEMBERS_CHUNK, members, guild);
+    client.emit(Events.GUILD_MEMBERS_CHUNK, members, guild);
 
     client.ws.lastHeartbeatAck = true;
   }
@@ -25211,13 +25211,13 @@ module.exports = ChannelDeleteHandler;
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
-const Constants = __webpack_require__(0);
+const { Events } = __webpack_require__(0);
 
 class ChannelUpdateHandler extends AbstractHandler {
   handle(packet) {
     const { old, updated } = this.packetManager.client.actions.ChannelUpdate.handle(packet.d);
     if (old && updated) {
-      this.packetManager.client.emit(Constants.Events.CHANNEL_UPDATE, old, updated);
+      this.packetManager.client.emit(Events.CHANNEL_UPDATE, old, updated);
     }
   }
 }
@@ -25237,7 +25237,7 @@ module.exports = ChannelUpdateHandler;
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
-const Constants = __webpack_require__(0);
+const { Events } = __webpack_require__(0);
 
 /*
 { t: 'CHANNEL_PINS_UPDATE',
@@ -25254,7 +25254,7 @@ class ChannelPinsUpdate extends AbstractHandler {
     const data = packet.d;
     const channel = client.channels.get(data.channel_id);
     const time = new Date(data.last_pin_timestamp);
-    if (channel && time) client.emit(Constants.Events.CHANNEL_PINS_UPDATE, channel, time);
+    if (channel && time) client.emit(Events.CHANNEL_PINS_UPDATE, channel, time);
   }
 }
 
@@ -25274,7 +25274,7 @@ module.exports = ChannelPinsUpdate;
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
-const Constants = __webpack_require__(0);
+const { Events } = __webpack_require__(0);
 
 class PresenceUpdateHandler extends AbstractHandler {
   handle(packet) {
@@ -25294,7 +25294,7 @@ class PresenceUpdateHandler extends AbstractHandler {
 
     const oldUser = user._update(data.user);
     if (!user.equals(oldUser)) {
-      client.emit(Constants.Events.USER_UPDATE, oldUser, user);
+      client.emit(Events.USER_UPDATE, oldUser, user);
     }
 
     if (guild) {
@@ -25306,10 +25306,10 @@ class PresenceUpdateHandler extends AbstractHandler {
           deaf: false,
           mute: false,
         });
-        client.emit(Constants.Events.GUILD_MEMBER_AVAILABLE, member);
+        client.emit(Events.GUILD_MEMBER_AVAILABLE, member);
       }
       if (member) {
-        if (client.listenerCount(Constants.Events.PRESENCE_UPDATE) === 0) {
+        if (client.listenerCount(Events.PRESENCE_UPDATE) === 0) {
           guild.presences.create(data);
           return;
         }
@@ -25318,7 +25318,7 @@ class PresenceUpdateHandler extends AbstractHandler {
           oldMember.frozenPresence = member.presence._clone();
         }
         guild.presences.create(data);
-        client.emit(Constants.Events.PRESENCE_UPDATE, oldMember, member);
+        client.emit(Events.PRESENCE_UPDATE, oldMember, member);
       } else {
         guild.presences.create(data);
       }
@@ -25389,13 +25389,13 @@ module.exports = UserNoteUpdateHandler;
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
-const Constants = __webpack_require__(0);
+const { Events } = __webpack_require__(0);
 
 class UserSettingsUpdateHandler extends AbstractHandler {
   handle(packet) {
     const client = this.packetManager.client;
     client.user.settings.patch(packet.d);
-    client.emit(Constants.Events.USER_SETTINGS_UPDATE, client.user.settings);
+    client.emit(Events.USER_SETTINGS_UPDATE, client.user.settings);
   }
 }
 
@@ -25413,7 +25413,7 @@ module.exports = UserSettingsUpdateHandler;
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
-const Constants = __webpack_require__(0);
+const { Events } = __webpack_require__(0);
 const ClientUserGuildSettings = __webpack_require__(78);
 
 class UserGuildSettingsUpdateHandler extends AbstractHandler {
@@ -25422,7 +25422,7 @@ class UserGuildSettingsUpdateHandler extends AbstractHandler {
     const settings = client.user.guildSettings.get(packet.d.guild_id);
     if (settings) settings.patch(packet.d);
     else client.user.guildSettings.set(packet.d.guild_id, new ClientUserGuildSettings(this.client, packet.d));
-    client.emit(Constants.Events.USER_GUILD_SETTINGS_UPDATE, client.user.guildSettings.get(packet.d.guild_id));
+    client.emit(Events.USER_GUILD_SETTINGS_UPDATE, client.user.guildSettings.get(packet.d.guild_id));
   }
 }
 
@@ -25441,7 +25441,7 @@ module.exports = UserGuildSettingsUpdateHandler;
 
 const AbstractHandler = __webpack_require__(1);
 
-const Constants = __webpack_require__(0);
+const { Events } = __webpack_require__(0);
 
 class VoiceStateUpdateHandler extends AbstractHandler {
   handle(packet) {
@@ -25461,7 +25461,7 @@ class VoiceStateUpdateHandler extends AbstractHandler {
 
         guild.voiceStates.set(member.user.id, data);
 
-        client.emit(Constants.Events.VOICE_STATE_UPDATE, oldMember, member);
+        client.emit(Events.VOICE_STATE_UPDATE, oldMember, member);
       }
     }
   }
@@ -25482,7 +25482,7 @@ module.exports = VoiceStateUpdateHandler;
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
-const Constants = __webpack_require__(0);
+const { Events } = __webpack_require__(0);
 
 class TypingStartHandler extends AbstractHandler {
   handle(packet) {
@@ -25494,7 +25494,7 @@ class TypingStartHandler extends AbstractHandler {
 
     if (channel && user) {
       if (channel.type === 'voice') {
-        client.emit(Constants.Events.WARN, `Discord sent a typing packet to voice channel ${channel.id}`);
+        client.emit(Events.WARN, `Discord sent a typing packet to voice channel ${channel.id}`);
         return;
       }
       if (channel._typing.has(user.id)) {
@@ -25503,7 +25503,7 @@ class TypingStartHandler extends AbstractHandler {
         typing.resetTimeout(tooLate(channel, user));
       } else {
         channel._typing.set(user.id, new TypingData(client, timestamp, timestamp, tooLate(channel, user)));
-        client.emit(Constants.Events.TYPING_START, channel, user);
+        client.emit(Events.TYPING_START, channel, user);
       }
     }
   }
@@ -25529,7 +25529,7 @@ class TypingData {
 
 function tooLate(channel, user) {
   return channel.client.setTimeout(() => {
-    channel.client.emit(Constants.Events.TYPING_STOP, channel, user, channel._typing.get(user.id));
+    channel.client.emit(Events.TYPING_STOP, channel, user, channel._typing.get(user.id));
     channel._typing.delete(user.id);
   }, 6000);
 }
@@ -25586,13 +25586,13 @@ module.exports = MessageDeleteHandler;
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
-const Constants = __webpack_require__(0);
+const { Events } = __webpack_require__(0);
 
 class MessageUpdateHandler extends AbstractHandler {
   handle(packet) {
     const { old, updated } = this.packetManager.client.actions.MessageUpdate.handle(packet.d);
     if (old && updated) {
-      this.packetManager.client.emit(Constants.Events.MESSAGE_UPDATE, old, updated);
+      this.packetManager.client.emit(Events.MESSAGE_UPDATE, old, updated);
     }
   }
 }
@@ -25719,14 +25719,14 @@ module.exports = RelationshipRemoveHandler;
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
-const Constants = __webpack_require__(0);
+const { Events } = __webpack_require__(0);
 
 class MessageReactionAddHandler extends AbstractHandler {
   handle(packet) {
     const client = this.packetManager.client;
     const data = packet.d;
     const { user, reaction } = client.actions.MessageReactionAdd.handle(data);
-    if (reaction) client.emit(Constants.Events.MESSAGE_REACTION_ADD, reaction, user);
+    if (reaction) client.emit(Events.MESSAGE_REACTION_ADD, reaction, user);
   }
 }
 
@@ -25836,7 +25836,7 @@ module.exports = ActionsManager;
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
-const Constants = __webpack_require__(0);
+const { Events } = __webpack_require__(0);
 
 class MessageCreateAction extends Action {
   handle(data) {
@@ -25859,7 +25859,7 @@ class MessageCreateAction extends Action {
         member.lastMessage = message;
       }
 
-      client.emit(Constants.Events.MESSAGE_CREATE, message);
+      client.emit(Events.MESSAGE_CREATE, message);
       return { message };
     }
 
@@ -25881,7 +25881,7 @@ module.exports = MessageCreateAction;
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
-const Constants = __webpack_require__(0);
+const { Events } = __webpack_require__(0);
 
 class MessageDeleteAction extends Action {
   handle(data) {
@@ -25893,7 +25893,7 @@ class MessageDeleteAction extends Action {
       message = channel.messages.get(data.id);
       if (message) {
         channel.messages.delete(message.id);
-        client.emit(Constants.Events.MESSAGE_DELETE, message);
+        client.emit(Events.MESSAGE_DELETE, message);
       }
     }
 
@@ -25916,7 +25916,7 @@ module.exports = MessageDeleteAction;
 
 const Action = __webpack_require__(2);
 const Collection = __webpack_require__(3);
-const Constants = __webpack_require__(0);
+const { Events } = __webpack_require__(0);
 
 class MessageDeleteBulkAction extends Action {
   handle(data) {
@@ -25931,7 +25931,7 @@ class MessageDeleteBulkAction extends Action {
         if (message) messages.set(message.id, message);
       }
 
-      if (messages.size > 0) client.emit(Constants.Events.MESSAGE_BULK_DELETE, messages);
+      if (messages.size > 0) client.emit(Events.MESSAGE_BULK_DELETE, messages);
       return { messages };
     }
     return {};
@@ -26026,7 +26026,7 @@ module.exports = MessageReactionAdd;
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
-const Constants = __webpack_require__(0);
+const { Events } = __webpack_require__(0);
 
 /*
 { user_id: 'id',
@@ -26051,7 +26051,7 @@ class MessageReactionRemove extends Action {
     const reaction = message.reactions.get(emojiID);
     if (!reaction) return false;
     reaction._remove(user);
-    this.client.emit(Constants.Events.MESSAGE_REACTION_REMOVE, reaction, user);
+    this.client.emit(Events.MESSAGE_REACTION_REMOVE, reaction, user);
 
     return { message, reaction, user };
   }
@@ -26072,7 +26072,7 @@ module.exports = MessageReactionRemove;
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
-const Constants = __webpack_require__(0);
+const { Events } = __webpack_require__(0);
 
 class MessageReactionRemoveAll extends Action {
   handle(data) {
@@ -26083,7 +26083,7 @@ class MessageReactionRemoveAll extends Action {
     if (!message) return false;
 
     message.reactions.clear();
-    this.client.emit(Constants.Events.MESSAGE_REACTION_REMOVE_ALL, message);
+    this.client.emit(Events.MESSAGE_REACTION_REMOVE_ALL, message);
 
     return { message };
   }
@@ -26103,7 +26103,7 @@ module.exports = MessageReactionRemoveAll;
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
-const Constants = __webpack_require__(0);
+const { Events } = __webpack_require__(0);
 
 class ChannelCreateAction extends Action {
   handle(data) {
@@ -26111,7 +26111,7 @@ class ChannelCreateAction extends Action {
     const existing = client.channels.has(data.id);
     const channel = client.channels.create(data);
     if (!existing && channel) {
-      client.emit(Constants.Events.CHANNEL_CREATE, channel);
+      client.emit(Events.CHANNEL_CREATE, channel);
     }
     return { channel };
   }
@@ -26125,7 +26125,7 @@ module.exports = ChannelCreateAction;
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
-const Constants = __webpack_require__(0);
+const { Events } = __webpack_require__(0);
 
 class ChannelDeleteAction extends Action {
   constructor(client) {
@@ -26139,7 +26139,7 @@ class ChannelDeleteAction extends Action {
 
     if (channel) {
       client.channels.remove(channel.id);
-      client.emit(Constants.Events.CHANNEL_DELETE, channel);
+      client.emit(Events.CHANNEL_DELETE, channel);
     }
 
     return { channel };
@@ -26186,7 +26186,7 @@ module.exports = ChannelUpdateAction;
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
-const Constants = __webpack_require__(0);
+const { Events } = __webpack_require__(0);
 
 class GuildDeleteAction extends Action {
   constructor(client) {
@@ -26206,7 +26206,7 @@ class GuildDeleteAction extends Action {
       if (guild.available && data.unavailable) {
         // Guild is unavailable
         guild.available = false;
-        client.emit(Constants.Events.GUILD_UNAVAILABLE, guild);
+        client.emit(Events.GUILD_UNAVAILABLE, guild);
 
         // Stops the GuildDelete packet thinking a guild was actually deleted,
         // handles emitting of event itself
@@ -26217,7 +26217,7 @@ class GuildDeleteAction extends Action {
 
       // Delete guild
       client.guilds.remove(guild.id);
-      client.emit(Constants.Events.GUILD_DELETE, guild);
+      client.emit(Events.GUILD_DELETE, guild);
       this.deleted.set(guild.id, guild);
       this.scheduleForDeletion(guild.id);
     } else {
@@ -26246,7 +26246,7 @@ module.exports = GuildDeleteAction;
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
-const Constants = __webpack_require__(0);
+const { Events } = __webpack_require__(0);
 
 class GuildUpdateAction extends Action {
   handle(data) {
@@ -26255,7 +26255,7 @@ class GuildUpdateAction extends Action {
     const guild = client.guilds.get(data.id);
     if (guild) {
       const old = guild._update(data);
-      client.emit(Constants.Events.GUILD_UPDATE, old, guild);
+      client.emit(Events.GUILD_UPDATE, old, guild);
       return {
         old,
         updated: guild,
@@ -26300,7 +26300,7 @@ module.exports = GuildMemberGetAction;
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
-const Constants = __webpack_require__(0);
+const { Events, Status } = __webpack_require__(0);
 
 class GuildMemberRemoveAction extends Action {
   handle(data) {
@@ -26312,7 +26312,7 @@ class GuildMemberRemoveAction extends Action {
       if (member) {
         guild.memberCount--;
         guild.members.remove(member.id);
-        if (client.status === Constants.Status.READY) client.emit(Constants.Events.GUILD_MEMBER_REMOVE, member);
+        if (client.status === Status.READY) client.emit(Events.GUILD_MEMBER_REMOVE, member);
       }
     }
     return { guild, member };
@@ -26333,14 +26333,14 @@ module.exports = GuildMemberRemoveAction;
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
-const Constants = __webpack_require__(0);
+const { Events } = __webpack_require__(0);
 
 class GuildBanRemove extends Action {
   handle(data) {
     const client = this.client;
     const guild = client.guilds.get(data.guild_id);
     const user = client.users.create(data.user);
-    if (guild && user) client.emit(Constants.Events.GUILD_BAN_REMOVE, guild, user);
+    if (guild && user) client.emit(Events.GUILD_BAN_REMOVE, guild, user);
   }
 }
 
@@ -26352,7 +26352,7 @@ module.exports = GuildBanRemove;
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
-const Constants = __webpack_require__(0);
+const { Events } = __webpack_require__(0);
 
 class GuildRoleCreate extends Action {
   handle(data) {
@@ -26362,7 +26362,7 @@ class GuildRoleCreate extends Action {
     if (guild) {
       const already = guild.roles.has(data.role.id);
       role = guild.roles.create(data.role);
-      if (!already) client.emit(Constants.Events.GUILD_ROLE_CREATE, role);
+      if (!already) client.emit(Events.GUILD_ROLE_CREATE, role);
     }
     return { role };
   }
@@ -26382,7 +26382,7 @@ module.exports = GuildRoleCreate;
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
-const Constants = __webpack_require__(0);
+const { Events } = __webpack_require__(0);
 
 class GuildRoleDeleteAction extends Action {
   handle(data) {
@@ -26394,7 +26394,7 @@ class GuildRoleDeleteAction extends Action {
       role = guild.roles.get(data.role_id);
       if (role) {
         guild.roles.remove(data.role_id);
-        client.emit(Constants.Events.GUILD_ROLE_DELETE, role);
+        client.emit(Events.GUILD_ROLE_DELETE, role);
       }
     }
 
@@ -26416,7 +26416,7 @@ module.exports = GuildRoleDeleteAction;
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
-const Constants = __webpack_require__(0);
+const { Events } = __webpack_require__(0);
 
 class GuildRoleUpdateAction extends Action {
   handle(data) {
@@ -26429,7 +26429,7 @@ class GuildRoleUpdateAction extends Action {
       const role = guild.roles.get(data.role.id);
       if (role) {
         old = role._update(data.role);
-        client.emit(Constants.Events.GUILD_ROLE_UPDATE, old, role);
+        client.emit(Events.GUILD_ROLE_UPDATE, old, role);
       }
 
       return {
@@ -26477,7 +26477,7 @@ module.exports = UserGetAction;
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
-const Constants = __webpack_require__(0);
+const { Events } = __webpack_require__(0);
 
 class UserUpdateAction extends Action {
   handle(data) {
@@ -26492,7 +26492,7 @@ class UserUpdateAction extends Action {
       }
 
       const oldUser = client.user._update(data);
-      client.emit(Constants.Events.USER_UPDATE, oldUser, client.user);
+      client.emit(Events.USER_UPDATE, oldUser, client.user);
       return {
         old: oldUser,
         updated: client.user,
@@ -26514,7 +26514,7 @@ module.exports = UserUpdateAction;
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
-const Constants = __webpack_require__(0);
+const { Events } = __webpack_require__(0);
 
 class UserNoteUpdateAction extends Action {
   handle(data) {
@@ -26525,7 +26525,7 @@ class UserNoteUpdateAction extends Action {
 
     client.user.notes.set(data.id, note);
 
-    client.emit(Constants.Events.USER_NOTE_UPDATE, data.id, oldNote, note);
+    client.emit(Events.USER_NOTE_UPDATE, data.id, oldNote, note);
 
     return {
       old: oldNote,
@@ -26585,12 +26585,12 @@ module.exports = GuildSync;
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
-const Constants = __webpack_require__(0);
+const { Events } = __webpack_require__(0);
 
 class GuildEmojiCreateAction extends Action {
   handle(guild, createdEmoji) {
     const emoji = guild.emojis.create(createdEmoji);
-    this.client.emit(Constants.Events.GUILD_EMOJI_CREATE, emoji);
+    this.client.emit(Events.GUILD_EMOJI_CREATE, emoji);
     return { emoji };
   }
 }
@@ -26609,12 +26609,12 @@ module.exports = GuildEmojiCreateAction;
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
-const Constants = __webpack_require__(0);
+const { Events } = __webpack_require__(0);
 
 class GuildEmojiDeleteAction extends Action {
   handle(emoji) {
     emoji.guild.emojis.remove(emoji.id);
-    this.client.emit(Constants.Events.GUILD_EMOJI_DELETE, emoji);
+    this.client.emit(Events.GUILD_EMOJI_DELETE, emoji);
     return { emoji };
   }
 }
@@ -26633,12 +26633,12 @@ module.exports = GuildEmojiDeleteAction;
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
-const Constants = __webpack_require__(0);
+const { Events } = __webpack_require__(0);
 
 class GuildEmojiUpdateAction extends Action {
   handle(current, data) {
     const old = current._update(data);
-    this.client.emit(Constants.Events.GUILD_EMOJI_UPDATE, old, current);
+    this.client.emit(Events.GUILD_EMOJI_UPDATE, old, current);
     return { emoji: current };
   }
 }
@@ -26832,7 +26832,7 @@ module.exports = UserStore;
 
 const DataStore = __webpack_require__(11);
 const Channel = __webpack_require__(17);
-const Constants = __webpack_require__(0);
+const { Events } = __webpack_require__(0);
 
 const kLru = Symbol('LRU');
 const lruable = ['group', 'dm'];
@@ -26890,7 +26890,7 @@ class ChannelStore extends DataStore {
     const channel = Channel.create(this.client, data, guild);
 
     if (!channel) {
-      this.client.emit(Constants.Events.DEBUG, `Failed to find guild for channel ${data.id} ${data.type}`);
+      this.client.emit(Events.DEBUG, `Failed to find guild for channel ${data.id} ${data.type}`);
       return null;
     }
 
@@ -26986,7 +26986,7 @@ module.exports = GuildStore;
 
 const PresenceStore = __webpack_require__(76);
 const Collection = __webpack_require__(3);
-const Constants = __webpack_require__(0);
+const { ActivityTypes, OPCodes } = __webpack_require__(0);
 const { Presence } = __webpack_require__(19);
 const { TypeError } = __webpack_require__(4);
 
@@ -27020,7 +27020,7 @@ class ClientPresenceStore extends PresenceStore {
       since: since != null ? since : null, // eslint-disable-line eqeqeq
       status: status || this.clientPresence.status,
       game: activity ? {
-        type: typeof activity.type === 'number' ? activity.type : Constants.ActivityTypes.indexOf(activity.type),
+        type: typeof activity.type === 'number' ? activity.type : ActivityTypes.indexOf(activity.type),
         name: activity.name,
         url: activity.url,
         details: activity.details || undefined,
@@ -27040,7 +27040,7 @@ class ClientPresenceStore extends PresenceStore {
     };
 
     this.clientPresence.patch(packet);
-    this.client.ws.send({ op: Constants.OPCodes.STATUS_UPDATE, d: packet });
+    this.client.ws.send({ op: OPCodes.STATUS_UPDATE, d: packet });
     return this.clientPresence;
   }
 }
