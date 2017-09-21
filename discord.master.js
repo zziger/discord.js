@@ -200,12 +200,12 @@ exports.Endpoints = {
 
 /**
  * The current status of the client. Here are the available statuses:
- * * READY
- * * CONNECTING
- * * RECONNECTING
- * * IDLE
- * * NEARLY
- * * DISCONNECTED
+ * * READY: 0
+ * * CONNECTING: 1
+ * * RECONNECTING: 2
+ * * IDLE: 3
+ * * NEARLY: 4
+ * * DISCONNECTED: 5
  * @typedef {number} Status
  */
 exports.Status = {
@@ -219,11 +219,11 @@ exports.Status = {
 
 /**
  * The current status of a voice connection. Here are the available statuses:
- * * CONNECTED
- * * CONNECTING
- * * AUTHENTICATING
- * * RECONNECTING
- * * DISCONNECTED
+ * * CONNECTED: 0
+ * * CONNECTING: 1
+ * * AUTHENTICATING: 2
+ * * RECONNECTING: 3
+ * * DISCONNECTED: 4
  * @typedef {number} VoiceStatus
  */
 exports.VoiceStatus = {
@@ -5268,6 +5268,7 @@ class Presence {
 
     const activity = data.game || data.activity;
     /**
+     * The activity of the presence
      * @type {?Activity}
      */
     this.activity = activity ? new Activity(this, activity) : null;
@@ -5353,7 +5354,7 @@ class Activity {
      * Party of the activity
      * @type {?Object}
      * @prop {?string} id ID of the party
-     * @prop {Number[]} size Size of the party as `[current, max]`
+     * @prop {number[]} size Size of the party as `[current, max]`
      */
     this.party = data.party || null;
 
@@ -12325,14 +12326,14 @@ class BaseClient extends EventEmitter {
     this.rest = new RESTManager(this, options._tokenType);
 
     /**
-     * Timeouts set by {@link WebhookClient#setTimeout} that are still active
+     * Timeouts set by {@link BaseClient#setTimeout} that are still active
      * @type {Set<Timeout>}
      * @private
      */
     this._timeouts = new Set();
 
     /**
-     * Intervals set by {@link WebhookClient#setInterval} that are still active
+     * Intervals set by {@link BaseClient#setInterval} that are still active
      * @type {Set<Timeout>}
      * @private
      */
@@ -12395,7 +12396,7 @@ class BaseClient extends EventEmitter {
   /**
    * Sets an interval that will be automatically cancelled if the client is destroyed.
    * @param {Function} fn Function to execute
-   * @param {number} delay Time to wait before executing (in milliseconds)
+   * @param {number} delay Time to wait between executions (in milliseconds)
    * @param {...*} args Arguments for the function
    * @returns {Timeout}
    */
@@ -17977,6 +17978,18 @@ class GuildAuditLogs {
    */
 
   /**
+   * The target for an audit log entry. It can be one of:
+   * * A guild
+   * * A user
+   * * A role
+   * * An emoji
+   * * An invite
+   * * A webhook
+   * * An object where the keys represent either the new value or the old value
+   * @typedef {?Object|Guild|User|Role|Emoji|Invite|Webhook} EntryTarget
+   */
+
+  /**
    * Find target type from entry action.
    * @param {number} target The action target
    * @returns {?string}
@@ -18138,7 +18151,7 @@ class GuildAuditLogsEntry {
     if (targetType === Targets.UNKNOWN) {
       /**
        * The target of this entry
-       * @type {TargetType}
+       * @type {EntryTarget}
        */
       this.target = this.changes.reduce((o, c) => {
         o[c.key] = c.new || c.old;
@@ -18354,9 +18367,9 @@ class PresenceStore extends DataStore {
   /**
    * Data that can be resolved to a Presence object. This can be:
    * * A Presence
-   * * A UserResolveable
+   * * A UserResolvable
    * * A Snowflake
-   * @typedef {Presence|UserResolveable|Snowflake} PresenceResolvable
+   * @typedef {Presence|UserResolvable|Snowflake} PresenceResolvable
    */
 
   /**
@@ -23034,7 +23047,7 @@ class Client extends BaseClient {
 
   /**
    * All custom emojis that the client has access to, mapped by their IDs
-   * @type {Collection<Snowflake, Emoji>}
+   * @type {EmojiStore<Snowflake, Emoji>}
    * @readonly
    */
   get emojis() {
@@ -24305,7 +24318,7 @@ const GuildChannel = __webpack_require__(21);
 class CategoryChannel extends GuildChannel {
   /**
    * The channels that are part of this category
-   * @type {?Collection}
+   * @type {?Collection<Snowflake, GuildChannel>}
    * @readonly
    */
   get children() {
@@ -24344,7 +24357,7 @@ class GuildMemberStore extends DataStore {
    * Data that resolves to give a GuildMember object. This can be:
    * * A GuildMember object
    * * A User resolvable
-   * @typedef {GuildMember|UserResolveable} GuildMemberResolvable
+   * @typedef {GuildMember|UserResolvable} GuildMemberResolvable
    */
 
   /**
@@ -24544,10 +24557,10 @@ class GuildChannelStore extends DataStore {
   }
 
   /**
-   * Data that can be resolved to give a Channel object. This can be:
+   * Data that can be resolved to give a Guild Channel object. This can be:
    * * A GuildChannel object
    * * A Snowflake
-   * @typedef {Channel|Snowflake} GuildChannelResolvable
+   * @typedef {GuildChannel|Snowflake} GuildChannelResolvable
    */
 
   /**
@@ -26992,6 +27005,11 @@ const { ActivityTypes, OPCodes } = __webpack_require__(0);
 const { Presence } = __webpack_require__(19);
 const { TypeError } = __webpack_require__(4);
 
+/**
+ * Stores the client presence and other presences.
+ * @extends {PresenceStore}
+ * @private
+ */
 class ClientPresenceStore extends PresenceStore {
   constructor(...args) {
     super(...args);
