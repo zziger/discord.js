@@ -1598,6 +1598,61 @@ module.exports = Util;
 /* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
+const Collection = __webpack_require__(3);
+
+/**
+ * Manages the creation, retrieval and deletion of a specific data model.
+ * @extends {Collection}
+ */
+class DataStore extends Collection {
+  constructor(client, iterable, holds) {
+    super();
+    Object.defineProperty(this, 'client', { value: client });
+    Object.defineProperty(this, 'holds', { value: holds });
+    if (iterable) for (const item of iterable) this.create(item);
+  }
+
+  create(data, cache = true, { id, extras = [] } = {}) {
+    const existing = this.get(id || data.id);
+    if (existing) return existing;
+
+    const entry = this.holds ? new this.holds(this.client, data, ...extras) : data;
+    if (cache) this.set(id || entry.id, entry);
+    return entry;
+  }
+
+  remove(key) { return this.delete(key); }
+
+  /**
+   * Resolves a data entry to a data Object.
+   * @param {string|Object} idOrInstance The id or instance of something in this datastore
+   * @returns {?Object} An instance from this datastore
+   */
+  resolve(idOrInstance) {
+    if (idOrInstance instanceof this.holds) return idOrInstance;
+    if (typeof idOrInstance === 'string') return this.get(idOrInstance) || null;
+    return null;
+  }
+
+  /**
+   * Resolves a data entry to a instance ID.
+   * @param {string|Instance} idOrInstance The id or instance of something in this datastore
+   * @returns {?string}
+   */
+  resolveID(idOrInstance) {
+    if (idOrInstance instanceof this.holds) return idOrInstance.id;
+    if (typeof idOrInstance === 'string') return idOrInstance;
+    return null;
+  }
+}
+
+module.exports = DataStore;
+
+
+/***/ }),
+/* 7 */
+/***/ (function(module, exports, __webpack_require__) {
+
 const Long = __webpack_require__(25);
 
 // Discord epoch (2015-01-01T00:00:00.000Z)
@@ -1676,7 +1731,7 @@ module.exports = SnowflakeUtil;
 
 
 /***/ }),
-/* 7 */
+/* 8 */
 /***/ (function(module, exports) {
 
 /**
@@ -1707,61 +1762,6 @@ class Base {
 }
 
 module.exports = Base;
-
-
-/***/ }),
-/* 8 */
-/***/ (function(module, exports, __webpack_require__) {
-
-const Collection = __webpack_require__(3);
-
-/**
- * Manages the creation, retrieval and deletion of a specific data model.
- * @extends {Collection}
- */
-class DataStore extends Collection {
-  constructor(client, iterable, holds) {
-    super();
-    Object.defineProperty(this, 'client', { value: client });
-    Object.defineProperty(this, 'holds', { value: holds });
-    if (iterable) for (const item of iterable) this.create(item);
-  }
-
-  create(data, cache = true, { id, extras = [] } = {}) {
-    const existing = this.get(id || data.id);
-    if (existing) return existing;
-
-    const entry = this.holds ? new this.holds(this.client, data, ...extras) : data;
-    if (cache) this.set(id || entry.id, entry);
-    return entry;
-  }
-
-  remove(key) { return this.delete(key); }
-
-  /**
-   * Resolves a data entry to a data Object.
-   * @param {string|Object} idOrInstance The id or instance of something in this datastore
-   * @returns {?Object} An instance from this datastore
-   */
-  resolve(idOrInstance) {
-    if (idOrInstance instanceof this.holds) return idOrInstance;
-    if (typeof idOrInstance === 'string') return this.get(idOrInstance) || null;
-    return null;
-  }
-
-  /**
-   * Resolves a data entry to a instance ID.
-   * @param {string|Instance} idOrInstance The id or instance of something in this datastore
-   * @returns {?string}
-   */
-  resolveID(idOrInstance) {
-    if (idOrInstance instanceof this.holds) return idOrInstance.id;
-    if (typeof idOrInstance === 'string') return idOrInstance;
-    return null;
-  }
-}
-
-module.exports = DataStore;
 
 
 /***/ }),
@@ -2099,8 +2099,8 @@ module.exports = DataResolver;
 /* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Snowflake = __webpack_require__(6);
-const Base = __webpack_require__(7);
+const Snowflake = __webpack_require__(7);
+const Base = __webpack_require__(8);
 const { ChannelTypes } = __webpack_require__(0);
 
 /**
@@ -2212,7 +2212,7 @@ const TextBasedChannel = __webpack_require__(17);
 const Role = __webpack_require__(22);
 const Permissions = __webpack_require__(9);
 const Collection = __webpack_require__(3);
-const Base = __webpack_require__(7);
+const Base = __webpack_require__(8);
 const { Presence } = __webpack_require__(13);
 const { Error, TypeError } = __webpack_require__(4);
 
@@ -4115,7 +4115,7 @@ const MessageCollector = __webpack_require__(40);
 const Shared = __webpack_require__(41);
 const Util = __webpack_require__(5);
 const { browser } = __webpack_require__(0);
-const Snowflake = __webpack_require__(6);
+const Snowflake = __webpack_require__(7);
 const Collection = __webpack_require__(3);
 const DataResolver = __webpack_require__(10);
 const MessageAttachment = __webpack_require__(18);
@@ -4894,8 +4894,8 @@ function isUndefined(arg) {
 const TextBasedChannel = __webpack_require__(17);
 const { Presence } = __webpack_require__(13);
 const UserProfile = __webpack_require__(87);
-const Snowflake = __webpack_require__(6);
-const Base = __webpack_require__(7);
+const Snowflake = __webpack_require__(7);
+const Base = __webpack_require__(8);
 const { Error } = __webpack_require__(4);
 
 /**
@@ -5167,7 +5167,7 @@ module.exports = User;
 /* 21 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const DataStore = __webpack_require__(8);
+const DataStore = __webpack_require__(6);
 const Collection = __webpack_require__(3);
 const Message = __webpack_require__(30);
 const { Error } = __webpack_require__(4);
@@ -5292,10 +5292,10 @@ module.exports = MessageStore;
 /* 22 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Snowflake = __webpack_require__(6);
+const Snowflake = __webpack_require__(7);
 const Permissions = __webpack_require__(9);
 const Util = __webpack_require__(5);
-const Base = __webpack_require__(7);
+const Base = __webpack_require__(8);
 const { TypeError } = __webpack_require__(4);
 
 /**
@@ -5646,7 +5646,7 @@ module.exports = Role;
 /***/ (function(module, exports, __webpack_require__) {
 
 const { Endpoints } = __webpack_require__(0);
-const Base = __webpack_require__(7);
+const Base = __webpack_require__(8);
 
 /**
  * Represents an invitation to a guild channel.
@@ -5814,7 +5814,7 @@ const { ChannelTypes, Events, browser } = __webpack_require__(0);
 const Collection = __webpack_require__(3);
 const Util = __webpack_require__(5);
 const DataResolver = __webpack_require__(10);
-const Snowflake = __webpack_require__(6);
+const Snowflake = __webpack_require__(7);
 const Permissions = __webpack_require__(9);
 const Shared = __webpack_require__(41);
 const GuildMemberStore = __webpack_require__(83);
@@ -5822,7 +5822,7 @@ const RoleStore = __webpack_require__(84);
 const EmojiStore = __webpack_require__(52);
 const GuildChannelStore = __webpack_require__(85);
 const PresenceStore = __webpack_require__(53);
-const Base = __webpack_require__(7);
+const Base = __webpack_require__(8);
 const { Error, TypeError } = __webpack_require__(4);
 
 /**
@@ -8561,7 +8561,7 @@ const ReactionStore = __webpack_require__(81);
 const { MessageTypes } = __webpack_require__(0);
 const Permissions = __webpack_require__(9);
 const GuildMember = __webpack_require__(12);
-const Base = __webpack_require__(7);
+const Base = __webpack_require__(8);
 const { Error, TypeError } = __webpack_require__(4);
 
 /**
@@ -9128,10 +9128,10 @@ module.exports = Message;
 /* 31 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Snowflake = __webpack_require__(6);
+const Snowflake = __webpack_require__(7);
 const { ClientApplicationAssetTypes, Endpoints } = __webpack_require__(0);
 const DataResolver = __webpack_require__(10);
-const Base = __webpack_require__(7);
+const Base = __webpack_require__(8);
 
 /**
  * Represents a Client OAuth2 Application.
@@ -9347,8 +9347,8 @@ module.exports = ClientApplication;
 /***/ (function(module, exports, __webpack_require__) {
 
 const Collection = __webpack_require__(3);
-const Snowflake = __webpack_require__(6);
-const Base = __webpack_require__(7);
+const Snowflake = __webpack_require__(7);
+const Base = __webpack_require__(8);
 const { TypeError } = __webpack_require__(4);
 
 /**
@@ -11321,7 +11321,7 @@ module.exports = VoiceChannel;
 /***/ (function(module, exports, __webpack_require__) {
 
 const Collection = __webpack_require__(3);
-const Snowflake = __webpack_require__(6);
+const Snowflake = __webpack_require__(7);
 const Webhook = __webpack_require__(16);
 
 const Targets = {
@@ -11711,7 +11711,7 @@ module.exports = VoiceRegion;
 /* 52 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const DataStore = __webpack_require__(8);
+const DataStore = __webpack_require__(6);
 const Emoji = __webpack_require__(33);
 const ReactionEmoji = __webpack_require__(34);
 
@@ -11788,7 +11788,7 @@ module.exports = EmojiStore;
 /* 53 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const DataStore = __webpack_require__(8);
+const DataStore = __webpack_require__(6);
 const { Presence } = __webpack_require__(13);
 
 /**
@@ -12064,11 +12064,12 @@ module.exports = {
   Collection: __webpack_require__(3),
   Constants: __webpack_require__(0),
   DataResolver: __webpack_require__(10),
+  DataStore: __webpack_require__(6),
   DiscordAPIError: __webpack_require__(38),
   EvaluatedPermissions: __webpack_require__(9),
   Permissions: __webpack_require__(9),
-  Snowflake: __webpack_require__(6),
-  SnowflakeUtil: __webpack_require__(6),
+  Snowflake: __webpack_require__(7),
+  SnowflakeUtil: __webpack_require__(7),
   Util: Util,
   util: Util,
   version: __webpack_require__(35).version,
@@ -14374,7 +14375,7 @@ module.exports = function search(target, options) {
 /* 81 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const DataStore = __webpack_require__(8);
+const DataStore = __webpack_require__(6);
 const MessageReaction = __webpack_require__(45);
 
 /**
@@ -14449,7 +14450,7 @@ module.exports = CategoryChannel;
 /* 83 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const DataStore = __webpack_require__(8);
+const DataStore = __webpack_require__(6);
 const GuildMember = __webpack_require__(12);
 const { Events, OPCodes } = __webpack_require__(0);
 const Collection = __webpack_require__(3);
@@ -14600,7 +14601,7 @@ module.exports = GuildMemberStore;
 /* 84 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const DataStore = __webpack_require__(8);
+const DataStore = __webpack_require__(6);
 const Role = __webpack_require__(22);
 
 /**
@@ -14651,7 +14652,7 @@ module.exports = RoleStore;
 /* 85 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const DataStore = __webpack_require__(8);
+const DataStore = __webpack_require__(6);
 const Channel = __webpack_require__(11);
 const GuildChannel = __webpack_require__(15);
 
@@ -14780,7 +14781,7 @@ module.exports = function sendMessage(channel, options) { // eslint-disable-line
 const Collection = __webpack_require__(3);
 const { UserFlags } = __webpack_require__(0);
 const UserConnection = __webpack_require__(88);
-const Base = __webpack_require__(7);
+const Base = __webpack_require__(8);
 
 /**
  * Represents a user's profile on Discord.
@@ -16895,7 +16896,7 @@ module.exports = GuildChannelsPositionUpdate;
 /* 160 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const DataStore = __webpack_require__(8);
+const DataStore = __webpack_require__(6);
 const User = __webpack_require__(20);
 const GuildMember = __webpack_require__(12);
 const Message = __webpack_require__(30);
@@ -16962,7 +16963,7 @@ module.exports = UserStore;
 /* 161 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const DataStore = __webpack_require__(8);
+const DataStore = __webpack_require__(6);
 const Channel = __webpack_require__(11);
 const { Events } = __webpack_require__(0);
 
@@ -17070,7 +17071,7 @@ module.exports = ChannelStore;
 /* 162 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const DataStore = __webpack_require__(8);
+const DataStore = __webpack_require__(6);
 const Guild = __webpack_require__(24);
 
 /**
