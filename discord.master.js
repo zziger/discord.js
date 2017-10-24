@@ -264,6 +264,7 @@ exports.VoiceOPCodes = {
 };
 
 exports.Events = {
+  RATE_LIMIT: 'rateLimit',
   READY: 'ready',
   RESUMED: 'resumed',
   GUILD_CREATE: 'guildCreate',
@@ -12794,7 +12795,7 @@ module.exports = function sequential() {
         this.reset();
         this.busy = false;
         this.handle();
-      }, timeout || (this.resetTime - Date.now() + this.timeDifference + this.client.options.restTimeOffset));
+      }, timeout);
     });
 };
 
@@ -12811,7 +12812,7 @@ module.exports = function burst() {
       this.client.setTimeout(() => {
         this.reset();
         this.handle();
-      }, timeout || (this.resetTime - Date.now() + this.timeDifference + this.client.options.restTimeOffset));
+      }, timeout);
     });
   this.remaining--;
   this.handle();
@@ -12823,6 +12824,7 @@ module.exports = function burst() {
 /***/ (function(module, exports, __webpack_require__) {
 
 const DiscordAPIError = __webpack_require__(37);
+const { Events: { RATE_LIMIT } } = __webpack_require__(0);
 
 class RequestHandler {
   constructor(manager, handler) {
@@ -12853,9 +12855,35 @@ class RequestHandler {
   execute(item) {
     return new Promise((resolve, reject) => {
       const finish = timeout => {
-        // eslint-disable-next-line prefer-promise-reject-errors
-        if (timeout || this.limited) reject({ timeout, limited: this.limited });
-        else resolve();
+        if (timeout || this.limited) {
+          if (!timeout) {
+            timeout = this.resetTime - Date.now() + this.timeDifference + this.client.options.restTimeOffset;
+          }
+          // eslint-disable-next-line prefer-promise-reject-errors
+          reject({ timeout });
+          if (this.client.listenerCount(RATE_LIMIT)) {
+            /**
+             * Emitted when the client hits a rate limit while making a request
+             * @event Client#rateLimit
+             * @prop {number} timeout Timeout in ms
+             * @prop {number} limit Number of requests that can be made to this endpoint
+             * @prop {number} timeDifference Delta-T in ms between your system and Discord servers
+             * @prop {string} method HTTP method used for request that triggered this event
+             * @prop {string} path Path used for request that triggered this event
+             * @prop {string} route Route used for request that triggered this event
+             */
+            this.client.emit(RATE_LIMIT, {
+              timeout,
+              limit: this.limit,
+              timeDifference: this.timeDifference,
+              method: item.request.method,
+              path: item.request.path,
+              route: item.request.route,
+            });
+          }
+        } else {
+          resolve();
+        }
       };
       item.request.gen().end((err, res) => {
         if (res && res.headers) {
