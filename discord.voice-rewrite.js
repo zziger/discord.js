@@ -6498,7 +6498,7 @@ class Guild extends Base {
       }
     }
     return this.client.api.guilds(this.id).members(user.id).put({ data: options })
-      .then(data => this.client.actions.GuildMemberGet.handle(this, data).member);
+      .then(data => this.members.create(data));
   }
 
   /**
@@ -12640,10 +12640,10 @@ module.exports = {
   // "Root" classes (starting points)
   BaseClient: __webpack_require__(29),
   Client: __webpack_require__(80),
-  Shard: __webpack_require__(180),
-  ShardClientUtil: __webpack_require__(181),
-  ShardingManager: __webpack_require__(182),
-  WebhookClient: __webpack_require__(183),
+  Shard: __webpack_require__(178),
+  ShardClientUtil: __webpack_require__(179),
+  ShardingManager: __webpack_require__(180),
+  WebhookClient: __webpack_require__(181),
 
   // Utilities
   Collection: __webpack_require__(3),
@@ -13641,12 +13641,12 @@ const VoiceRegion = __webpack_require__(52);
 const Webhook = __webpack_require__(17);
 const Invite = __webpack_require__(24);
 const ClientApplication = __webpack_require__(32);
-const ShardClientUtil = __webpack_require__(174);
-const VoiceBroadcast = __webpack_require__(175);
-const UserStore = __webpack_require__(176);
-const ChannelStore = __webpack_require__(177);
-const GuildStore = __webpack_require__(178);
-const ClientPresenceStore = __webpack_require__(179);
+const ShardClientUtil = __webpack_require__(172);
+const VoiceBroadcast = __webpack_require__(173);
+const UserStore = __webpack_require__(174);
+const ChannelStore = __webpack_require__(175);
+const GuildStore = __webpack_require__(176);
+const ClientPresenceStore = __webpack_require__(177);
 const EmojiStore = __webpack_require__(53);
 const { Events, browser } = __webpack_require__(0);
 const DataResolver = __webpack_require__(10);
@@ -22926,8 +22926,6 @@ class ActionsManager {
     this.register(__webpack_require__(169));
     this.register(__webpack_require__(170));
     this.register(__webpack_require__(171));
-    this.register(__webpack_require__(172));
-    this.register(__webpack_require__(173));
   }
 
   register(Action) {
@@ -23397,22 +23395,6 @@ module.exports = GuildUpdateAction;
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
-
-class GuildMemberGetAction extends Action {
-  handle(guild, data) {
-    const member = guild.members.create(data);
-    return { member };
-  }
-}
-
-module.exports = GuildMemberGetAction;
-
-
-/***/ }),
-/* 159 */
-/***/ (function(module, exports, __webpack_require__) {
-
-const Action = __webpack_require__(2);
 const { Events, Status } = __webpack_require__(0);
 
 class GuildMemberRemoveAction extends Action {
@@ -23442,7 +23424,7 @@ module.exports = GuildMemberRemoveAction;
 
 
 /***/ }),
-/* 160 */
+/* 159 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23461,7 +23443,7 @@ module.exports = GuildBanRemove;
 
 
 /***/ }),
-/* 161 */
+/* 160 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23491,7 +23473,7 @@ module.exports = GuildRoleCreate;
 
 
 /***/ }),
-/* 162 */
+/* 161 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23525,7 +23507,7 @@ module.exports = GuildRoleDeleteAction;
 
 
 /***/ }),
-/* 163 */
+/* 162 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23569,24 +23551,7 @@ module.exports = GuildRoleUpdateAction;
 
 
 /***/ }),
-/* 164 */
-/***/ (function(module, exports, __webpack_require__) {
-
-const Action = __webpack_require__(2);
-
-class UserGetAction extends Action {
-  handle(data) {
-    const client = this.client;
-    const user = client.users.create(data);
-    return { user };
-  }
-}
-
-module.exports = UserGetAction;
-
-
-/***/ }),
-/* 165 */
+/* 163 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23623,7 +23588,7 @@ module.exports = UserUpdateAction;
 
 
 /***/ }),
-/* 166 */
+/* 164 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23659,7 +23624,7 @@ module.exports = UserNoteUpdateAction;
 
 
 /***/ }),
-/* 167 */
+/* 165 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23694,7 +23659,7 @@ module.exports = GuildSync;
 
 
 /***/ }),
-/* 168 */
+/* 166 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23718,7 +23683,7 @@ module.exports = GuildEmojiCreateAction;
 
 
 /***/ }),
-/* 169 */
+/* 167 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23742,7 +23707,7 @@ module.exports = GuildEmojiDeleteAction;
 
 
 /***/ }),
-/* 170 */
+/* 168 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23767,7 +23732,7 @@ module.exports = GuildEmojiUpdateAction;
 
 
 /***/ }),
-/* 171 */
+/* 169 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23811,7 +23776,7 @@ module.exports = GuildEmojisUpdateAction;
 
 
 /***/ }),
-/* 172 */
+/* 170 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23836,7 +23801,7 @@ module.exports = GuildRolesPositionUpdate;
 
 
 /***/ }),
-/* 173 */
+/* 171 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23861,19 +23826,19 @@ module.exports = GuildChannelsPositionUpdate;
 
 
 /***/ }),
+/* 172 */
+/***/ (function(module, exports) {
+
+/* (ignored) */
+
+/***/ }),
+/* 173 */
+/***/ (function(module, exports) {
+
+/* (ignored) */
+
+/***/ }),
 /* 174 */
-/***/ (function(module, exports) {
-
-/* (ignored) */
-
-/***/ }),
-/* 175 */
-/***/ (function(module, exports) {
-
-/* (ignored) */
-
-/***/ }),
-/* 176 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const DataStore = __webpack_require__(6);
@@ -23940,7 +23905,7 @@ module.exports = UserStore;
 
 
 /***/ }),
-/* 177 */
+/* 175 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const DataStore = __webpack_require__(6);
@@ -24048,7 +24013,7 @@ module.exports = ChannelStore;
 
 
 /***/ }),
-/* 178 */
+/* 176 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const DataStore = __webpack_require__(6);
@@ -24094,7 +24059,7 @@ module.exports = GuildStore;
 
 
 /***/ }),
-/* 179 */
+/* 177 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const PresenceStore = __webpack_require__(54);
@@ -24167,6 +24132,18 @@ module.exports = ClientPresenceStore;
 
 
 /***/ }),
+/* 178 */
+/***/ (function(module, exports) {
+
+/* (ignored) */
+
+/***/ }),
+/* 179 */
+/***/ (function(module, exports) {
+
+/* (ignored) */
+
+/***/ }),
 /* 180 */
 /***/ (function(module, exports) {
 
@@ -24174,18 +24151,6 @@ module.exports = ClientPresenceStore;
 
 /***/ }),
 /* 181 */
-/***/ (function(module, exports) {
-
-/* (ignored) */
-
-/***/ }),
-/* 182 */
-/***/ (function(module, exports) {
-
-/* (ignored) */
-
-/***/ }),
-/* 183 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Webhook = __webpack_require__(17);
