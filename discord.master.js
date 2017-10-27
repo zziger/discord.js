@@ -3686,6 +3686,7 @@ class GuildChannel extends Channel {
    * @property {string} [name] The name of the channel
    * @property {number} [position] The position of the channel
    * @property {string} [topic] The topic of the text channel
+   * @property {boolean} [nsfw] Whether the channel is NSFW
    * @property {number} [bitrate] The bitrate of the voice channel
    * @property {number} [userLimit] The user limit of the voice channel
    * @property {Snowflake} [parentID] The parent ID of the channel
@@ -3728,6 +3729,7 @@ class GuildChannel extends Channel {
       data: {
         name: (data.name || this.name).trim(),
         topic: data.topic,
+        nsfw: data.nsfw,
         bitrate: data.bitrate || (this.bitrate ? this.bitrate * 1000 : undefined),
         user_limit: data.userLimit != null ? data.userLimit : this.userLimit, // eslint-disable-line eqeqeq
         parent_id: data.parentID,
@@ -11169,6 +11171,16 @@ class TextChannel extends GuildChannel {
     this.lastMessageID = data.last_message_id;
 
     if (data.messages) for (const message of data.messages) this.messages.create(message);
+  }
+
+  /**
+   * Sets whether this channel is flagged as NSFW.
+   * @param {boolean} nsfw Whether the channel should be considered NSFW
+   * @param {string} [reason] Reason for changing the channel's NSFW flag
+   * @returns {Promise<TextChannel>}
+   */
+  setNSFW(nsfw, reason) {
+    return this.edit({ nsfw }, reason);
   }
 
   /**
