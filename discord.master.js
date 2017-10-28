@@ -1676,7 +1676,7 @@ class DataStore extends Collection {
   /**
    * Resolves a data entry to a instance ID.
    * @param {string|Instance} idOrInstance The id or instance of something in this DataStore
-   * @returns {?string}
+   * @returns {?Snowflake}
    */
   resolveID(idOrInstance) {
     if (idOrInstance instanceof this.holds) return idOrInstance.id;
@@ -2452,7 +2452,7 @@ class GuildMember extends Base {
    * @readonly
    */
   get presence() {
-    return this.frozenPresence || this.guild.presences.get(this.id) || new Presence();
+    return this.frozenPresence || this.guild.presences.get(this.id) || new Presence(this.client);
   }
 
   /**
@@ -2842,7 +2842,7 @@ class GuildMember extends Base {
 
   /**
    * Bans this guild member.
-   * @param {Object|number|string} [options] Ban options. If a number, the number of days to delete messages for, if a
+   * @param {Object} [options] Ban options. If a number, the number of days to delete messages for, if a
    * string, the ban reason. Supplying an object allows you to do both.
    * @param {number} [options.days=0] Number of days of messages to delete
    * @param {string} [options.reason] Reason for banning
@@ -2901,7 +2901,7 @@ class Presence {
      * * **`dnd`** - user is in Do Not Disturb
      * @type {string}
      */
-    this.status = data.status || this.status;
+    this.status = data.status || this.status || 'offline';
 
     const activity = data.game || data.activity;
     /**
@@ -2920,7 +2920,7 @@ class Presence {
   }
 
   /**
-   * Whether this presence is equal to another
+   * Whether this presence is equal to another.
    * @param {Presence} presence The presence to compare with
    * @returns {boolean}
    */
@@ -3042,21 +3042,22 @@ class RichPresenceAssets {
 
     /**
      * ID of the large image asset
-     * @type {?string}
+     * @type {?Snowflake}
      */
     this.largeImage = assets.large_image || null;
 
     /**
      * ID of the small image asset
-     * @type {?string}
+     * @type {?Snowflake}
      */
     this.smallImage = assets.small_image || null;
   }
 
   /**
    * Gets the URL of the small image asset
-   * @param  {string} format Format of the image
-   * @param  {number} size Size of the image
+   * @param {Object} [options] Options for the image url
+   * @param {string} [options.format] Format of the image
+   * @param {number} [options.size] Size of the image
    * @returns {?string} The small image URL
    */
   smallImageURL({ format, size } = {}) {
@@ -3067,8 +3068,9 @@ class RichPresenceAssets {
 
   /**
    * Gets the URL of the large image asset
-   * @param  {string} format Format of the image
-   * @param  {number} size Size of the image
+   * @param {Object} [options] Options for the image url
+   * @param {string} [options.format] Format of the image
+   * @param {number} [options.size] Size of the image
    * @returns {?string} The large image URL
    */
   largeImageURL({ format, size } = {}) {
@@ -3221,12 +3223,12 @@ class MessageEmbed {
       proxyIconURL: data.footer.proxyIconURL || data.footer.proxy_icon_url,
     } : null;
 
-    /**
-     * The files of this embed
-     * @type {?Object}
-     * @property {Array<FileOptions|string|MessageAttachment>} files Files to attach
-     */
     if (data.files) {
+      /**
+       * The files of this embed
+       * @type {?Object}
+       * @property {Array<FileOptions|string|MessageAttachment>} files Files to attach
+       */
       this.files = data.files.map(file => {
         if (file instanceof MessageAttachment) {
           return typeof file.file === 'string' ? file.file : Util.cloneObject(file.file);
@@ -3247,7 +3249,7 @@ class MessageEmbed {
 
   /**
    * The hexadecimal version of the embed color, with a leading hash
-   * @type {string}
+   * @type {?string}
    * @readonly
    */
   get hexColor() {
@@ -4024,7 +4026,6 @@ class Webhook {
    * (see [here](https://discordapp.com/developers/docs/resources/channel#embed-object) for more details)
    * @property {boolean} [disableEveryone=this.client.options.disableEveryone] Whether or not @everyone and @here
    * should be replaced with plain-text
-   * @property {FileOptions|BufferResolvable} [file] A file to send with the message
    * @property {FileOptions[]|string[]} [files] Files to send with the message
    * @property {string|boolean} [code] Language for optional codeblock formatting to apply
    * @property {boolean|SplitOptions} [split=false] Whether or not the message should be split into multiple messages if
@@ -4715,7 +4716,7 @@ class MessageStore extends DataStore {
     * @memberof MessageStore
     * @instance
     * @param {MessageResolvable} message The message resolvable to resolve
-    * @returns {?string}
+    * @returns {?Snowflake}
     */
 }
 
@@ -5175,6 +5176,13 @@ class User extends Base {
      */
     this.id = data.id;
 
+    /**
+     * Whether or not the user is a bot
+     * @type {boolean}
+     * @name User#bot
+     */
+    this.bot = Boolean(data.bot);
+
     this._patch(data);
   }
 
@@ -5195,17 +5203,10 @@ class User extends Base {
 
     /**
      * The ID of the user's avatar
-     * @type {string}
+     * @type {?string}
      * @name User#avatar
      */
     if (typeof data.avatar !== 'undefined') this.avatar = data.avatar;
-
-    /**
-     * Whether or not the user is a bot
-     * @type {boolean}
-     * @name User#bot
-     */
-    if (typeof this.bot === 'undefined' && typeof data.bot !== 'undefined') this.bot = Boolean(data.bot);
 
     /**
      * The ID of the last message sent by the user, if one was sent
@@ -5218,8 +5219,6 @@ class User extends Base {
      * @type {?Message}
      */
     this.lastMessage = null;
-
-    if (data.token) this.client.token = data.token;
   }
 
   /**
@@ -5250,7 +5249,7 @@ class User extends Base {
     for (const guild of this.client.guilds.values()) {
       if (guild.presences.has(this.id)) return guild.presences.get(this.id);
     }
-    return new Presence();
+    return new Presence(this.client);
   }
 
   /**
@@ -6068,7 +6067,7 @@ class Guild extends Base {
 
     /**
      * An array of guild features
-     * @type {Object[]}
+     * @type {string[]}
      */
     this.features = data.features;
 
@@ -6354,7 +6353,7 @@ class Guild extends Base {
     }
   }
 
-  /*
+  /**
    * The `@everyone` role of the guild
    * @type {Role}
    * @readonly
@@ -6755,7 +6754,7 @@ class Guild extends Base {
   /**
    * Bans a user from the guild.
    * @param {UserResolvable} user The user to ban
-   * @param {Object|number|string} [options] Ban options. If a number, the number of days to delete messages for, if a
+   * @param {Object} [options] Ban options. If a number, the number of days to delete messages for, if a
    * string, the ban reason. Supplying an object allows you to do both.
    * @param {number} [options.days=0] Number of days of messages to delete
    * @param {string} [options.reason] Reason for banning
@@ -6932,7 +6931,7 @@ class Guild extends Base {
   }
 
   /**
-   * Creates a new role in the guild with given information
+   * Creates a new role in the guild with given information.
    * <warn>The position will silently reset to 1 if an invalid one is provided, or none.</warn>
    * @param {Object} [options] Options
    * @param {RoleData} [options.data] The data to update the role with
@@ -6953,7 +6952,7 @@ class Guild extends Base {
    *   reason: 'we needed a role for Super Cool People',
    * })
    *   .then(role => console.log(`Created role ${role}`))
-   *   .catch(console.error)
+   *   .catch(console.error);
    */
   createRole({ data = {}, reason } = {}) {
     if (data.color) data.color = Util.resolveColor(data.color);
@@ -9462,7 +9461,7 @@ class ClientApplication extends Base {
   /**
    * Resets the app's secret.
    * <warn>This is only available when using a user account.</warn>
-   * @returns {ClientApplication}
+   * @returns {Promise<ClientApplication>}
    */
   resetSecret() {
     return this.client.api.oauth2.applications[this.id].reset.post()
@@ -9472,7 +9471,7 @@ class ClientApplication extends Base {
   /**
    * Resets the app's bot token.
    * <warn>This is only available when using a user account.</warn>
-   * @returns {ClientApplication}
+   * @returns {Promise<ClientApplication>}
    */
   resetToken() {
     return this.client.api.oauth2.applications[this.id].bot.reset.post()
@@ -9890,7 +9889,7 @@ class EmojiStore extends DataStore {
   /**
    * Resolves a EmojiResolvable to a Emoji ID string.
    * @param {EmojiResolvable} emoji The Emoji resolvable to identify
-   * @returns {?string}
+   * @returns {?Snowflake}
    */
   resolveID(emoji) {
     if (emoji instanceof ReactionEmoji) return emoji.id;
@@ -9968,7 +9967,7 @@ class PresenceStore extends DataStore {
   /**
     * Resolves a PresenceResolvable to a Presence ID string.
     * @param {PresenceResolvable} presence The presence resolvable to resolve
-    * @returns {?string}
+    * @returns {?Snowflake}
     */
   resolveID(presence) {
     const presenceResolveable = super.resolveID(presence);
@@ -10311,6 +10310,8 @@ class ClientUser extends User {
         this.guildSettings.set(settings.guild_id, new ClientUserGuildSettings(this.client, settings));
       }
     }
+
+    if (data.token) this.client.token = data.token;
   }
 
   /**
@@ -11731,6 +11732,24 @@ const Collection = __webpack_require__(3);
 const Snowflake = __webpack_require__(8);
 const Webhook = __webpack_require__(17);
 
+/**
+ * The target type of an entry, e.g. `GUILD`. Here are the available types:
+ * * GUILD
+ * * CHANNEL
+ * * USER
+ * * ROLE
+ * * INVITE
+ * * WEBHOOK
+ * * EMOJI
+ * * MESSAGE
+ * @typedef {string} AuditLogTargetType
+ */
+
+/**
+ * Key mirror of all available audit log targets.
+ * @name GuildAuditLogs.Targets
+ * @type {AuditLogTargetType}
+ */
 const Targets = {
   ALL: 'ALL',
   GUILD: 'GUILD',
@@ -11744,6 +11763,43 @@ const Targets = {
   UNKNOWN: 'UNKNOWN',
 };
 
+/**
+ * The action of an entry. Here are the available actions:
+ * * ALL: null
+ * * GUILD_UPDATE: 1
+ * * CHANNEL_CREATE: 10
+ * * CHANNEL_UPDATE: 11
+ * * CHANNEL_DELETE: 12
+ * * CHANNEL_OVERWRITE_CREATE: 13
+ * * CHANNEL_OVERWRITE_UPDATE: 14
+ * * CHANNEL_OVERWRITE_DELETE: 15
+ * * MEMBER_KICK: 20
+ * * MEMBER_PRUNE: 21
+ * * MEMBER_BAN_ADD: 22
+ * * MEMBER_BAN_REMOVE: 23
+ * * MEMBER_UPDATE: 24
+ * * MEMBER_ROLE_UPDATE: 25
+ * * ROLE_CREATE: 30
+ * * ROLE_UPDATE: 31
+ * * ROLE_DELETE: 32
+ * * INVITE_CREATE: 40
+ * * INVITE_UPDATE: 41
+ * * INVITE_DELETE: 42
+ * * WEBHOOK_CREATE: 50
+ * * WEBHOOK_UPDATE: 51
+ * * WEBHOOK_DELETE: 50
+ * * EMOJI_CREATE: 60
+ * * EMOJI_UPDATE: 61
+ * * EMOJI_DELETE: 62
+ * * MESSAGE_DELETE: 72
+ * @typedef {?number|string} AuditLogAction
+ */
+
+/**
+ * All available actions keyed under their names to their numeric values.
+ * @name GuildAuditLogs.Actions
+ * @type {AuditLogAction}
+ */
 const Actions = {
   ALL: null,
   GUILD_UPDATE: 1,
@@ -11814,20 +11870,7 @@ class GuildAuditLogs {
   }
 
   /**
-   * The target type of an entry, e.g. `GUILD`. Here are the available types:
-   * * GUILD
-   * * CHANNEL
-   * * USER
-   * * ROLE
-   * * INVITE
-   * * WEBHOOK
-   * * EMOJI
-   * * MESSAGE
-   * @typedef {string} TargetType
-   */
-
-  /**
-   * The target for an audit log entry. It can be one of:
+   * The target of an entry. It can be one of:
    * * A guild
    * * A user
    * * A role
@@ -11835,13 +11878,13 @@ class GuildAuditLogs {
    * * An invite
    * * A webhook
    * * An object where the keys represent either the new value or the old value
-   * @typedef {?Object|Guild|User|Role|Emoji|Invite|Webhook} EntryTarget
+   * @typedef {?Object|Guild|User|Role|Emoji|Invite|Webhook} AuditLogEntryTarget
    */
 
   /**
    * Finds the target type from the entry action.
-   * @param {number} target The action target
-   * @returns {?string}
+   * @param {AuditLogAction} target The action target
+   * @returns {AuditLogTargetType}
    */
   static targetType(target) {
     if (target < 10) return Targets.GUILD;
@@ -11860,13 +11903,14 @@ class GuildAuditLogs {
    * * CREATE
    * * DELETE
    * * UPDATE
-   * @typedef {string} ActionType
+   * * ALL
+   * @typedef {string} AuditLogActionType
    */
 
   /**
    * Finds the action type from the entry action.
-   * @param {string} action The action target
-   * @returns {string}
+   * @param {AuditLogAction} action The action target
+   * @returns {AuditLogActionType}
    */
   static actionType(action) {
     if ([
@@ -11916,19 +11960,19 @@ class GuildAuditLogsEntry {
     const targetType = GuildAuditLogs.targetType(data.action_type);
     /**
      * The target type of this entry
-     * @type {TargetType}
+     * @type {AuditLogTargetType}
      */
     this.targetType = targetType;
 
     /**
      * The action type of this entry
-     * @type {ActionType}
+     * @type {AuditLogActionType}
      */
     this.actionType = GuildAuditLogs.actionType(data.action_type);
 
     /**
-     * Specific action type of this entry
-     * @type {string}
+     * Specific action type of this entry in its string presentation
+     * @type {AuditLogAction}
      */
     this.action = Object.keys(Actions).find(k => Actions[k] === data.action_type);
 
@@ -12000,7 +12044,7 @@ class GuildAuditLogsEntry {
     if (targetType === Targets.UNKNOWN) {
       /**
        * The target of this entry
-       * @type {EntryTarget}
+       * @type {AuditLogEntryTarget}
        */
       this.target = this.changes.reduce((o, c) => {
         o[c.key] = c.new || c.old;
@@ -12113,7 +12157,7 @@ class GuildMemberStore extends DataStore {
   /**
    * Resolves a GuildMemberResolvable to an member ID string.
    * @param {GuildMemberResolvable} member The user that is part of the guild
-   * @returns {?string}
+   * @returns {?Snowflake}
    */
   resolveID(member) {
     const memberResolveable = super.resolveID(member);
@@ -12261,7 +12305,7 @@ class RoleStore extends DataStore {
     * @memberof RoleStore
     * @instance
     * @param {RoleResolvable} role The role resolvable to resolve
-    * @returns {?string}
+    * @returns {?Snowflake}
     */
 }
 
@@ -12316,7 +12360,7 @@ class GuildChannelStore extends DataStore {
    * @memberof GuildChannelStore
    * @instance
    * @param {GuildChannelResolvable} channel The GuildChannel resolvable to resolve
-   * @returns {?string}
+   * @returns {?Snowflake}
    */
 }
 
@@ -13047,7 +13091,7 @@ class UserStore extends DataStore {
   /**
    * Resolves a UserResolvable to a user ID string.
    * @param {UserResolvable} user The UserResolvable to identify
-   * @returns {?string}
+   * @returns {?Snowflake}
    */
   resolveID(user) {
     if (user instanceof GuildMember) return user.user.id;
@@ -13174,7 +13218,7 @@ class ChannelStore extends DataStore {
    * @memberof ChannelStore
    * @instance
    * @param {ChannelResolvable} channel The channel resolvable to resolve
-   * @returns {?string}
+   * @returns {?Snowflake}
    */
 }
 
@@ -13220,7 +13264,7 @@ class GuildStore extends DataStore {
    * @memberof GuildStore
    * @instance
    * @param {GuildResolvable} guild The guild resolvable to identify
-   * @returns {?string}
+   * @returns {?Snowflake}
    */
 }
 
@@ -14825,6 +14869,7 @@ class ClientManager {
 
   /**
    * The status of the client
+   * @readonly
    * @type {number}
    */
   get status() {
@@ -15255,7 +15300,7 @@ class WebSocketConnection extends EventEmitter {
     try {
       const packet = WebSocket.unpack(this.inflate.result);
       this.onPacket(packet);
-      if (this.client.listenerCount('raw')) this.client.emit('raw', data);
+      if (this.client.listenerCount('raw')) this.client.emit('raw', packet);
     } catch (err) {
       this.client.emit('debug', err);
     }
@@ -15810,7 +15855,7 @@ class ReactionStore extends DataStore {
     * @memberof ReactionStore
     * @instance
     * @param {MessageReactionResolvable} role The role resolvable to resolve
-    * @returns {?string}
+    * @returns {?Snowflake}
     */
 }
 
