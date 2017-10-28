@@ -2856,10 +2856,10 @@ class GuildMember extends Base {
   }
 
   /**
-   * When concatenated with a string, this automatically concatenates the user's mention instead of the Member object.
+   * When concatenated with a string, this automatically returns the user's mention instead of the GuildMember object.
    * @returns {string}
    * @example
-   * // Logs: Hello from <@123456789>!
+   * // Logs: Hello from <@123456789012345678>!
    * console.log(`Hello from ${member}!`);
    */
   toString() {
@@ -3927,11 +3927,8 @@ class GuildChannel extends Channel {
    * When concatenated with a string, this automatically returns the channel's mention instead of the Channel object.
    * @returns {string}
    * @example
-   * // Outputs: Hello from #general
-   * console.log(`Hello from ${channel}`);
-   * @example
-   * // Outputs: Hello from #general
-   * console.log('Hello from ' + channel);
+   * // Logs: Hello from <#123456789012345678>!
+   * console.log(`Hello from ${channel}!`);
    */
   toString() {
     return `<#${this.id}>`;
@@ -5404,10 +5401,10 @@ class User extends Base {
   }
 
   /**
-   * When concatenated with a string, this automatically concatenates the user's mention instead of the User object.
+   * When concatenated with a string, this automatically returns the user's mention instead of the User object.
    * @returns {string}
    * @example
-   * // logs: Hello from <@123456789>!
+   * // Logs: Hello from <@123456789012345678>!
    * console.log(`Hello from ${user}!`);
    */
   toString() {
@@ -5762,8 +5759,11 @@ class Role extends Base {
   }
 
   /**
-   * When concatenated with a string, this automatically concatenates the role mention rather than the Role object.
+   * When concatenated with a string, this automatically returns the role's mention instead of the Role object.
    * @returns {string}
+   * @example
+   * // Logs: Role: <@&123456789012345678>
+   * console.log(`Role: ${role}`);
    */
   toString() {
     if (this.id === this.guild.id) return '@everyone';
@@ -7075,14 +7075,11 @@ class Guild extends Base {
   }
 
   /**
-   * When concatenated with a string, this automatically concatenates the guild's name instead of the guild object.
+   * When concatenated with a string, this automatically returns the guild's name instead of the Guild object.
    * @returns {string}
    * @example
    * // Logs: Hello from My Guild!
    * console.log(`Hello from ${guild}!`);
-   * @example
-   * // Logs: Hello from My Guild!
-   * console.log('Hello from ' + guild + '!');
    */
   toString() {
     return this.name;
@@ -9479,8 +9476,12 @@ class ClientApplication extends Base {
   }
 
   /**
-   * When concatenated with a string, this automatically concatenates the app name rather than the app object.
+   * When concatenated with a string, this automatically returns the application's name instead of the
+   * ClientApplication object.
    * @returns {string}
+   * @example
+   * // Logs: Application name: My App
+   * console.log(`Application name: ${application}`);
    */
   toString() {
     return this.name;
@@ -9686,7 +9687,7 @@ class Emoji extends Base {
   }
 
   /**
-   * When concatenated with a string, this automatically returns the emoji mention rather than the object.
+   * When concatenated with a string, this automatically concatenates the emoji's mention instead of the Emoji object.
    * @returns {string}
    * @example
    * // Send an emoji:
@@ -9775,11 +9776,12 @@ class ReactionEmoji {
   }
 
   /**
-   * Creates the text required to form a graphical emoji on Discord.
+   * When concatenated with a string, this automatically returns the text required to form a graphical emoji on Discord
+   * instead of the ReactionEmoji object.
+   * @returns {string}
    * @example
    * // Send the emoji used in a reaction to the channel the reaction is part of
-   * reaction.message.channel.send(`The emoji used is ${reaction.emoji}`);
-   * @returns {string}
+   * reaction.message.channel.send(`The emoji used was: ${reaction.emoji}`);
    */
   toString() {
     return this.id ? `<:${this.name}:${this.id}>` : this.name;
@@ -10691,9 +10693,12 @@ class DMChannel extends Channel {
   }
 
   /**
-   * When concatenated with a string, this automatically concatenates the recipient's mention instead of the
-   * DM channel object.
+   * When concatenated with a string, this automatically returns the recipient's mention instead of the
+   * DMChannel object.
    * @returns {string}
+   * @example
+   * // Logs: Hello from <@123456789012345678>!
+   * console.log(`Hello from ${channel}!`);
    */
   toString() {
     return this.recipient.toString();
@@ -11348,14 +11353,12 @@ class GroupDMChannel extends Channel {
   }
 
   /**
-   * When concatenated with a string, this automatically concatenates the channel's name instead of the Channel object.
+   * When concatenated with a string, this automatically returns the channel's name instead of the
+   * GroupDMChannel object.
    * @returns {string}
    * @example
    * // Logs: Hello from My Group DM!
    * console.log(`Hello from ${channel}!`);
-   * @example
-   * // Logs: Hello from My Group DM!
-   * console.log(`Hello from ' + channel + '!');
    */
   toString() {
     return this.name;
