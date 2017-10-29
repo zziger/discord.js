@@ -61,14 +61,14 @@ window["Discord"] =
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 74);
+/******/ 	return __webpack_require__(__webpack_require__.s = 75);
 /******/ })
 /************************************************************************/
 /******/ ([
 /* 0 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Package = exports.Package = __webpack_require__(40);
+const Package = exports.Package = __webpack_require__(41);
 const { Error, RangeError } = __webpack_require__(4);
 const browser = exports.browser = typeof window !== 'undefined';
 
@@ -1268,16 +1268,16 @@ module.exports = Collection;
 /* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
-module.exports = __webpack_require__(41);
-module.exports.Messages = __webpack_require__(81);
+module.exports = __webpack_require__(42);
+module.exports.Messages = __webpack_require__(82);
 
 
 /***/ }),
 /* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Long = __webpack_require__(26);
-const snekfetch = __webpack_require__(27);
+const Long = __webpack_require__(27);
+const snekfetch = __webpack_require__(28);
 const { Colors, DefaultOptions, Endpoints } = __webpack_require__(0);
 const { Error: DiscordError, RangeError, TypeError } = __webpack_require__(4);
 const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
@@ -1692,7 +1692,7 @@ module.exports = DataStore;
 /* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Long = __webpack_require__(26);
+const Long = __webpack_require__(27);
 
 // Discord epoch (2015-01-01T00:00:00.000Z)
 const EPOCH = 1420070400000;
@@ -1775,7 +1775,7 @@ module.exports = SnowflakeUtil;
 
 const path = __webpack_require__(49);
 const fs = __webpack_require__(49);
-const snekfetch = __webpack_require__(27);
+const snekfetch = __webpack_require__(28);
 const Util = __webpack_require__(5);
 const { Error, TypeError } = __webpack_require__(4);
 const { browser } = __webpack_require__(0);
@@ -2326,7 +2326,7 @@ module.exports = Channel;
 /***/ (function(module, exports, __webpack_require__) {
 
 const TextBasedChannel = __webpack_require__(18);
-const Role = __webpack_require__(23);
+const Role = __webpack_require__(22);
 const Permissions = __webpack_require__(10);
 const Collection = __webpack_require__(3);
 const Base = __webpack_require__(6);
@@ -3089,343 +3089,199 @@ exports.RichPresenceAssets = RichPresenceAssets;
 /* 15 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const MessageAttachment = __webpack_require__(20);
-const Util = __webpack_require__(5);
-const { RangeError } = __webpack_require__(4);
+const DataResolver = __webpack_require__(9);
+const { createMessage } = __webpack_require__(21);
 
 /**
- * Represents an embed in a message (image/video preview, rich embed, etc.)
+ * Represents a webhook.
  */
-class MessageEmbed {
-  constructor(data = {}) {
-    this.setup(data);
-  }
-
-  setup(data) { // eslint-disable-line complexity
+class Webhook {
+  constructor(client, data) {
     /**
-     * The type of this embed
-     * @type {string}
-     */
-    this.type = data.type;
-
-    /**
-     * The title of this embed
-     * @type {?string}
-     */
-    this.title = data.title;
-
-    /**
-     * The description of this embed
-     * @type {?string}
-     */
-    this.description = data.description;
-
-    /**
-     * The URL of this embed
-     * @type {?string}
-     */
-    this.url = data.url;
-
-    /**
-     * The color of the embed
-     * @type {?number}
-     */
-    this.color = data.color;
-
-    /**
-     * The timestamp of this embed
-     * @type {?number}
-     */
-    this.timestamp = data.timestamp ? new Date(data.timestamp).getTime() : null;
-
-    /**
-     * The fields of this embed
-     * @type {Object[]}
-     * @property {string} name The name of this field
-     * @property {string} value The value of this field
-     * @property {boolean} inline If this field will be displayed inline
-     */
-    this.fields = data.fields ? data.fields.map(Util.cloneObject) : [];
-
-    /**
-     * The thumbnail of this embed (if there is one)
-     * @type {?Object}
-     * @property {string} url URL for this thumbnail
-     * @property {string} proxyURL ProxyURL for this thumbnail
-     * @property {number} height Height of this thumbnail
-     * @property {number} width Width of this thumbnail
-     */
-    this.thumbnail = data.thumbnail ? {
-      url: data.thumbnail.url,
-      proxyURL: data.thumbnail.proxy_url,
-      height: data.height,
-      width: data.width,
-    } : null;
-
-    /**
-     * The image of this embed, if there is one
-     * @type {?Object}
-     * @property {string} url URL for this image
-     * @property {string} proxyURL ProxyURL for this image
-     * @property {number} height Height of this image
-     * @property {number} width Width of this image
-     */
-    this.image = data.image ? {
-      url: data.image.url,
-      proxyURL: data.image.proxy_url,
-      height: data.height,
-      width: data.width,
-    } : null;
-
-    /**
-     * The video of this embed (if there is one)
-     * @type {?Object}
-     * @property {string} url URL of this video
-     * @property {number} height Height of this video
-     * @property {number} width Width of this video
+     * The client that instantiated the webhook
+     * @name Webhook#client
+     * @type {Client}
      * @readonly
      */
-    this.video = data.video;
+    Object.defineProperty(this, 'client', { value: client });
+    if (data) this._patch(data);
+  }
+
+  _patch(data) {
+    /**
+     * The name of the webhook
+     * @type {string}
+     */
+    this.name = data.name;
 
     /**
-     * The author of this embed (if there is one)
-     * @type {?Object}
-     * @property {string} name The name of this author
-     * @property {string} url URL of this author
-     * @property {string} iconURL URL of the icon for this author
-     * @property {string} proxyIconURL Proxied URL of the icon for this author
+     * The token for the webhook
+     * @type {string}
      */
-    this.author = data.author ? {
-      name: data.author.name,
-      url: data.author.url,
-      iconURL: data.author.iconURL || data.author.icon_url,
-      proxyIconURL: data.author.proxyIconUrl || data.author.proxy_icon_url,
-    } : null;
+    this.token = data.token;
 
     /**
-     * The provider of this embed (if there is one)
-     * @type {?Object}
-     * @property {string} name The name of this provider
-     * @property {string} url URL of this provider
+     * The avatar for the webhook
+     * @type {?string}
      */
-    this.provider = data.provider;
+    this.avatar = data.avatar;
 
     /**
-     * The footer of this embed
-     * @type {?Object}
-     * @property {string} text The text of this footer
-     * @property {string} iconURL URL of the icon for this footer
-     * @property {string} proxyIconURL Proxied URL of the icon for this footer
+     * The ID of the webhook
+     * @type {Snowflake}
      */
-    this.footer = data.footer ? {
-      text: data.footer.text,
-      iconURL: data.footer.iconURL || data.footer.icon_url,
-      proxyIconURL: data.footer.proxyIconURL || data.footer.proxy_icon_url,
-    } : null;
+    this.id = data.id;
 
-    if (data.files) {
+    /**
+     * The guild the webhook belongs to
+     * @type {Snowflake}
+     */
+    this.guildID = data.guild_id;
+
+    /**
+     * The channel the webhook belongs to
+     * @type {Snowflake}
+     */
+    this.channelID = data.channel_id;
+
+    if (data.user) {
       /**
-       * The files of this embed
-       * @type {?Object}
-       * @property {Array<FileOptions|string|MessageAttachment>} files Files to attach
+       * The owner of the webhook
+       * @type {?User|Object}
        */
-      this.files = data.files.map(file => {
-        if (file instanceof MessageAttachment) {
-          return typeof file.file === 'string' ? file.file : Util.cloneObject(file.file);
-        }
-        return file;
-      });
+      this.owner = this.client.users ? this.client.users.get(data.user.id) : data.user;
+    } else {
+      this.owner = null;
     }
   }
 
   /**
-   * The date this embed was created at
-   * @type {?Date}
-   * @readonly
+   * Options that can be passed into send.
+   * @typedef {Object} WebhookMessageOptions
+   * @property {string} [username=this.name] Username override for the message
+   * @property {string} [avatarURL] Avatar URL override for the message
+   * @property {boolean} [tts=false] Whether or not the message should be spoken aloud
+   * @property {string} [nonce=''] The nonce for the message
+   * @property {Object[]} [embeds] An array of embeds for the message
+   * (see [here](https://discordapp.com/developers/docs/resources/channel#embed-object) for more details)
+   * @property {boolean} [disableEveryone=this.client.options.disableEveryone] Whether or not @everyone and @here
+   * should be replaced with plain-text
+   * @property {FileOptions[]|string[]} [files] Files to send with the message
+   * @property {string|boolean} [code] Language for optional codeblock formatting to apply
+   * @property {boolean|SplitOptions} [split=false] Whether or not the message should be split into multiple messages if
+   * it exceeds the character limit. If an object is provided, these are the options for splitting the message.
    */
-  get createdAt() {
-    return this.timestamp ? new Date(this.timestamp) : null;
-  }
 
+  /* eslint-disable max-len */
   /**
-   * The hexadecimal version of the embed color, with a leading hash
-   * @type {?string}
-   * @readonly
+   * Sends a message with this webhook.
+   * @param {StringResolvable} [content] The content to send
+   * @param {WebhookMessageOptions|MessageEmbed|MessageAttachment|MessageAttachment[]} [options={}] The options to provide
+   * @returns {Promise<Message|Object>}
+   * @example
+   * // Send a message
+   * webhook.send('hello!')
+   *   .then(message => console.log(`Sent message: ${message.content}`))
+   *   .catch(console.error);
    */
-  get hexColor() {
-    return this.color ? `#${this.color.toString(16).padStart(6, '0')}` : null;
-  }
-
-  /**
-   * Adds a field to the embed (max 25).
-   * @param {StringResolvable} name The name of the field
-   * @param {StringResolvable} value The value of the field
-   * @param {boolean} [inline=false] Set the field to display inline
-   * @returns {MessageEmbed}
-   */
-  addField(name, value, inline = false) {
-    if (this.fields.length >= 25) throw new RangeError('EMBED_FIELD_COUNT');
-    name = Util.resolveString(name);
-    if (!String(name) || name.length > 256) throw new RangeError('EMBED_FIELD_NAME');
-    value = Util.resolveString(value);
-    if (!String(value) || value.length > 1024) throw new RangeError('EMBED_FIELD_VALUE');
-    this.fields.push({ name, value, inline });
-    return this;
-  }
-
-  /**
-   * Convenience function for `<MessageEmbed>.addField('\u200B', '\u200B', inline)`.
-   * @param {boolean} [inline=false] Set the field to display inline
-   * @returns {MessageEmbed}
-   */
-  addBlankField(inline = false) {
-    return this.addField('\u200B', '\u200B', inline);
-  }
-
-  /**
-   * Sets the file to upload alongside the embed. This file can be accessed via `attachment://fileName.extension` when
-   * setting an embed image or author/footer icons. Only one file may be attached.
-   * @param {Array<FileOptions|string|MessageAttachment>} files Files to attach
-   * @returns {MessageEmbed}
-   */
-  attachFiles(files) {
-    if (this.files) this.files = this.files.concat(files);
-    else this.files = files;
-    for (let file of files) {
-      if (file instanceof MessageAttachment) file = file.file;
+  /* eslint-enable max-len */
+  async send(content, options) { // eslint-disable-line complexity
+    if (!options && typeof content === 'object' && !(content instanceof Array)) {
+      options = content;
+      content = null;
+    } else if (!options) {
+      options = {};
     }
-    return this;
+    if (!options.content) options.content = content;
+
+    const { data, files } = await createMessage(this, options);
+
+    return this.client.api.webhooks(this.id, this.token).post({
+      data, files,
+      query: { wait: true },
+      auth: false,
+    }).then(d => {
+      if (!this.client.channels) return d;
+      return this.client.channels.get(d.channel_id).messages.create(d, false);
+    });
   }
 
   /**
-   * Sets the author of this embed.
-   * @param {StringResolvable} name The name of the author
-   * @param {string} [iconURL] The icon URL of the author
-   * @param {string} [url] The URL of the author
-   * @returns {MessageEmbed}
+   * Sends a raw slack message with this webhook.
+   * @param {Object} body The raw body to send
+   * @returns {Promise<Message|Object>}
+   * @example
+   * // Send a slack message
+   * webhook.sendSlackMessage({
+   *   'username': 'Wumpus',
+   *   'attachments': [{
+   *     'pretext': 'this looks pretty cool',
+   *     'color': '#F0F',
+   *     'footer_icon': 'http://snek.s3.amazonaws.com/topSnek.png',
+   *     'footer': 'Powered by sneks',
+   *     'ts': Date.now() / 1000
+   *   }]
+   * }).catch(console.error);
    */
-  setAuthor(name, iconURL, url) {
-    this.author = { name: Util.resolveString(name), iconURL, url };
-    return this;
+  sendSlackMessage(body) {
+    return this.client.api.webhooks(this.id, this.token).slack.post({
+      query: { wait: true },
+      auth: false,
+      data: body,
+    }).then(data => {
+      if (!this.client.channels) return data;
+      return this.client.channels.get(data.channel_id).messages.create(data, false);
+    });
   }
 
   /**
-   * Sets the color of this embed.
-   * @param {ColorResolvable} color The color of the embed
-   * @returns {MessageEmbed}
+   * Edits the webhook.
+   * @param {Object} options Options
+   * @param {string} [options.name=this.name] New name for this webhook
+   * @param {BufferResolvable} [options.avatar] New avatar for this webhook
+   * @param {ChannelResolvable} [options.channel] New channel for this webhook
+   * @param {string} [reason] Reason for editing this webhook
+   * @returns {Promise<Webhook>}
    */
-  setColor(color) {
-    this.color = Util.resolveColor(color);
-    return this;
+  edit({ name = this.name, avatar, channel }, reason) {
+    if (avatar && (typeof avatar === 'string' && !avatar.startsWith('data:'))) {
+      return DataResolver.resolveImage(avatar).then(image => this.edit({ name, avatar: image }, reason));
+    }
+    if (channel) channel = this.client.channels.resolveID(channel);
+    return this.client.api.webhooks(this.id, channel ? undefined : this.token).patch({
+      data: { name, avatar, channel_id: channel },
+      reason,
+    }).then(data => {
+      this.name = data.name;
+      this.avatar = data.avatar;
+      this.channelID = data.channel_id;
+      return this;
+    });
   }
 
   /**
-   * Sets the description of this embed.
-   * @param {StringResolvable} description The description
-   * @returns {MessageEmbed}
+   * Deletes the webhook.
+   * @param {string} [reason] Reason for deleting this webhook
+   * @returns {Promise}
    */
-  setDescription(description) {
-    description = Util.resolveString(description);
-    if (description.length > 2048) throw new RangeError('EMBED_DESCRIPTION');
-    this.description = description;
-    return this;
+  delete(reason) {
+    return this.client.api.webhooks(this.id, this.token).delete({ reason });
   }
 
-  /**
-   * Sets the footer of this embed.
-   * @param {StringResolvable} text The text of the footer
-   * @param {string} [iconURL] The icon URL of the footer
-   * @returns {MessageEmbed}
-   */
-  setFooter(text, iconURL) {
-    text = Util.resolveString(text);
-    if (text.length > 2048) throw new RangeError('EMBED_FOOTER_TEXT');
-    this.footer = { text, iconURL };
-    return this;
-  }
-
-  /**
-   * Sets the image of this embed.
-   * @param {string} url The URL of the image
-   * @returns {MessageEmbed}
-   */
-  setImage(url) {
-    this.image = { url };
-    return this;
-  }
-
-  /**
-   * Sets the thumbnail of this embed.
-   * @param {string} url The URL of the thumbnail
-   * @returns {MessageEmbed}
-   */
-  setThumbnail(url) {
-    this.thumbnail = { url };
-    return this;
-  }
-
-  /**
-   * Sets the timestamp of this embed.
-   * @param {Date} [timestamp=current date] The timestamp
-   * @returns {MessageEmbed}
-   */
-  setTimestamp(timestamp = new Date()) {
-    this.timestamp = timestamp.getTime();
-    return this;
-  }
-
-  /**
-   * Sets the title of this embed.
-   * @param {StringResolvable} title The title
-   * @returns {MessageEmbed}
-   */
-  setTitle(title) {
-    title = Util.resolveString(title);
-    if (title.length > 256) throw new RangeError('EMBED_TITLE');
-    this.title = title;
-    return this;
-  }
-
-  /**
-   * Sets the URL of this embed.
-   * @param {string} url The URL
-   * @returns {MessageEmbed}
-   */
-  setURL(url) {
-    this.url = url;
-    return this;
-  }
-
-  /**
-   * Transforms the embed object to be processed.
-   * @returns {Object} The raw data of this embed
-   * @private
-   */
-  _apiTransform() {
-    return {
-      title: this.title,
-      type: 'rich',
-      description: this.description,
-      url: this.url,
-      timestamp: this.timestamp ? new Date(this.timestamp) : null,
-      color: this.color,
-      fields: this.fields,
-      thumbnail: this.thumbnail,
-      image: this.image,
-      author: this.author ? {
-        name: this.author.name,
-        url: this.author.url,
-        icon_url: this.author.iconURL,
-      } : null,
-      footer: this.footer ? {
-        text: this.footer.text,
-        icon_url: this.footer.iconURL,
-      } : null,
-    };
+  static applyToClass(structure) {
+    for (const prop of [
+      'send',
+      'sendSlackMessage',
+      'edit',
+      'delete',
+    ]) {
+      Object.defineProperty(structure.prototype, prop,
+        Object.getOwnPropertyDescriptor(Webhook.prototype, prop));
+    }
   }
 }
 
-module.exports = MessageEmbed;
+module.exports = Webhook;
 
 
 /***/ }),
@@ -3433,8 +3289,8 @@ module.exports = MessageEmbed;
 /***/ (function(module, exports, __webpack_require__) {
 
 const Channel = __webpack_require__(12);
-const Role = __webpack_require__(23);
-const Invite = __webpack_require__(24);
+const Role = __webpack_require__(22);
+const Invite = __webpack_require__(25);
 const PermissionOverwrites = __webpack_require__(53);
 const Util = __webpack_require__(5);
 const Permissions = __webpack_require__(10);
@@ -3942,309 +3798,284 @@ module.exports = GuildChannel;
 /* 17 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Util = __webpack_require__(5);
-const DataResolver = __webpack_require__(9);
-const Embed = __webpack_require__(15);
-const MessageAttachment = __webpack_require__(20);
-const MessageEmbed = __webpack_require__(15);
-const { browser } = __webpack_require__(0);
+const TextBasedChannel = __webpack_require__(18);
+const { Presence } = __webpack_require__(14);
+const UserProfile = __webpack_require__(101);
+const Snowflake = __webpack_require__(8);
+const Base = __webpack_require__(6);
+const { Error } = __webpack_require__(4);
 
 /**
- * Represents a webhook.
+ * Represents a user on Discord.
+ * @implements {TextBasedChannel}
+ * @extends {Base}
  */
-class Webhook {
+class User extends Base {
   constructor(client, data) {
-    /**
-     * The client that instantiated the webhook
-     * @name Webhook#client
-     * @type {Client}
-     * @readonly
-     */
-    Object.defineProperty(this, 'client', { value: client });
-    if (data) this._patch(data);
-  }
-
-  _patch(data) {
-    /**
-     * The name of the webhook
-     * @type {string}
-     */
-    this.name = data.name;
+    super(client);
 
     /**
-     * The token for the webhook
-     * @type {string}
-     */
-    this.token = data.token;
-
-    /**
-     * The avatar for the webhook
-     * @type {?string}
-     */
-    this.avatar = data.avatar;
-
-    /**
-     * The ID of the webhook
+     * The ID of the user
      * @type {Snowflake}
      */
     this.id = data.id;
 
     /**
-     * The guild the webhook belongs to
-     * @type {Snowflake}
+     * Whether or not the user is a bot
+     * @type {boolean}
+     * @name User#bot
      */
-    this.guildID = data.guild_id;
+    this.bot = Boolean(data.bot);
+
+    this._patch(data);
+  }
+
+  _patch(data) {
+    /**
+     * The username of the user
+     * @type {string}
+     * @name User#username
+     */
+    if (data.username) this.username = data.username;
 
     /**
-     * The channel the webhook belongs to
-     * @type {Snowflake}
+     * A discriminator based on username for the user
+     * @type {string}
+     * @name User#discriminator
      */
-    this.channelID = data.channel_id;
+    if (data.discriminator) this.discriminator = data.discriminator;
 
-    if (data.user) {
-      /**
-       * The owner of the webhook
-       * @type {?User|Object}
-       */
-      this.owner = this.client.users ? this.client.users.get(data.user.id) : data.user;
-    } else {
-      this.owner = null;
-    }
+    /**
+     * The ID of the user's avatar
+     * @type {?string}
+     * @name User#avatar
+     */
+    if (typeof data.avatar !== 'undefined') this.avatar = data.avatar;
+
+    /**
+     * The ID of the last message sent by the user, if one was sent
+     * @type {?Snowflake}
+     */
+    this.lastMessageID = null;
+
+    /**
+     * The Message object of the last message sent by the user, if one was sent
+     * @type {?Message}
+     */
+    this.lastMessage = null;
   }
 
   /**
-   * Options that can be passed into send.
-   * @typedef {Object} WebhookMessageOptions
-   * @property {string} [username=this.name] Username override for the message
-   * @property {string} [avatarURL] Avatar URL override for the message
-   * @property {boolean} [tts=false] Whether or not the message should be spoken aloud
-   * @property {string} [nonce=''] The nonce for the message
-   * @property {Object[]} [embeds] An array of embeds for the message
-   * (see [here](https://discordapp.com/developers/docs/resources/channel#embed-object) for more details)
-   * @property {boolean} [disableEveryone=this.client.options.disableEveryone] Whether or not @everyone and @here
-   * should be replaced with plain-text
-   * @property {FileOptions[]|string[]} [files] Files to send with the message
-   * @property {string|boolean} [code] Language for optional codeblock formatting to apply
-   * @property {boolean|SplitOptions} [split=false] Whether or not the message should be split into multiple messages if
-   * it exceeds the character limit. If an object is provided, these are the options for splitting the message.
+   * The timestamp the user was created at
+   * @type {number}
+   * @readonly
    */
+  get createdTimestamp() {
+    return Snowflake.deconstruct(this.id).timestamp;
+  }
 
-  /* eslint-disable max-len */
   /**
-   * Sends a message with this webhook.
-   * @param {StringResolvable} [content] The content to send
-   * @param {WebhookMessageOptions|MessageEmbed|MessageAttachment|MessageAttachment[]} [options={}] The options to provide
-   * @returns {Promise<Message|Object>}
+   * The time the user was created at
+   * @type {Date}
+   * @readonly
+   */
+  get createdAt() {
+    return new Date(this.createdTimestamp);
+  }
+
+  /**
+   * The presence of this user
+   * @type {Presence}
+   * @readonly
+   */
+  get presence() {
+    if (this.client.presences.has(this.id)) return this.client.presences.get(this.id);
+    for (const guild of this.client.guilds.values()) {
+      if (guild.presences.has(this.id)) return guild.presences.get(this.id);
+    }
+    return new Presence(this.client);
+  }
+
+  /**
+   * A link to the user's avatar.
+   * @param {Object} [options={}] Options for the avatar url
+   * @param {string} [options.format='webp'] One of `webp`, `png`, `jpg`, `gif`. If no format is provided,
+   * it will be `gif` for animated avatars or otherwise `webp`
+   * @param {number} [options.size=128] One of `128`, `256`, `512`, `1024`, `2048`
+   * @returns {?string}
+   */
+  avatarURL({ format, size } = {}) {
+    if (!this.avatar) return null;
+    return this.client.rest.cdn.Avatar(this.id, this.avatar, format, size);
+  }
+
+  /**
+   * A link to the user's default avatar
+   * @type {string}
+   * @readonly
+   */
+  get defaultAvatarURL() {
+    return this.client.rest.cdn.DefaultAvatar(this.discriminator % 5);
+  }
+
+  /**
+   * A link to the user's avatar if they have one.
+   * Otherwise a link to their default avatar will be returned.
+   * @param {Object} [options={}] Options for the avatar url
+   * @param {string} [options.format='webp'] One of `webp`, `png`, `jpg`, `gif`. If no format is provided,
+   * it will be `gif` for animated avatars or otherwise `webp`
+   * @param {number} [options.size=128] One of `128`, `256`, `512`, `1024`, `2048`
+   * @returns {string}
+   */
+  displayAvatarURL(options) {
+    return this.avatarURL(options) || this.defaultAvatarURL;
+  }
+
+  /**
+   * The Discord "tag" (e.g. `hydrabolt#0086`) for this user
+   * @type {string}
+   * @readonly
+   */
+  get tag() {
+    return `${this.username}#${this.discriminator}`;
+  }
+
+  /**
+   * The note that is set for the user
+   * <warn>This is only available when using a user account.</warn>
+   * @type {?string}
+   * @readonly
+   */
+  get note() {
+    return this.client.user.notes.get(this.id) || null;
+  }
+
+  /**
+   * Checks whether the user is typing in a channel.
+   * @param {ChannelResolvable} channel The channel to check in
+   * @returns {boolean}
+   */
+  typingIn(channel) {
+    channel = this.client.channels.resolve(channel);
+    return channel._typing.has(this.id);
+  }
+
+  /**
+   * Gets the time that the user started typing.
+   * @param {ChannelResolvable} channel The channel to get the time in
+   * @returns {?Date}
+   */
+  typingSinceIn(channel) {
+    channel = this.client.channels.resolve(channel);
+    return channel._typing.has(this.id) ? new Date(channel._typing.get(this.id).since) : null;
+  }
+
+  /**
+   * Gets the amount of time the user has been typing in a channel for (in milliseconds), or -1 if they're not typing.
+   * @param {ChannelResolvable} channel The channel to get the time in
+   * @returns {number}
+   */
+  typingDurationIn(channel) {
+    channel = this.client.channels.resolve(channel);
+    return channel._typing.has(this.id) ? channel._typing.get(this.id).elapsedTime : -1;
+  }
+
+  /**
+   * The DM between the client's user and this user
+   * @type {?DMChannel}
+   * @readonly
+   */
+  get dmChannel() {
+    return this.client.channels.filter(c => c.type === 'dm').find(c => c.recipient.id === this.id);
+  }
+
+  /**
+   * Creates a DM channel between the client and the user.
+   * @returns {Promise<DMChannel>}
+   */
+  createDM() {
+    if (this.dmChannel) return Promise.resolve(this.dmChannel);
+    return this.client.api.users(this.client.user.id).channels.post({ data: {
+      recipient_id: this.id,
+    } })
+      .then(data => this.client.actions.ChannelCreate.handle(data).channel);
+  }
+
+  /**
+   * Deletes a DM channel (if one exists) between the client and the user. Resolves with the channel if successful.
+   * @returns {Promise<DMChannel>}
+   */
+  deleteDM() {
+    if (!this.dmChannel) return Promise.reject(new Error('USER_NO_DMCHANNEL'));
+    return this.client.api.channels(this.dmChannel.id).delete()
+      .then(data => this.client.actions.ChannelDelete.handle(data).channel);
+  }
+
+  /**
+   * Gets the profile of the user.
+   * <warn>This is only available when using a user account.</warn>
+   * @returns {Promise<UserProfile>}
+   */
+  fetchProfile() {
+    return this.client.api.users(this.id).profile.get().then(data => new UserProfile(this, data));
+  }
+
+  /**
+   * Sets a note for the user.
+   * <warn>This is only available when using a user account.</warn>
+   * @param {string} note The note to set for the user
+   * @returns {Promise<User>}
+   */
+  setNote(note) {
+    return this.client.api.users('@me').notes(this.id).put({ data: { note } })
+      .then(() => this);
+  }
+
+  /**
+   * Checks if the user is equal to another. It compares ID, username, discriminator, avatar, and bot flags.
+   * It is recommended to compare equality by using `user.id === user2.id` unless you want to compare all properties.
+   * @param {User} user User to compare with
+   * @returns {boolean}
+   */
+  equals(user) {
+    let equal = user &&
+      this.id === user.id &&
+      this.username === user.username &&
+      this.discriminator === user.discriminator &&
+      this.avatar === user.avatar;
+
+    return equal;
+  }
+
+  /**
+   * When concatenated with a string, this automatically returns the user's mention instead of the User object.
+   * @returns {string}
    * @example
-   * // Send a message
-   * webhook.send('hello!')
-   *   .then(message => console.log(`Sent message: ${message.content}`))
-   *   .catch(console.error);
+   * // Logs: Hello from <@123456789012345678>!
+   * console.log(`Hello from ${user}!`);
    */
-  /* eslint-enable max-len */
-  send(content, options) { // eslint-disable-line complexity
-    if (!options && typeof content === 'object' && !(content instanceof Array)) {
-      options = content;
-      content = '';
-    } else if (!options) {
-      options = {};
-    }
-
-    if (options instanceof MessageAttachment) options = { files: [options.file] };
-    if (options instanceof MessageEmbed) options = { embeds: [options] };
-    if (options.embed) options = { embeds: [options.embed] };
-
-    if (content instanceof Array || options instanceof Array) {
-      const which = content instanceof Array ? content : options;
-      const attachments = which.filter(item => item instanceof MessageAttachment);
-      const embeds = which.filter(item => item instanceof MessageEmbed);
-      if (attachments.length) options = { files: attachments };
-      if (embeds.length) options = { embeds };
-      if ((embeds.length || attachments.length) && content instanceof Array) content = '';
-    }
-
-    if (!options.username) options.username = this.name;
-    if (options.avatarURL) {
-      options.avatar_url = options.avatarURL;
-      options.avatarURL = null;
-    }
-
-    if (content) {
-      content = Util.resolveString(content);
-      let { split, code, disableEveryone } = options;
-      if (split && typeof split !== 'object') split = {};
-      if (typeof code !== 'undefined' && (typeof code !== 'boolean' || code === true)) {
-        content = Util.escapeMarkdown(content, true);
-        content = `\`\`\`${typeof code !== 'boolean' ? code || '' : ''}\n${content}\n\`\`\``;
-        if (split) {
-          split.prepend = `\`\`\`${typeof code !== 'boolean' ? code || '' : ''}\n`;
-          split.append = '\n```';
-        }
-      }
-      if (disableEveryone || (typeof disableEveryone === 'undefined' && this.client.options.disableEveryone)) {
-        content = content.replace(/@(everyone|here)/g, '@\u200b$1');
-      }
-
-      if (split) content = Util.splitMessage(content, split);
-    }
-    options.content = content;
-
-    if (options.embeds) options.embeds = options.embeds.map(embed => new Embed(embed)._apiTransform());
-
-    if (options.files) {
-      for (let i = 0; i < options.files.length; i++) {
-        let file = options.files[i];
-        if (typeof file === 'string' || (!browser && Buffer.isBuffer(file))) file = { attachment: file };
-        if (!file.name) {
-          if (typeof file.attachment === 'string') {
-            file.name = Util.basename(file.attachment);
-          } else if (file.attachment && file.attachment.path) {
-            file.name = Util.basename(file.attachment.path);
-          } else if (file instanceof MessageAttachment) {
-            file = { attachment: file.file, name: Util.basename(file.file) || 'file.jpg' };
-          } else {
-            file.name = 'file.jpg';
-          }
-        } else if (file instanceof MessageAttachment) {
-          file = file.file;
-        }
-        options.files[i] = file;
-      }
-
-      return Promise.all(options.files.map(file =>
-        DataResolver.resolveFile(file.attachment).then(resource => {
-          file.file = resource;
-          return file;
-        })
-      )).then(files => this.client.api.webhooks(this.id, this.token).post({
-        data: options,
-        query: { wait: true },
-        files,
-        auth: false,
-      }));
-    }
-
-    if (content instanceof Array) {
-      return new Promise((resolve, reject) => {
-        const messages = [];
-        (function sendChunk() {
-          const opt = content.length ? null : { embeds: options.embeds, files: options.files };
-          this.client.api.webhooks(this.id, this.token).post({
-            data: { content: content.shift(), opt },
-            query: { wait: true },
-            auth: false,
-          })
-            .then(message => {
-              messages.push(message);
-              if (content.length === 0) return resolve(messages);
-              return sendChunk.call(this);
-            })
-            .catch(reject);
-        }.call(this));
-      });
-    }
-
-    return this.client.api.webhooks(this.id, this.token).post({
-      data: options,
-      query: { wait: true },
-      auth: false,
-    }).then(data => {
-      if (!this.client.channels) return data;
-      return this.client.channels.get(data.channel_id).messages.create(data, false);
-    });
+  toString() {
+    return `<@${this.id}>`;
   }
 
-  /**
-   * Sends a raw slack message with this webhook.
-   * @param {Object} body The raw body to send
-   * @returns {Promise<Message|Object>}
-   * @example
-   * // Send a slack message
-   * webhook.sendSlackMessage({
-   *   'username': 'Wumpus',
-   *   'attachments': [{
-   *     'pretext': 'this looks pretty cool',
-   *     'color': '#F0F',
-   *     'footer_icon': 'http://snek.s3.amazonaws.com/topSnek.png',
-   *     'footer': 'Powered by sneks',
-   *     'ts': Date.now() / 1000
-   *   }]
-   * }).catch(console.error);
-   */
-  sendSlackMessage(body) {
-    return this.client.api.webhooks(this.id, this.token).slack.post({
-      query: { wait: true },
-      auth: false,
-      data: body,
-    }).then(data => {
-      if (!this.client.channels) return data;
-      return this.client.channels.get(data.channel_id).messages.create(data, false);
-    });
-  }
-
-  /**
-   * Edits the webhook.
-   * @param {Object} options Options
-   * @param {string} [options.name=this.name] New name for this webhook
-   * @param {BufferResolvable} [options.avatar] New avatar for this webhook
-   * @param {ChannelResolvable} [options.channel] New channel for this webhook
-   * @param {string} [reason] Reason for editing this webhook
-   * @returns {Promise<Webhook>}
-   */
-  edit({ name = this.name, avatar, channel }, reason) {
-    if (avatar && (typeof avatar === 'string' && !avatar.startsWith('data:'))) {
-      return DataResolver.resolveImage(avatar).then(image => this.edit({ name, avatar: image }, reason));
-    }
-    if (channel) channel = this.client.channels.resolveID(channel);
-    return this.client.api.webhooks(this.id, channel ? undefined : this.token).patch({
-      data: { name, avatar, channel_id: channel },
-      reason,
-    }).then(data => {
-      this.name = data.name;
-      this.avatar = data.avatar;
-      this.channelID = data.channel_id;
-      return this;
-    });
-  }
-
-  /**
-   * Deletes the webhook.
-   * @param {string} [reason] Reason for deleting this webhook
-   * @returns {Promise}
-   */
-  delete(reason) {
-    return this.client.api.webhooks(this.id, this.token).delete({ reason });
-  }
-
-  static applyToClass(structure) {
-    for (const prop of [
-      'send',
-      'sendSlackMessage',
-      'edit',
-      'delete',
-    ]) {
-      Object.defineProperty(structure.prototype, prop,
-        Object.getOwnPropertyDescriptor(Webhook.prototype, prop));
-    }
-  }
+  // These are here only for documentation purposes - they are implemented by TextBasedChannel
+  /* eslint-disable no-empty-function */
+  send() {}
 }
 
-module.exports = Webhook;
+TextBasedChannel.applyToClass(User);
+
+module.exports = User;
 
 
 /***/ }),
 /* 18 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const MessageCollector = __webpack_require__(44);
-const Shared = __webpack_require__(45);
-const Util = __webpack_require__(5);
-const { browser } = __webpack_require__(0);
+const MessageCollector = __webpack_require__(45);
+const Shared = __webpack_require__(21);
 const Snowflake = __webpack_require__(8);
 const Collection = __webpack_require__(3);
-const DataResolver = __webpack_require__(9);
-const MessageAttachment = __webpack_require__(20);
-const MessageEmbed = __webpack_require__(15);
 const { RangeError, TypeError } = __webpack_require__(4);
 
 /**
@@ -4318,60 +4149,11 @@ class TextBasedChannel {
   send(content, options) { // eslint-disable-line complexity
     if (!options && typeof content === 'object' && !(content instanceof Array)) {
       options = content;
-      content = '';
+      content = null;
     } else if (!options) {
       options = {};
     }
-
-    if (options instanceof MessageEmbed) options = { embed: options };
-    if (options instanceof MessageAttachment) options = { files: [options.file] };
-
-    if (content instanceof Array || options instanceof Array) {
-      const which = content instanceof Array ? content : options;
-      const attachments = which.filter(item => item instanceof MessageAttachment);
-      if (attachments.length) {
-        options = { files: attachments };
-        if (content instanceof Array) content = '';
-      }
-    }
-
     if (!options.content) options.content = content;
-
-    if (options.embed && options.embed.files) {
-      if (options.files) options.files = options.files.concat(options.embed.files);
-      else options.files = options.embed.files;
-    }
-
-    if (options.files) {
-      for (let i = 0; i < options.files.length; i++) {
-        let file = options.files[i];
-        if (typeof file === 'string' || (!browser && Buffer.isBuffer(file))) file = { attachment: file };
-        if (!file.name) {
-          if (typeof file.attachment === 'string') {
-            file.name = Util.basename(file.attachment);
-          } else if (file.attachment && file.attachment.path) {
-            file.name = Util.basename(file.attachment.path);
-          } else if (file instanceof MessageAttachment) {
-            file = { attachment: file.file, name: Util.basename(file.file) || 'file.jpg' };
-          } else {
-            file.name = 'file.jpg';
-          }
-        } else if (file instanceof MessageAttachment) {
-          file = file.file;
-        }
-        options.files[i] = file;
-      }
-
-      return Promise.all(options.files.map(file =>
-        DataResolver.resolveFile(file.attachment).then(resource => {
-          file.file = resource;
-          return file;
-        })
-      )).then(files => {
-        options.files = files;
-        return Shared.sendMessage(this, options);
-      });
-    }
 
     return Shared.sendMessage(this, options);
   }
@@ -4396,26 +4178,45 @@ class TextBasedChannel {
 
   /**
    * Starts a typing indicator in the channel.
-   * @param {number} [count] The number of times startTyping should be considered to have been called
+   * @param {number} [count=1] The number of times startTyping should be considered to have been called
+   * @returns {Promise} Resolves once the bot stops typing gracefully, or rejects when an error occurs
    * @example
-   * // Start typing in a channel
+   * // Start typing in a channel, or increase the typing count by one
    * channel.startTyping();
+   * @example
+   * // Start typing in a channel with a typing count of five, or set it to five
+   * channel.startTyping(5);
    */
   startTyping(count) {
     if (typeof count !== 'undefined' && count < 1) throw new RangeError('TYPING_COUNT');
-    if (!this.client.user._typing.has(this.id)) {
-      const endpoint = this.client.api.channels[this.id].typing;
-      this.client.user._typing.set(this.id, {
-        count: count || 1,
-        interval: this.client.setInterval(() => {
-          endpoint.post();
-        }, 9000),
-      });
-      endpoint.post();
-    } else {
+    if (this.client.user._typing.has(this.id)) {
       const entry = this.client.user._typing.get(this.id);
       entry.count = count || entry.count + 1;
+      return entry.promise;
     }
+
+    const entry = {};
+    entry.promise = new Promise((resolve, reject) => {
+      const endpoint = this.client.api.channels[this.id].typing;
+      Object.assign(entry, {
+        count: count || 1,
+        interval: this.client.setInterval(() => {
+          endpoint.post().catch(error => {
+            this.client.clearInterval(entry.interval);
+            this.client.user._typing.delete(this.id);
+            reject(error);
+          });
+        }, 9000),
+        resolve,
+      });
+      endpoint.post().catch(error => {
+        this.client.clearInterval(entry.interval);
+        this.client.user._typing.delete(this.id);
+        reject(error);
+      });
+      this.client.user._typing.set(this.id, entry);
+    });
+    return entry.promise;
   }
 
   /**
@@ -4424,10 +4225,10 @@ class TextBasedChannel {
    * <info>It can take a few seconds for the client user to stop typing.</info>
    * @param {boolean} [force=false] Whether or not to reset the call count and force the indicator to stop
    * @example
-   * // Stop typing in a channel
+   * // Reduce the typing count by one and stop typing if it reached 0
    * channel.stopTyping();
    * @example
-   * // Force typing to fully stop in a channel
+   * // Force typing to fully stop regardless of typing count
    * channel.stopTyping(true);
    */
   stopTyping(force = false) {
@@ -4437,6 +4238,7 @@ class TextBasedChannel {
       if (entry.count <= 0 || force) {
         this.client.clearInterval(entry.interval);
         this.client.user._typing.delete(this.id);
+        entry.resolve();
       }
     }
   }
@@ -4601,7 +4403,7 @@ const MessageStore = __webpack_require__(19);
 
 const DataStore = __webpack_require__(7);
 const Collection = __webpack_require__(3);
-const Message = __webpack_require__(31);
+const Message = __webpack_require__(32);
 const { Error } = __webpack_require__(4);
 
 /**
@@ -4722,125 +4524,6 @@ module.exports = MessageStore;
 
 /***/ }),
 /* 20 */
-/***/ (function(module, exports) {
-
-/**
- * Represents an attachment in a message.
- * @param {BufferResolvable|Stream} file The file
- * @param {string} [name] The name of the file, if any
- */
-class MessageAttachment {
-  constructor(file, name, data) {
-    this.file = null;
-    if (data) this._patch(data);
-    if (name) this.setAttachment(file, name);
-    else this._attach(file);
-  }
-
-  /**
-    * The name of the file
-    * @type {?string}
-    * @readonly
-    */
-  get name() {
-    return this.file.name;
-  }
-
-  /**
-    * The file
-    * @type {?BufferResolvable|Stream}
-    * @readonly
-    */
-  get attachment() {
-    return this.file.attachment;
-  }
-
-  /**
-    * Sets the file of this attachment.
-    * @param {BufferResolvable|Stream} file The file
-    * @param {string} name The name of the file
-    * @returns {MessageAttachment} This attachment
-    */
-  setAttachment(file, name) {
-    this.file = { attachment: file, name };
-    return this;
-  }
-
-  /**
-    * Sets the file of this attachment.
-    * @param {BufferResolvable|Stream} attachment The file
-    * @returns {MessageAttachment} This attachment
-    */
-  setFile(attachment) {
-    this.file = { attachment };
-    return this;
-  }
-
-  /**
-    * Sets the name of this attachment.
-    * @param {string} name The name of the image
-    * @returns {MessageAttachment} This attachment
-    */
-  setName(name) {
-    this.file.name = name;
-    return this;
-  }
-
-  /**
-    * Sets the file of this attachment.
-    * @param {BufferResolvable|Stream} file The file
-    * @param {string} name The name of the file
-    * @private
-    */
-  _attach(file, name) {
-    if (typeof file === 'string') this.file = file;
-    else this.setAttachment(file, name);
-  }
-
-  _patch(data) {
-    /**
-     * The ID of this attachment
-     * @type {Snowflake}
-     */
-    this.id = data.id;
-
-    /**
-     * The size of this attachment in bytes
-     * @type {number}
-     */
-    this.size = data.size;
-
-    /**
-     * The URL to this attachment
-     * @type {string}
-     */
-    this.url = data.url;
-
-    /**
-     * The Proxy URL to this attachment
-     * @type {string}
-     */
-    this.proxyURL = data.proxy_url;
-
-    /**
-     * The height of this attachment (if an image)
-     * @type {?number}
-     */
-    this.height = data.height;
-
-    /**
-     * The width of this attachment (if an image)
-     * @type {?number}
-     */
-    this.width = data.width;
-  }
-}
-
-module.exports = MessageAttachment;
-
-
-/***/ }),
-/* 21 */
 /***/ (function(module, exports) {
 
 // Copyright Joyent, Inc. and other Node contributors.
@@ -5148,281 +4831,18 @@ function isUndefined(arg) {
 
 
 /***/ }),
-/* 22 */
+/* 21 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const TextBasedChannel = __webpack_require__(18);
-const { Presence } = __webpack_require__(14);
-const UserProfile = __webpack_require__(100);
-const Snowflake = __webpack_require__(8);
-const Base = __webpack_require__(6);
-const { Error } = __webpack_require__(4);
-
-/**
- * Represents a user on Discord.
- * @implements {TextBasedChannel}
- * @extends {Base}
- */
-class User extends Base {
-  constructor(client, data) {
-    super(client);
-
-    /**
-     * The ID of the user
-     * @type {Snowflake}
-     */
-    this.id = data.id;
-
-    /**
-     * Whether or not the user is a bot
-     * @type {boolean}
-     * @name User#bot
-     */
-    this.bot = Boolean(data.bot);
-
-    this._patch(data);
-  }
-
-  _patch(data) {
-    /**
-     * The username of the user
-     * @type {string}
-     * @name User#username
-     */
-    if (data.username) this.username = data.username;
-
-    /**
-     * A discriminator based on username for the user
-     * @type {string}
-     * @name User#discriminator
-     */
-    if (data.discriminator) this.discriminator = data.discriminator;
-
-    /**
-     * The ID of the user's avatar
-     * @type {?string}
-     * @name User#avatar
-     */
-    if (typeof data.avatar !== 'undefined') this.avatar = data.avatar;
-
-    /**
-     * The ID of the last message sent by the user, if one was sent
-     * @type {?Snowflake}
-     */
-    this.lastMessageID = null;
-
-    /**
-     * The Message object of the last message sent by the user, if one was sent
-     * @type {?Message}
-     */
-    this.lastMessage = null;
-  }
-
-  /**
-   * The timestamp the user was created at
-   * @type {number}
-   * @readonly
-   */
-  get createdTimestamp() {
-    return Snowflake.deconstruct(this.id).timestamp;
-  }
-
-  /**
-   * The time the user was created at
-   * @type {Date}
-   * @readonly
-   */
-  get createdAt() {
-    return new Date(this.createdTimestamp);
-  }
-
-  /**
-   * The presence of this user
-   * @type {Presence}
-   * @readonly
-   */
-  get presence() {
-    if (this.client.presences.has(this.id)) return this.client.presences.get(this.id);
-    for (const guild of this.client.guilds.values()) {
-      if (guild.presences.has(this.id)) return guild.presences.get(this.id);
-    }
-    return new Presence(this.client);
-  }
-
-  /**
-   * A link to the user's avatar.
-   * @param {Object} [options={}] Options for the avatar url
-   * @param {string} [options.format='webp'] One of `webp`, `png`, `jpg`, `gif`. If no format is provided,
-   * it will be `gif` for animated avatars or otherwise `webp`
-   * @param {number} [options.size=128] One of `128`, `256`, `512`, `1024`, `2048`
-   * @returns {?string}
-   */
-  avatarURL({ format, size } = {}) {
-    if (!this.avatar) return null;
-    return this.client.rest.cdn.Avatar(this.id, this.avatar, format, size);
-  }
-
-  /**
-   * A link to the user's default avatar
-   * @type {string}
-   * @readonly
-   */
-  get defaultAvatarURL() {
-    return this.client.rest.cdn.DefaultAvatar(this.discriminator % 5);
-  }
-
-  /**
-   * A link to the user's avatar if they have one.
-   * Otherwise a link to their default avatar will be returned.
-   * @param {Object} [options={}] Options for the avatar url
-   * @param {string} [options.format='webp'] One of `webp`, `png`, `jpg`, `gif`. If no format is provided,
-   * it will be `gif` for animated avatars or otherwise `webp`
-   * @param {number} [options.size=128] One of `128`, `256`, `512`, `1024`, `2048`
-   * @returns {string}
-   */
-  displayAvatarURL(options) {
-    return this.avatarURL(options) || this.defaultAvatarURL;
-  }
-
-  /**
-   * The Discord "tag" (e.g. `hydrabolt#0086`) for this user
-   * @type {string}
-   * @readonly
-   */
-  get tag() {
-    return `${this.username}#${this.discriminator}`;
-  }
-
-  /**
-   * The note that is set for the user
-   * <warn>This is only available when using a user account.</warn>
-   * @type {?string}
-   * @readonly
-   */
-  get note() {
-    return this.client.user.notes.get(this.id) || null;
-  }
-
-  /**
-   * Checks whether the user is typing in a channel.
-   * @param {ChannelResolvable} channel The channel to check in
-   * @returns {boolean}
-   */
-  typingIn(channel) {
-    channel = this.client.channels.resolve(channel);
-    return channel._typing.has(this.id);
-  }
-
-  /**
-   * Gets the time that the user started typing.
-   * @param {ChannelResolvable} channel The channel to get the time in
-   * @returns {?Date}
-   */
-  typingSinceIn(channel) {
-    channel = this.client.channels.resolve(channel);
-    return channel._typing.has(this.id) ? new Date(channel._typing.get(this.id).since) : null;
-  }
-
-  /**
-   * Gets the amount of time the user has been typing in a channel for (in milliseconds), or -1 if they're not typing.
-   * @param {ChannelResolvable} channel The channel to get the time in
-   * @returns {number}
-   */
-  typingDurationIn(channel) {
-    channel = this.client.channels.resolve(channel);
-    return channel._typing.has(this.id) ? channel._typing.get(this.id).elapsedTime : -1;
-  }
-
-  /**
-   * The DM between the client's user and this user
-   * @type {?DMChannel}
-   * @readonly
-   */
-  get dmChannel() {
-    return this.client.channels.filter(c => c.type === 'dm').find(c => c.recipient.id === this.id);
-  }
-
-  /**
-   * Creates a DM channel between the client and the user.
-   * @returns {Promise<DMChannel>}
-   */
-  createDM() {
-    if (this.dmChannel) return Promise.resolve(this.dmChannel);
-    return this.client.api.users(this.client.user.id).channels.post({ data: {
-      recipient_id: this.id,
-    } })
-      .then(data => this.client.actions.ChannelCreate.handle(data).channel);
-  }
-
-  /**
-   * Deletes a DM channel (if one exists) between the client and the user. Resolves with the channel if successful.
-   * @returns {Promise<DMChannel>}
-   */
-  deleteDM() {
-    if (!this.dmChannel) return Promise.reject(new Error('USER_NO_DMCHANNEL'));
-    return this.client.api.channels(this.dmChannel.id).delete()
-      .then(data => this.client.actions.ChannelDelete.handle(data).channel);
-  }
-
-  /**
-   * Gets the profile of the user.
-   * <warn>This is only available when using a user account.</warn>
-   * @returns {Promise<UserProfile>}
-   */
-  fetchProfile() {
-    return this.client.api.users(this.id).profile.get().then(data => new UserProfile(this, data));
-  }
-
-  /**
-   * Sets a note for the user.
-   * <warn>This is only available when using a user account.</warn>
-   * @param {string} note The note to set for the user
-   * @returns {Promise<User>}
-   */
-  setNote(note) {
-    return this.client.api.users('@me').notes(this.id).put({ data: { note } })
-      .then(() => this);
-  }
-
-  /**
-   * Checks if the user is equal to another. It compares ID, username, discriminator, avatar, and bot flags.
-   * It is recommended to compare equality by using `user.id === user2.id` unless you want to compare all properties.
-   * @param {User} user User to compare with
-   * @returns {boolean}
-   */
-  equals(user) {
-    let equal = user &&
-      this.id === user.id &&
-      this.username === user.username &&
-      this.discriminator === user.discriminator &&
-      this.avatar === user.avatar;
-
-    return equal;
-  }
-
-  /**
-   * When concatenated with a string, this automatically returns the user's mention instead of the User object.
-   * @returns {string}
-   * @example
-   * // Logs: Hello from <@123456789012345678>!
-   * console.log(`Hello from ${user}!`);
-   */
-  toString() {
-    return `<@${this.id}>`;
-  }
-
-  // These are here only for documentation purposes - they are implemented by TextBasedChannel
-  /* eslint-disable no-empty-function */
-  send() {}
-}
-
-TextBasedChannel.applyToClass(User);
-
-module.exports = User;
+module.exports = {
+  search: __webpack_require__(98),
+  sendMessage: __webpack_require__(100),
+  createMessage: __webpack_require__(60),
+};
 
 
 /***/ }),
-/* 23 */
+/* 22 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Snowflake = __webpack_require__(8);
@@ -5787,7 +5207,469 @@ module.exports = Role;
 
 
 /***/ }),
+/* 23 */
+/***/ (function(module, exports) {
+
+/**
+ * Represents an attachment in a message.
+ * @param {BufferResolvable|Stream} file The file
+ * @param {string} [name] The name of the file, if any
+ */
+class MessageAttachment {
+  constructor(file, name, data) {
+    this.file = null;
+    if (data) this._patch(data);
+    if (name) this.setAttachment(file, name);
+    else this._attach(file);
+  }
+
+  /**
+    * The name of the file
+    * @type {?string}
+    * @readonly
+    */
+  get name() {
+    return this.file.name;
+  }
+
+  /**
+    * The file
+    * @type {?BufferResolvable|Stream}
+    * @readonly
+    */
+  get attachment() {
+    return this.file.attachment;
+  }
+
+  /**
+    * Sets the file of this attachment.
+    * @param {BufferResolvable|Stream} file The file
+    * @param {string} name The name of the file
+    * @returns {MessageAttachment} This attachment
+    */
+  setAttachment(file, name) {
+    this.file = { attachment: file, name };
+    return this;
+  }
+
+  /**
+    * Sets the file of this attachment.
+    * @param {BufferResolvable|Stream} attachment The file
+    * @returns {MessageAttachment} This attachment
+    */
+  setFile(attachment) {
+    this.file = { attachment };
+    return this;
+  }
+
+  /**
+    * Sets the name of this attachment.
+    * @param {string} name The name of the image
+    * @returns {MessageAttachment} This attachment
+    */
+  setName(name) {
+    this.file.name = name;
+    return this;
+  }
+
+  /**
+    * Sets the file of this attachment.
+    * @param {BufferResolvable|Stream} file The file
+    * @param {string} name The name of the file
+    * @private
+    */
+  _attach(file, name) {
+    if (typeof file === 'string') this.file = file;
+    else this.setAttachment(file, name);
+  }
+
+  _patch(data) {
+    /**
+     * The ID of this attachment
+     * @type {Snowflake}
+     */
+    this.id = data.id;
+
+    /**
+     * The size of this attachment in bytes
+     * @type {number}
+     */
+    this.size = data.size;
+
+    /**
+     * The URL to this attachment
+     * @type {string}
+     */
+    this.url = data.url;
+
+    /**
+     * The Proxy URL to this attachment
+     * @type {string}
+     */
+    this.proxyURL = data.proxy_url;
+
+    /**
+     * The height of this attachment (if an image)
+     * @type {?number}
+     */
+    this.height = data.height;
+
+    /**
+     * The width of this attachment (if an image)
+     * @type {?number}
+     */
+    this.width = data.width;
+  }
+}
+
+module.exports = MessageAttachment;
+
+
+/***/ }),
 /* 24 */
+/***/ (function(module, exports, __webpack_require__) {
+
+const MessageAttachment = __webpack_require__(23);
+const Util = __webpack_require__(5);
+const { RangeError } = __webpack_require__(4);
+
+/**
+ * Represents an embed in a message (image/video preview, rich embed, etc.)
+ */
+class MessageEmbed {
+  constructor(data = {}) {
+    this.setup(data);
+  }
+
+  setup(data) { // eslint-disable-line complexity
+    /**
+     * The type of this embed
+     * @type {string}
+     */
+    this.type = data.type;
+
+    /**
+     * The title of this embed
+     * @type {?string}
+     */
+    this.title = data.title;
+
+    /**
+     * The description of this embed
+     * @type {?string}
+     */
+    this.description = data.description;
+
+    /**
+     * The URL of this embed
+     * @type {?string}
+     */
+    this.url = data.url;
+
+    /**
+     * The color of the embed
+     * @type {?number}
+     */
+    this.color = data.color;
+
+    /**
+     * The timestamp of this embed
+     * @type {?number}
+     */
+    this.timestamp = data.timestamp ? new Date(data.timestamp).getTime() : null;
+
+    /**
+     * The fields of this embed
+     * @type {Object[]}
+     * @property {string} name The name of this field
+     * @property {string} value The value of this field
+     * @property {boolean} inline If this field will be displayed inline
+     */
+    this.fields = data.fields ? data.fields.map(Util.cloneObject) : [];
+
+    /**
+     * The thumbnail of this embed (if there is one)
+     * @type {?Object}
+     * @property {string} url URL for this thumbnail
+     * @property {string} proxyURL ProxyURL for this thumbnail
+     * @property {number} height Height of this thumbnail
+     * @property {number} width Width of this thumbnail
+     */
+    this.thumbnail = data.thumbnail ? {
+      url: data.thumbnail.url,
+      proxyURL: data.thumbnail.proxy_url,
+      height: data.height,
+      width: data.width,
+    } : null;
+
+    /**
+     * The image of this embed, if there is one
+     * @type {?Object}
+     * @property {string} url URL for this image
+     * @property {string} proxyURL ProxyURL for this image
+     * @property {number} height Height of this image
+     * @property {number} width Width of this image
+     */
+    this.image = data.image ? {
+      url: data.image.url,
+      proxyURL: data.image.proxy_url,
+      height: data.height,
+      width: data.width,
+    } : null;
+
+    /**
+     * The video of this embed (if there is one)
+     * @type {?Object}
+     * @property {string} url URL of this video
+     * @property {number} height Height of this video
+     * @property {number} width Width of this video
+     * @readonly
+     */
+    this.video = data.video;
+
+    /**
+     * The author of this embed (if there is one)
+     * @type {?Object}
+     * @property {string} name The name of this author
+     * @property {string} url URL of this author
+     * @property {string} iconURL URL of the icon for this author
+     * @property {string} proxyIconURL Proxied URL of the icon for this author
+     */
+    this.author = data.author ? {
+      name: data.author.name,
+      url: data.author.url,
+      iconURL: data.author.iconURL || data.author.icon_url,
+      proxyIconURL: data.author.proxyIconUrl || data.author.proxy_icon_url,
+    } : null;
+
+    /**
+     * The provider of this embed (if there is one)
+     * @type {?Object}
+     * @property {string} name The name of this provider
+     * @property {string} url URL of this provider
+     */
+    this.provider = data.provider;
+
+    /**
+     * The footer of this embed
+     * @type {?Object}
+     * @property {string} text The text of this footer
+     * @property {string} iconURL URL of the icon for this footer
+     * @property {string} proxyIconURL Proxied URL of the icon for this footer
+     */
+    this.footer = data.footer ? {
+      text: data.footer.text,
+      iconURL: data.footer.iconURL || data.footer.icon_url,
+      proxyIconURL: data.footer.proxyIconURL || data.footer.proxy_icon_url,
+    } : null;
+
+    if (data.files) {
+      /**
+       * The files of this embed
+       * @type {?Object}
+       * @property {Array<FileOptions|string|MessageAttachment>} files Files to attach
+       */
+      this.files = data.files.map(file => {
+        if (file instanceof MessageAttachment) {
+          return typeof file.file === 'string' ? file.file : Util.cloneObject(file.file);
+        }
+        return file;
+      });
+    }
+  }
+
+  /**
+   * The date this embed was created at
+   * @type {?Date}
+   * @readonly
+   */
+  get createdAt() {
+    return this.timestamp ? new Date(this.timestamp) : null;
+  }
+
+  /**
+   * The hexadecimal version of the embed color, with a leading hash
+   * @type {?string}
+   * @readonly
+   */
+  get hexColor() {
+    return this.color ? `#${this.color.toString(16).padStart(6, '0')}` : null;
+  }
+
+  /**
+   * Adds a field to the embed (max 25).
+   * @param {StringResolvable} name The name of the field
+   * @param {StringResolvable} value The value of the field
+   * @param {boolean} [inline=false] Set the field to display inline
+   * @returns {MessageEmbed}
+   */
+  addField(name, value, inline = false) {
+    if (this.fields.length >= 25) throw new RangeError('EMBED_FIELD_COUNT');
+    name = Util.resolveString(name);
+    if (!String(name) || name.length > 256) throw new RangeError('EMBED_FIELD_NAME');
+    value = Util.resolveString(value);
+    if (!String(value) || value.length > 1024) throw new RangeError('EMBED_FIELD_VALUE');
+    this.fields.push({ name, value, inline });
+    return this;
+  }
+
+  /**
+   * Convenience function for `<MessageEmbed>.addField('\u200B', '\u200B', inline)`.
+   * @param {boolean} [inline=false] Set the field to display inline
+   * @returns {MessageEmbed}
+   */
+  addBlankField(inline = false) {
+    return this.addField('\u200B', '\u200B', inline);
+  }
+
+  /**
+   * Sets the file to upload alongside the embed. This file can be accessed via `attachment://fileName.extension` when
+   * setting an embed image or author/footer icons. Only one file may be attached.
+   * @param {Array<FileOptions|string|MessageAttachment>} files Files to attach
+   * @returns {MessageEmbed}
+   */
+  attachFiles(files) {
+    if (this.files) this.files = this.files.concat(files);
+    else this.files = files;
+    for (let file of files) {
+      if (file instanceof MessageAttachment) file = file.file;
+    }
+    return this;
+  }
+
+  /**
+   * Sets the author of this embed.
+   * @param {StringResolvable} name The name of the author
+   * @param {string} [iconURL] The icon URL of the author
+   * @param {string} [url] The URL of the author
+   * @returns {MessageEmbed}
+   */
+  setAuthor(name, iconURL, url) {
+    this.author = { name: Util.resolveString(name), iconURL, url };
+    return this;
+  }
+
+  /**
+   * Sets the color of this embed.
+   * @param {ColorResolvable} color The color of the embed
+   * @returns {MessageEmbed}
+   */
+  setColor(color) {
+    this.color = Util.resolveColor(color);
+    return this;
+  }
+
+  /**
+   * Sets the description of this embed.
+   * @param {StringResolvable} description The description
+   * @returns {MessageEmbed}
+   */
+  setDescription(description) {
+    description = Util.resolveString(description);
+    if (description.length > 2048) throw new RangeError('EMBED_DESCRIPTION');
+    this.description = description;
+    return this;
+  }
+
+  /**
+   * Sets the footer of this embed.
+   * @param {StringResolvable} text The text of the footer
+   * @param {string} [iconURL] The icon URL of the footer
+   * @returns {MessageEmbed}
+   */
+  setFooter(text, iconURL) {
+    text = Util.resolveString(text);
+    if (text.length > 2048) throw new RangeError('EMBED_FOOTER_TEXT');
+    this.footer = { text, iconURL };
+    return this;
+  }
+
+  /**
+   * Sets the image of this embed.
+   * @param {string} url The URL of the image
+   * @returns {MessageEmbed}
+   */
+  setImage(url) {
+    this.image = { url };
+    return this;
+  }
+
+  /**
+   * Sets the thumbnail of this embed.
+   * @param {string} url The URL of the thumbnail
+   * @returns {MessageEmbed}
+   */
+  setThumbnail(url) {
+    this.thumbnail = { url };
+    return this;
+  }
+
+  /**
+   * Sets the timestamp of this embed.
+   * @param {Date} [timestamp=current date] The timestamp
+   * @returns {MessageEmbed}
+   */
+  setTimestamp(timestamp = new Date()) {
+    this.timestamp = timestamp.getTime();
+    return this;
+  }
+
+  /**
+   * Sets the title of this embed.
+   * @param {StringResolvable} title The title
+   * @returns {MessageEmbed}
+   */
+  setTitle(title) {
+    title = Util.resolveString(title);
+    if (title.length > 256) throw new RangeError('EMBED_TITLE');
+    this.title = title;
+    return this;
+  }
+
+  /**
+   * Sets the URL of this embed.
+   * @param {string} url The URL
+   * @returns {MessageEmbed}
+   */
+  setURL(url) {
+    this.url = url;
+    return this;
+  }
+
+  /**
+   * Transforms the embed object to be processed.
+   * @returns {Object} The raw data of this embed
+   * @private
+   */
+  _apiTransform() {
+    return {
+      title: this.title,
+      type: 'rich',
+      description: this.description,
+      url: this.url,
+      timestamp: this.timestamp ? new Date(this.timestamp) : null,
+      color: this.color,
+      fields: this.fields,
+      thumbnail: this.thumbnail,
+      image: this.image,
+      author: this.author ? {
+        name: this.author.name,
+        url: this.author.url,
+        icon_url: this.author.iconURL,
+      } : null,
+      footer: this.footer ? {
+        text: this.footer.text,
+        icon_url: this.footer.iconURL,
+      } : null,
+    };
+  }
+}
+
+module.exports = MessageEmbed;
+
+
+/***/ }),
+/* 25 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const { Endpoints } = __webpack_require__(0);
@@ -5947,26 +5829,26 @@ module.exports = Invite;
 
 
 /***/ }),
-/* 25 */
+/* 26 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Invite = __webpack_require__(24);
+const Invite = __webpack_require__(25);
 const GuildAuditLogs = __webpack_require__(56);
-const Webhook = __webpack_require__(17);
+const Webhook = __webpack_require__(15);
 const GuildMember = __webpack_require__(13);
-const VoiceRegion = __webpack_require__(35);
+const VoiceRegion = __webpack_require__(36);
 const { ChannelTypes, Events, browser } = __webpack_require__(0);
 const Collection = __webpack_require__(3);
 const Util = __webpack_require__(5);
 const DataResolver = __webpack_require__(9);
 const Snowflake = __webpack_require__(8);
 const Permissions = __webpack_require__(10);
-const Shared = __webpack_require__(45);
+const Shared = __webpack_require__(21);
 const GuildMemberStore = __webpack_require__(57);
 const RoleStore = __webpack_require__(58);
-const EmojiStore = __webpack_require__(36);
+const EmojiStore = __webpack_require__(37);
 const GuildChannelStore = __webpack_require__(59);
-const PresenceStore = __webpack_require__(37);
+const PresenceStore = __webpack_require__(38);
 const Base = __webpack_require__(6);
 const { Error, TypeError } = __webpack_require__(4);
 
@@ -7133,7 +7015,7 @@ module.exports = Guild;
 
 
 /***/ }),
-/* 26 */
+/* 27 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*
@@ -8351,29 +8233,29 @@ var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_
 
 
 /***/ }),
-/* 27 */
-/***/ (function(module, exports, __webpack_require__) {
-
-module.exports = __webpack_require__(75);
-
-
-/***/ }),
 /* 28 */
 /***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
-
-
-exports.decode = exports.parse = __webpack_require__(76);
-exports.encode = exports.stringify = __webpack_require__(77);
+module.exports = __webpack_require__(76);
 
 
 /***/ }),
 /* 29 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const EventEmitter = __webpack_require__(21);
-const RESTManager = __webpack_require__(82);
+"use strict";
+
+
+exports.decode = exports.parse = __webpack_require__(77);
+exports.encode = exports.stringify = __webpack_require__(78);
+
+
+/***/ }),
+/* 30 */
+/***/ (function(module, exports, __webpack_require__) {
+
+const EventEmitter = __webpack_require__(20);
+const RESTManager = __webpack_require__(83);
 const Util = __webpack_require__(5);
 const { DefaultOptions } = __webpack_require__(0);
 
@@ -8484,11 +8366,11 @@ module.exports = BaseClient;
 
 
 /***/ }),
-/* 30 */
+/* 31 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Collection = __webpack_require__(3);
-const EventEmitter = __webpack_require__(21);
+const EventEmitter = __webpack_require__(20);
 
 /**
  * Filter to be applied to the collector.
@@ -8698,22 +8580,22 @@ module.exports = Collector;
 
 
 /***/ }),
-/* 31 */
+/* 32 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Mentions = __webpack_require__(47);
-const MessageAttachment = __webpack_require__(20);
-const Embed = __webpack_require__(15);
+const MessageAttachment = __webpack_require__(23);
+const Embed = __webpack_require__(24);
 const ReactionCollector = __webpack_require__(48);
-const ClientApplication = __webpack_require__(32);
+const ClientApplication = __webpack_require__(33);
 const Util = __webpack_require__(5);
 const Collection = __webpack_require__(3);
-const ReactionStore = __webpack_require__(98);
+const ReactionStore = __webpack_require__(99);
 const { MessageTypes } = __webpack_require__(0);
 const Permissions = __webpack_require__(10);
-const GuildMember = __webpack_require__(13);
 const Base = __webpack_require__(6);
 const { Error, TypeError } = __webpack_require__(4);
+const { createMessage } = __webpack_require__(21);
 
 /**
  * Represents a message on Discord.
@@ -9071,41 +8953,22 @@ class Message extends Base {
    *   .then(msg => console.log(`Updated the content of a message from ${msg.author}`))
    *   .catch(console.error);
    */
-  edit(content, options) {
+  async edit(content, options) {
     if (!options && typeof content === 'object' && !(content instanceof Array)) {
       options = content;
-      content = '';
+      content = null;
     } else if (!options) {
       options = {};
     }
-    if (options instanceof Embed) options = { embed: options };
+    if (!options.content) options.content = content;
 
-    if (typeof options.content !== 'undefined') content = options.content;
-
-    if (typeof content !== 'undefined') content = Util.resolveString(content);
-
-    let { embed, code, reply } = options;
-
-    if (embed) embed = new Embed(embed)._apiTransform();
-
-    // Wrap everything in a code block
-    if (typeof code !== 'undefined' && (typeof code !== 'boolean' || code === true)) {
-      content = Util.escapeMarkdown(Util.resolveString(content), true);
-      content = `\`\`\`${typeof code !== 'boolean' ? code || '' : ''}\n${content}\n\`\`\``;
-    }
-
-    // Add the reply prefix
-    if (reply && this.channel.type !== 'dm') {
-      const id = this.client.users.resolveID(reply);
-      const mention = `<@${reply instanceof GuildMember && reply.nickname ? '!' : ''}${id}>`;
-      content = `${mention}${content ? `, ${content}` : ''}`;
-    }
+    const { data, files } = await createMessage(this, options);
 
     return this.client.api.channels[this.channel.id].messages[this.id]
-      .patch({ data: { content, embed } })
-      .then(data => {
+      .patch({ data, files })
+      .then(d => {
         const clone = this._clone();
-        clone._patch(data);
+        clone._patch(d);
         return clone;
       });
   }
@@ -9276,7 +9139,7 @@ module.exports = Message;
 
 
 /***/ }),
-/* 32 */
+/* 33 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Snowflake = __webpack_require__(8);
@@ -9492,7 +9355,7 @@ module.exports = ClientApplication;
 
 
 /***/ }),
-/* 33 */
+/* 34 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Collection = __webpack_require__(3);
@@ -9736,7 +9599,7 @@ module.exports = Emoji;
 
 
 /***/ }),
-/* 34 */
+/* 35 */
 /***/ (function(module, exports) {
 
 /**
@@ -9792,7 +9655,7 @@ module.exports = ReactionEmoji;
 
 
 /***/ }),
-/* 35 */
+/* 36 */
 /***/ (function(module, exports) {
 
 /**
@@ -9848,12 +9711,12 @@ module.exports = VoiceRegion;
 
 
 /***/ }),
-/* 36 */
+/* 37 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const DataStore = __webpack_require__(7);
-const Emoji = __webpack_require__(33);
-const ReactionEmoji = __webpack_require__(34);
+const Emoji = __webpack_require__(34);
+const ReactionEmoji = __webpack_require__(35);
 
 /**
  * Stores emojis.
@@ -9925,7 +9788,7 @@ module.exports = EmojiStore;
 
 
 /***/ }),
-/* 37 */
+/* 38 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const DataStore = __webpack_require__(7);
@@ -9983,12 +9846,12 @@ module.exports = PresenceStore;
 
 
 /***/ }),
-/* 38 */
+/* 39 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const { UserGuildSettingsMap } = __webpack_require__(0);
 const Collection = __webpack_require__(3);
-const ClientUserChannelOverride = __webpack_require__(62);
+const ClientUserChannelOverride = __webpack_require__(63);
 
 /**
  * A wrapper around the ClientUser's guild settings.
@@ -10049,7 +9912,7 @@ module.exports = ClientUserGuildSettings;
 
 
 /***/ }),
-/* 39 */
+/* 40 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -10088,13 +9951,13 @@ module.exports = {
 
 
 /***/ }),
-/* 40 */
+/* 41 */
 /***/ (function(module, exports) {
 
 module.exports = ({"version":"12.0.0-dev","homepage":"https://github.com/hydrabolt/discord.js#readme"})
 
 /***/ }),
-/* 41 */
+/* 42 */
 /***/ (function(module, exports) {
 
 // Heavily inspired by node's `internal/errors` module
@@ -10159,7 +10022,7 @@ module.exports = {
 
 
 /***/ }),
-/* 42 */
+/* 43 */
 /***/ (function(module, exports) {
 
 /**
@@ -10219,17 +10082,17 @@ module.exports = DiscordAPIError;
 
 
 /***/ }),
-/* 43 */
+/* 44 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const User = __webpack_require__(22);
+const User = __webpack_require__(17);
 const Collection = __webpack_require__(3);
-const ClientUserSettings = __webpack_require__(61);
-const ClientUserGuildSettings = __webpack_require__(38);
+const ClientUserSettings = __webpack_require__(62);
+const ClientUserGuildSettings = __webpack_require__(39);
 const { Events } = __webpack_require__(0);
 const Util = __webpack_require__(5);
 const DataResolver = __webpack_require__(9);
-const Guild = __webpack_require__(25);
+const Guild = __webpack_require__(26);
 
 /**
  * Represents the logged in client's Discord user.
@@ -10558,10 +10421,10 @@ module.exports = ClientUser;
 
 
 /***/ }),
-/* 44 */
+/* 45 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Collector = __webpack_require__(30);
+const Collector = __webpack_require__(31);
 const { Events } = __webpack_require__(0);
 
 /**
@@ -10648,16 +10511,6 @@ class MessageCollector extends Collector {
 }
 
 module.exports = MessageCollector;
-
-
-/***/ }),
-/* 45 */
-/***/ (function(module, exports, __webpack_require__) {
-
-module.exports = {
-  search: __webpack_require__(97),
-  sendMessage: __webpack_require__(99),
-};
 
 
 /***/ }),
@@ -10894,7 +10747,7 @@ module.exports = MessageMentions;
 /* 48 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Collector = __webpack_require__(30);
+const Collector = __webpack_require__(31);
 const Collection = __webpack_require__(3);
 const { Events } = __webpack_require__(0);
 
@@ -11023,8 +10876,8 @@ module.exports = ReactionCollector;
 /***/ (function(module, exports, __webpack_require__) {
 
 const Collection = __webpack_require__(3);
-const Emoji = __webpack_require__(33);
-const ReactionEmoji = __webpack_require__(34);
+const Emoji = __webpack_require__(34);
+const ReactionEmoji = __webpack_require__(35);
 const { Error } = __webpack_require__(4);
 
 /**
@@ -11389,7 +11242,7 @@ module.exports = GroupDMChannel;
 /***/ (function(module, exports, __webpack_require__) {
 
 const GuildChannel = __webpack_require__(16);
-const Webhook = __webpack_require__(17);
+const Webhook = __webpack_require__(15);
 const TextBasedChannel = __webpack_require__(18);
 const Collection = __webpack_require__(3);
 const DataResolver = __webpack_require__(9);
@@ -11733,7 +11586,7 @@ module.exports = CategoryChannel;
 
 const Collection = __webpack_require__(3);
 const Snowflake = __webpack_require__(8);
-const Webhook = __webpack_require__(17);
+const Webhook = __webpack_require__(15);
 
 /**
  * The target type of an entry, e.g. `GUILD`. Here are the available types:
@@ -12269,7 +12122,7 @@ module.exports = GuildMemberStore;
 /***/ (function(module, exports, __webpack_require__) {
 
 const DataStore = __webpack_require__(7);
-const Role = __webpack_require__(23);
+const Role = __webpack_require__(22);
 
 /**
  * Stores roles.
@@ -12372,6 +12225,123 @@ module.exports = GuildChannelStore;
 
 /***/ }),
 /* 60 */
+/***/ (function(module, exports, __webpack_require__) {
+
+const Embed = __webpack_require__(24);
+const DataResolver = __webpack_require__(9);
+const MessageEmbed = __webpack_require__(24);
+const MessageAttachment = __webpack_require__(23);
+const { browser } = __webpack_require__(0);
+const Util = __webpack_require__(5);
+
+// eslint-disable-next-line complexity
+module.exports = async function createMessage(channel, options) {
+  const User = __webpack_require__(17);
+  const GuildMember = __webpack_require__(13);
+  const Webhook = __webpack_require__(15);
+
+  const webhook = channel instanceof Webhook;
+
+  if (typeof options.nonce !== 'undefined') {
+    options.nonce = parseInt(options.nonce);
+    if (isNaN(options.nonce) || options.nonce < 0) throw new RangeError('MESSAGE_NONCE_TYPE');
+  }
+
+  if (options instanceof MessageEmbed) options = webhook ? { embeds: [options] } : { embed: options };
+  if (options instanceof MessageAttachment) options = { files: [options.file] };
+
+  if (options.reply && !(channel instanceof User || channel instanceof GuildMember) && channel.type !== 'dm') {
+    const id = channel.client.users.resolveID(options.reply);
+    const mention = `<@${options.reply instanceof GuildMember && options.reply.nickname ? '!' : ''}${id}>`;
+    if (options.split) options.split.prepend = `${mention}, ${options.split.prepend || ''}`;
+    options.content = `${mention}${typeof options.content !== 'undefined' ? `, ${options.content}` : ''}`;
+  }
+
+  if (options.content) {
+    options.content = Util.resolveString(options.content);
+    if (options.split && typeof options.split !== 'object') options.split = {};
+    // Wrap everything in a code block
+    if (typeof options.code !== 'undefined' && (typeof options.code !== 'boolean' || options.code === true)) {
+      options.content = Util.escapeMarkdown(options.content, true);
+      options.content =
+        `\`\`\`${typeof options.code !== 'boolean' ? options.code || '' : ''}\n${options.content}\n\`\`\``;
+      if (options.split) {
+        options.split.prepend = `\`\`\`${typeof options.code !== 'boolean' ? options.code || '' : ''}\n`;
+        options.split.append = '\n```';
+      }
+    }
+
+    // Add zero-width spaces to @everyone/@here
+    if (options.disableEveryone ||
+      (typeof options.disableEveryone === 'undefined' && channel.client.options.disableEveryone)) {
+      options.content = options.content.replace(/@(everyone|here)/g, '@\u200b$1');
+    }
+
+    if (options.split) options.content = Util.splitMessage(options.content, options.split);
+  }
+
+  if (options.embed && options.embed.files) {
+    if (options.files) options.files = options.files.concat(options.embed.files);
+    else options.files = options.embed.files;
+  }
+
+  if (options.embed && webhook) options.embeds = [new Embed(options.embed)._apiTransform()];
+  else if (options.embed) options.embed = new Embed(options.embed)._apiTransform();
+  else if (options.embeds) options.embeds = options.embeds.map(e => new Embed(e)._apiTransform());
+
+  let files;
+
+  if (options.files) {
+    for (let i = 0; i < options.files.length; i++) {
+      let file = options.files[i];
+      if (typeof file === 'string' || (!browser && Buffer.isBuffer(file))) file = { attachment: file };
+      if (!file.name) {
+        if (typeof file.attachment === 'string') {
+          file.name = Util.basename(file.attachment);
+        } else if (file.attachment && file.attachment.path) {
+          file.name = Util.basename(file.attachment.path);
+        } else if (file instanceof MessageAttachment) {
+          file = { attachment: file.file, name: Util.basename(file.file) || 'file.jpg' };
+        } else {
+          file.name = 'file.jpg';
+        }
+      } else if (file instanceof MessageAttachment) {
+        file = file.file;
+      }
+      options.files[i] = file;
+    }
+
+    files = await Promise.all(options.files.map(file =>
+      DataResolver.resolveFile(file.attachment).then(resource => {
+        file.file = resource;
+        return file;
+      })
+    ));
+    delete options.files;
+  }
+
+  if (webhook) {
+    if (!options.username) options.username = this.name;
+    if (options.avatarURL) {
+      options.avatar_url = options.avatarURL;
+      options.avatarURL = null;
+    }
+  }
+
+  return { data: {
+    content: options.content,
+    tts: options.tts,
+    nonce: options.nonce,
+    embed: options.embed,
+    embeds: options.embeds,
+    username: options.username,
+    avatar_url: options.avatarURL,
+  }, files };
+};
+
+
+/***/ }),
+/* 61 */
 /***/ (function(module, exports) {
 
 /**
@@ -12425,7 +12395,7 @@ module.exports = UserConnection;
 
 
 /***/ }),
-/* 61 */
+/* 62 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const { UserSettingsMap } = __webpack_require__(0);
@@ -12511,7 +12481,7 @@ module.exports = ClientUserSettings;
 
 
 /***/ }),
-/* 62 */
+/* 63 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const { UserChannelOverrideMap } = __webpack_require__(0);
@@ -12545,13 +12515,13 @@ module.exports = ClientUserChannelOverride;
 
 
 /***/ }),
-/* 63 */
+/* 64 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const { browser } = __webpack_require__(0);
-const querystring = __webpack_require__(28);
+const querystring = __webpack_require__(29);
 try {
-  var erlpack = __webpack_require__(137);
+  var erlpack = __webpack_require__(138);
   if (!erlpack.pack) erlpack = null;
 } catch (err) {} // eslint-disable-line no-empty
 
@@ -12559,9 +12529,9 @@ if (browser) {
   exports.WebSocket = window.WebSocket; // eslint-disable-line no-undef
 } else {
   try {
-    exports.WebSocket = __webpack_require__(138);
-  } catch (err) {
     exports.WebSocket = __webpack_require__(139);
+  } catch (err) {
+    exports.WebSocket = __webpack_require__(140);
   }
 }
 
@@ -12588,7 +12558,7 @@ for (const state of ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED']) exports[state] 
 
 
 /***/ }),
-/* 64 */
+/* 65 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -12597,9 +12567,9 @@ for (const state of ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED']) exports[state] 
 
 var assign    = __webpack_require__(11).assign;
 
-var deflate   = __webpack_require__(141);
-var inflate   = __webpack_require__(144);
-var constants = __webpack_require__(69);
+var deflate   = __webpack_require__(142);
+var inflate   = __webpack_require__(145);
+var constants = __webpack_require__(70);
 
 var pako = {};
 
@@ -12609,7 +12579,7 @@ module.exports = pako;
 
 
 /***/ }),
-/* 65 */
+/* 66 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -12667,7 +12637,7 @@ module.exports = adler32;
 
 
 /***/ }),
-/* 66 */
+/* 67 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -12733,7 +12703,7 @@ module.exports = crc32;
 
 
 /***/ }),
-/* 67 */
+/* 68 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -12925,7 +12895,7 @@ exports.utf8border = function (buf, max) {
 
 
 /***/ }),
-/* 68 */
+/* 69 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -12979,7 +12949,7 @@ module.exports = ZStream;
 
 
 /***/ }),
-/* 69 */
+/* 70 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -13054,13 +13024,13 @@ module.exports = {
 
 
 /***/ }),
-/* 70 */
+/* 71 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const DataStore = __webpack_require__(7);
-const User = __webpack_require__(22);
+const User = __webpack_require__(17);
 const GuildMember = __webpack_require__(13);
-const Message = __webpack_require__(31);
+const Message = __webpack_require__(32);
 
 /**
  * A data store to store User models.
@@ -13121,7 +13091,7 @@ module.exports = UserStore;
 
 
 /***/ }),
-/* 71 */
+/* 72 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const DataStore = __webpack_require__(7);
@@ -13229,11 +13199,11 @@ module.exports = ChannelStore;
 
 
 /***/ }),
-/* 72 */
+/* 73 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const DataStore = __webpack_require__(7);
-const Guild = __webpack_require__(25);
+const Guild = __webpack_require__(26);
 
 /**
  * Stores guilds.
@@ -13275,10 +13245,10 @@ module.exports = GuildStore;
 
 
 /***/ }),
-/* 73 */
+/* 74 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const PresenceStore = __webpack_require__(37);
+const PresenceStore = __webpack_require__(38);
 const Collection = __webpack_require__(3);
 const { ActivityTypes, OPCodes } = __webpack_require__(0);
 const { Presence } = __webpack_require__(14);
@@ -13348,44 +13318,44 @@ module.exports = ClientPresenceStore;
 
 
 /***/ }),
-/* 74 */
+/* 75 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Util = __webpack_require__(5);
 
 module.exports = {
   // "Root" classes (starting points)
-  BaseClient: __webpack_require__(29),
-  Client: __webpack_require__(90),
-  Shard: __webpack_require__(178),
-  ShardClientUtil: __webpack_require__(179),
-  ShardingManager: __webpack_require__(180),
-  WebhookClient: __webpack_require__(181),
+  BaseClient: __webpack_require__(30),
+  Client: __webpack_require__(91),
+  Shard: __webpack_require__(179),
+  ShardClientUtil: __webpack_require__(180),
+  ShardingManager: __webpack_require__(181),
+  WebhookClient: __webpack_require__(182),
 
   // Utilities
   Collection: __webpack_require__(3),
   Constants: __webpack_require__(0),
   DataResolver: __webpack_require__(9),
   DataStore: __webpack_require__(7),
-  DiscordAPIError: __webpack_require__(42),
+  DiscordAPIError: __webpack_require__(43),
   Permissions: __webpack_require__(10),
   Snowflake: __webpack_require__(8),
   SnowflakeUtil: __webpack_require__(8),
   Util: Util,
   util: Util,
-  version: __webpack_require__(40).version,
+  version: __webpack_require__(41).version,
 
   // Stores
-  ChannelStore: __webpack_require__(71),
-  ClientPresenceStore: __webpack_require__(73),
-  EmojiStore: __webpack_require__(36),
+  ChannelStore: __webpack_require__(72),
+  ClientPresenceStore: __webpack_require__(74),
+  EmojiStore: __webpack_require__(37),
   GuildChannelStore: __webpack_require__(59),
   GuildMemberStore: __webpack_require__(57),
-  GuildStore: __webpack_require__(72),
+  GuildStore: __webpack_require__(73),
   MessageStore: __webpack_require__(19),
-  PresenceStore: __webpack_require__(37),
+  PresenceStore: __webpack_require__(38),
   RoleStore: __webpack_require__(58),
-  UserStore: __webpack_require__(70),
+  UserStore: __webpack_require__(71),
 
   // Shortcuts to Util methods
   escapeMarkdown: Util.escapeMarkdown,
@@ -13397,51 +13367,51 @@ module.exports = {
   Activity: __webpack_require__(14).Activity,
   CategoryChannel: __webpack_require__(55),
   Channel: __webpack_require__(12),
-  ClientApplication: __webpack_require__(32),
-  ClientUser: __webpack_require__(43),
-  ClientUserChannelOverride: __webpack_require__(62),
-  ClientUserGuildSettings: __webpack_require__(38),
-  ClientUserSettings: __webpack_require__(61),
-  Collector: __webpack_require__(30),
+  ClientApplication: __webpack_require__(33),
+  ClientUser: __webpack_require__(44),
+  ClientUserChannelOverride: __webpack_require__(63),
+  ClientUserGuildSettings: __webpack_require__(39),
+  ClientUserSettings: __webpack_require__(62),
+  Collector: __webpack_require__(31),
   DMChannel: __webpack_require__(46),
-  Emoji: __webpack_require__(33),
+  Emoji: __webpack_require__(34),
   GroupDMChannel: __webpack_require__(51),
-  Guild: __webpack_require__(25),
+  Guild: __webpack_require__(26),
   GuildAuditLogs: __webpack_require__(56),
   GuildChannel: __webpack_require__(16),
   GuildMember: __webpack_require__(13),
-  Invite: __webpack_require__(24),
-  Message: __webpack_require__(31),
-  MessageAttachment: __webpack_require__(20),
-  MessageCollector: __webpack_require__(44),
-  MessageEmbed: __webpack_require__(15),
+  Invite: __webpack_require__(25),
+  Message: __webpack_require__(32),
+  MessageAttachment: __webpack_require__(23),
+  MessageCollector: __webpack_require__(45),
+  MessageEmbed: __webpack_require__(24),
   MessageMentions: __webpack_require__(47),
   MessageReaction: __webpack_require__(50),
   PermissionOverwrites: __webpack_require__(53),
   Presence: __webpack_require__(14).Presence,
   ReactionCollector: __webpack_require__(48),
-  ReactionEmoji: __webpack_require__(34),
+  ReactionEmoji: __webpack_require__(35),
   RichPresenceAssets: __webpack_require__(14).RichPresenceAssets,
-  Role: __webpack_require__(23),
+  Role: __webpack_require__(22),
   TextChannel: __webpack_require__(52),
-  User: __webpack_require__(22),
-  UserConnection: __webpack_require__(60),
+  User: __webpack_require__(17),
+  UserConnection: __webpack_require__(61),
   VoiceChannel: __webpack_require__(54),
-  VoiceRegion: __webpack_require__(35),
-  Webhook: __webpack_require__(17),
+  VoiceRegion: __webpack_require__(36),
+  Webhook: __webpack_require__(15),
 
-  WebSocket: __webpack_require__(63),
+  WebSocket: __webpack_require__(64),
 };
 
 
 /***/ }),
-/* 75 */
+/* 76 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const browser = typeof window !== 'undefined';
-const querystring = __webpack_require__(28);
-const Package = __webpack_require__(78);
-const transport = browser ? __webpack_require__(79) : __webpack_require__(80);
+const querystring = __webpack_require__(29);
+const Package = __webpack_require__(79);
+const transport = browser ? __webpack_require__(80) : __webpack_require__(81);
 
 /**
  * Snekfetch
@@ -13700,7 +13670,7 @@ module.exports = Snekfetch;
 
 
 /***/ }),
-/* 76 */
+/* 77 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -13791,7 +13761,7 @@ var isArray = Array.isArray || function (xs) {
 
 
 /***/ }),
-/* 77 */
+/* 78 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -13883,13 +13853,13 @@ var objectKeys = Object.keys || function (obj) {
 
 
 /***/ }),
-/* 78 */
+/* 79 */
 /***/ (function(module, exports) {
 
 module.exports = ({"name":"snekfetch","homepage":"https://github.com/devsnek/snekfetch"})
 
 /***/ }),
-/* 79 */
+/* 80 */
 /***/ (function(module, exports) {
 
 function buildRequest(method, url) {
@@ -13932,16 +13902,16 @@ module.exports = {
 
 
 /***/ }),
-/* 80 */
+/* 81 */
 /***/ (function(module, exports) {
 
 /* (ignored) */
 
 /***/ }),
-/* 81 */
+/* 82 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const { register } = __webpack_require__(41);
+const { register } = __webpack_require__(42);
 
 const Messages = {
   CLIENT_INVALID_OPTION: (prop, must) => `The ${prop} option must be ${must}`,
@@ -14041,12 +14011,12 @@ for (const [name, message] of Object.entries(Messages)) register(name, message);
 
 
 /***/ }),
-/* 82 */
+/* 83 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const handlers = __webpack_require__(83);
-const APIRequest = __webpack_require__(87);
-const routeBuilder = __webpack_require__(89);
+const handlers = __webpack_require__(84);
+const APIRequest = __webpack_require__(88);
+const routeBuilder = __webpack_require__(90);
 const { Error } = __webpack_require__(4);
 const { Endpoints } = __webpack_require__(0);
 
@@ -14122,18 +14092,18 @@ module.exports = RESTManager;
 
 
 /***/ }),
-/* 83 */
+/* 84 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = {
-  sequential: __webpack_require__(84),
-  burst: __webpack_require__(85),
-  RequestHandler: __webpack_require__(86),
+  sequential: __webpack_require__(85),
+  burst: __webpack_require__(86),
+  RequestHandler: __webpack_require__(87),
 };
 
 
 /***/ }),
-/* 84 */
+/* 85 */
 /***/ (function(module, exports) {
 
 module.exports = function sequential() {
@@ -14155,7 +14125,7 @@ module.exports = function sequential() {
 
 
 /***/ }),
-/* 85 */
+/* 86 */
 /***/ (function(module, exports) {
 
 module.exports = function burst() {
@@ -14174,10 +14144,10 @@ module.exports = function burst() {
 
 
 /***/ }),
-/* 86 */
+/* 87 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const DiscordAPIError = __webpack_require__(42);
+const DiscordAPIError = __webpack_require__(43);
 const { Events: { RATE_LIMIT } } = __webpack_require__(0);
 
 class RequestHandler {
@@ -14276,12 +14246,12 @@ module.exports = RequestHandler;
 
 
 /***/ }),
-/* 87 */
+/* 88 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const querystring = __webpack_require__(28);
-const snekfetch = __webpack_require__(27);
-const https = __webpack_require__(88);
+const querystring = __webpack_require__(29);
+const snekfetch = __webpack_require__(28);
+const https = __webpack_require__(89);
 const { browser, UserAgent } = __webpack_require__(0);
 
 if (https.Agent) var agent = new https.Agent({ keepAlive: true });
@@ -14326,13 +14296,13 @@ module.exports = APIRequest;
 
 
 /***/ }),
-/* 88 */
+/* 89 */
 /***/ (function(module, exports) {
 
 /* (ignored) */
 
 /***/ }),
-/* 89 */
+/* 90 */
 /***/ (function(module, exports) {
 
 const noop = () => {}; // eslint-disable-line no-empty-function
@@ -14371,27 +14341,27 @@ module.exports = buildRoute;
 
 
 /***/ }),
-/* 90 */
+/* 91 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const BaseClient = __webpack_require__(29);
+const BaseClient = __webpack_require__(30);
 const Permissions = __webpack_require__(10);
-const ClientManager = __webpack_require__(91);
-const ClientVoiceManager = __webpack_require__(92);
-const WebSocketManager = __webpack_require__(93);
-const ActionsManager = __webpack_require__(149);
+const ClientManager = __webpack_require__(92);
+const ClientVoiceManager = __webpack_require__(93);
+const WebSocketManager = __webpack_require__(94);
+const ActionsManager = __webpack_require__(150);
 const Collection = __webpack_require__(3);
-const VoiceRegion = __webpack_require__(35);
-const Webhook = __webpack_require__(17);
-const Invite = __webpack_require__(24);
-const ClientApplication = __webpack_require__(32);
-const ShardClientUtil = __webpack_require__(176);
-const VoiceBroadcast = __webpack_require__(177);
-const UserStore = __webpack_require__(70);
-const ChannelStore = __webpack_require__(71);
-const GuildStore = __webpack_require__(72);
-const ClientPresenceStore = __webpack_require__(73);
-const EmojiStore = __webpack_require__(36);
+const VoiceRegion = __webpack_require__(36);
+const Webhook = __webpack_require__(15);
+const Invite = __webpack_require__(25);
+const ClientApplication = __webpack_require__(33);
+const ShardClientUtil = __webpack_require__(177);
+const VoiceBroadcast = __webpack_require__(178);
+const UserStore = __webpack_require__(71);
+const ChannelStore = __webpack_require__(72);
+const GuildStore = __webpack_require__(73);
+const ClientPresenceStore = __webpack_require__(74);
+const EmojiStore = __webpack_require__(37);
 const { Events, browser } = __webpack_require__(0);
 const DataResolver = __webpack_require__(9);
 const { Error, TypeError, RangeError } = __webpack_require__(4);
@@ -14845,7 +14815,7 @@ module.exports = Client;
 
 
 /***/ }),
-/* 91 */
+/* 92 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const { Events, Status } = __webpack_require__(0);
@@ -14924,18 +14894,18 @@ module.exports = ClientManager;
 
 
 /***/ }),
-/* 92 */
+/* 93 */
 /***/ (function(module, exports) {
 
 /* (ignored) */
 
 /***/ }),
-/* 93 */
+/* 94 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const EventEmitter = __webpack_require__(21);
+const EventEmitter = __webpack_require__(20);
 const { Events, Status } = __webpack_require__(0);
-const WebSocketConnection = __webpack_require__(94);
+const WebSocketConnection = __webpack_require__(95);
 
 /**
  * WebSocket Manager of the client.
@@ -15026,18 +14996,18 @@ module.exports = WebSocketManager;
 
 
 /***/ }),
-/* 94 */
+/* 95 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const EventEmitter = __webpack_require__(21);
+const EventEmitter = __webpack_require__(20);
 const { Events, OPCodes, Status, WSCodes } = __webpack_require__(0);
-const PacketManager = __webpack_require__(95);
-const WebSocket = __webpack_require__(63);
+const PacketManager = __webpack_require__(96);
+const WebSocket = __webpack_require__(64);
 try {
-  var zlib = __webpack_require__(140);
-  if (!zlib.Inflate) zlib = __webpack_require__(64);
+  var zlib = __webpack_require__(141);
+  if (!zlib.Inflate) zlib = __webpack_require__(65);
 } catch (err) {
-  zlib = __webpack_require__(64);
+  zlib = __webpack_require__(65);
 }
 
 /**
@@ -15512,7 +15482,7 @@ module.exports = WebSocketConnection;
 
 
 /***/ }),
-/* 95 */
+/* 96 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const { OPCodes, Status, WSEvents } = __webpack_require__(0);
@@ -15533,43 +15503,43 @@ class WebSocketPacketManager {
     this.handlers = {};
     this.queue = [];
 
-    this.register(WSEvents.READY, __webpack_require__(96));
-    this.register(WSEvents.RESUMED, __webpack_require__(101));
-    this.register(WSEvents.GUILD_CREATE, __webpack_require__(102));
-    this.register(WSEvents.GUILD_DELETE, __webpack_require__(103));
-    this.register(WSEvents.GUILD_UPDATE, __webpack_require__(104));
-    this.register(WSEvents.GUILD_BAN_ADD, __webpack_require__(105));
-    this.register(WSEvents.GUILD_BAN_REMOVE, __webpack_require__(106));
-    this.register(WSEvents.GUILD_MEMBER_ADD, __webpack_require__(107));
-    this.register(WSEvents.GUILD_MEMBER_REMOVE, __webpack_require__(108));
-    this.register(WSEvents.GUILD_MEMBER_UPDATE, __webpack_require__(109));
-    this.register(WSEvents.GUILD_ROLE_CREATE, __webpack_require__(110));
-    this.register(WSEvents.GUILD_ROLE_DELETE, __webpack_require__(111));
-    this.register(WSEvents.GUILD_ROLE_UPDATE, __webpack_require__(112));
-    this.register(WSEvents.GUILD_EMOJIS_UPDATE, __webpack_require__(113));
-    this.register(WSEvents.GUILD_MEMBERS_CHUNK, __webpack_require__(114));
-    this.register(WSEvents.CHANNEL_CREATE, __webpack_require__(115));
-    this.register(WSEvents.CHANNEL_DELETE, __webpack_require__(116));
-    this.register(WSEvents.CHANNEL_UPDATE, __webpack_require__(117));
-    this.register(WSEvents.CHANNEL_PINS_UPDATE, __webpack_require__(118));
-    this.register(WSEvents.PRESENCE_UPDATE, __webpack_require__(119));
-    this.register(WSEvents.USER_UPDATE, __webpack_require__(120));
-    this.register(WSEvents.USER_NOTE_UPDATE, __webpack_require__(121));
-    this.register(WSEvents.USER_SETTINGS_UPDATE, __webpack_require__(122));
-    this.register(WSEvents.USER_GUILD_SETTINGS_UPDATE, __webpack_require__(123));
-    this.register(WSEvents.VOICE_STATE_UPDATE, __webpack_require__(124));
-    this.register(WSEvents.TYPING_START, __webpack_require__(125));
-    this.register(WSEvents.MESSAGE_CREATE, __webpack_require__(126));
-    this.register(WSEvents.MESSAGE_DELETE, __webpack_require__(127));
-    this.register(WSEvents.MESSAGE_UPDATE, __webpack_require__(128));
-    this.register(WSEvents.MESSAGE_DELETE_BULK, __webpack_require__(129));
-    this.register(WSEvents.VOICE_SERVER_UPDATE, __webpack_require__(130));
-    this.register(WSEvents.GUILD_SYNC, __webpack_require__(131));
-    this.register(WSEvents.RELATIONSHIP_ADD, __webpack_require__(132));
-    this.register(WSEvents.RELATIONSHIP_REMOVE, __webpack_require__(133));
-    this.register(WSEvents.MESSAGE_REACTION_ADD, __webpack_require__(134));
-    this.register(WSEvents.MESSAGE_REACTION_REMOVE, __webpack_require__(135));
-    this.register(WSEvents.MESSAGE_REACTION_REMOVE_ALL, __webpack_require__(136));
+    this.register(WSEvents.READY, __webpack_require__(97));
+    this.register(WSEvents.RESUMED, __webpack_require__(102));
+    this.register(WSEvents.GUILD_CREATE, __webpack_require__(103));
+    this.register(WSEvents.GUILD_DELETE, __webpack_require__(104));
+    this.register(WSEvents.GUILD_UPDATE, __webpack_require__(105));
+    this.register(WSEvents.GUILD_BAN_ADD, __webpack_require__(106));
+    this.register(WSEvents.GUILD_BAN_REMOVE, __webpack_require__(107));
+    this.register(WSEvents.GUILD_MEMBER_ADD, __webpack_require__(108));
+    this.register(WSEvents.GUILD_MEMBER_REMOVE, __webpack_require__(109));
+    this.register(WSEvents.GUILD_MEMBER_UPDATE, __webpack_require__(110));
+    this.register(WSEvents.GUILD_ROLE_CREATE, __webpack_require__(111));
+    this.register(WSEvents.GUILD_ROLE_DELETE, __webpack_require__(112));
+    this.register(WSEvents.GUILD_ROLE_UPDATE, __webpack_require__(113));
+    this.register(WSEvents.GUILD_EMOJIS_UPDATE, __webpack_require__(114));
+    this.register(WSEvents.GUILD_MEMBERS_CHUNK, __webpack_require__(115));
+    this.register(WSEvents.CHANNEL_CREATE, __webpack_require__(116));
+    this.register(WSEvents.CHANNEL_DELETE, __webpack_require__(117));
+    this.register(WSEvents.CHANNEL_UPDATE, __webpack_require__(118));
+    this.register(WSEvents.CHANNEL_PINS_UPDATE, __webpack_require__(119));
+    this.register(WSEvents.PRESENCE_UPDATE, __webpack_require__(120));
+    this.register(WSEvents.USER_UPDATE, __webpack_require__(121));
+    this.register(WSEvents.USER_NOTE_UPDATE, __webpack_require__(122));
+    this.register(WSEvents.USER_SETTINGS_UPDATE, __webpack_require__(123));
+    this.register(WSEvents.USER_GUILD_SETTINGS_UPDATE, __webpack_require__(124));
+    this.register(WSEvents.VOICE_STATE_UPDATE, __webpack_require__(125));
+    this.register(WSEvents.TYPING_START, __webpack_require__(126));
+    this.register(WSEvents.MESSAGE_CREATE, __webpack_require__(127));
+    this.register(WSEvents.MESSAGE_DELETE, __webpack_require__(128));
+    this.register(WSEvents.MESSAGE_UPDATE, __webpack_require__(129));
+    this.register(WSEvents.MESSAGE_DELETE_BULK, __webpack_require__(130));
+    this.register(WSEvents.VOICE_SERVER_UPDATE, __webpack_require__(131));
+    this.register(WSEvents.GUILD_SYNC, __webpack_require__(132));
+    this.register(WSEvents.RELATIONSHIP_ADD, __webpack_require__(133));
+    this.register(WSEvents.RELATIONSHIP_REMOVE, __webpack_require__(134));
+    this.register(WSEvents.MESSAGE_REACTION_ADD, __webpack_require__(135));
+    this.register(WSEvents.MESSAGE_REACTION_REMOVE, __webpack_require__(136));
+    this.register(WSEvents.MESSAGE_REACTION_REMOVE_ALL, __webpack_require__(137));
   }
 
   get client() {
@@ -15626,12 +15596,12 @@ module.exports = WebSocketPacketManager;
 
 
 /***/ }),
-/* 96 */
+/* 97 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
 const { Events } = __webpack_require__(0);
-const ClientUser = __webpack_require__(43);
+const ClientUser = __webpack_require__(44);
 
 class ReadyHandler extends AbstractHandler {
   handle(packet) {
@@ -15709,10 +15679,10 @@ module.exports = ReadyHandler;
 
 
 /***/ }),
-/* 97 */
+/* 98 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const long = __webpack_require__(26);
+const long = __webpack_require__(27);
 const { TypeError } = __webpack_require__(4);
 
 /**
@@ -15797,7 +15767,7 @@ module.exports = function search(target, options) {
 
   // Lazy load these because some of them use util
   const Channel = __webpack_require__(12);
-  const Guild = __webpack_require__(25);
+  const Guild = __webpack_require__(26);
 
   if (!(target instanceof Channel || target instanceof Guild)) throw new TypeError('SEARCH_CHANNEL_TYPE');
 
@@ -15815,7 +15785,7 @@ module.exports = function search(target, options) {
 
 
 /***/ }),
-/* 98 */
+/* 99 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const DataStore = __webpack_require__(7);
@@ -15866,83 +15836,30 @@ module.exports = ReactionStore;
 
 
 /***/ }),
-/* 99 */
+/* 100 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Util = __webpack_require__(5);
-const Embed = __webpack_require__(15);
-const { RangeError } = __webpack_require__(4);
+const createMessage = __webpack_require__(60);
 
-module.exports = function sendMessage(channel, options) { // eslint-disable-line complexity
-  const User = __webpack_require__(22);
+module.exports = async function sendMessage(channel, options) { // eslint-disable-line complexity
+  const User = __webpack_require__(17);
   const GuildMember = __webpack_require__(13);
   if (channel instanceof User || channel instanceof GuildMember) return channel.createDM().then(dm => dm.send(options));
-  let { content, nonce, reply, code, disableEveryone, tts, embed, files, split } = options;
 
-  if (embed) embed = new Embed(embed)._apiTransform();
+  const { data, files } = await createMessage(channel, options);
 
-  if (typeof nonce !== 'undefined') {
-    nonce = parseInt(nonce);
-    if (isNaN(nonce) || nonce < 0) throw new RangeError('MESSAGE_NONCE_TYPE');
-  }
-
-  // Add the reply prefix
-  if (reply && !(channel instanceof User || channel instanceof GuildMember) && channel.type !== 'dm') {
-    const id = channel.client.users.resolveID(reply);
-    const mention = `<@${reply instanceof GuildMember && reply.nickname ? '!' : ''}${id}>`;
-    if (split) split.prepend = `${mention}, ${split.prepend || ''}`;
-    content = `${mention}${typeof content !== 'undefined' ? `, ${content}` : ''}`;
-  }
-
-  if (content) {
-    content = Util.resolveString(content);
-    if (split && typeof split !== 'object') split = {};
-    // Wrap everything in a code block
-    if (typeof code !== 'undefined' && (typeof code !== 'boolean' || code === true)) {
-      content = Util.escapeMarkdown(content, true);
-      content = `\`\`\`${typeof code !== 'boolean' ? code || '' : ''}\n${content}\n\`\`\``;
-      if (split) {
-        split.prepend = `\`\`\`${typeof code !== 'boolean' ? code || '' : ''}\n`;
-        split.append = '\n```';
-      }
-    }
-
-    // Add zero-width spaces to @everyone/@here
-    if (disableEveryone || (typeof disableEveryone === 'undefined' && channel.client.options.disableEveryone)) {
-      content = content.replace(/@(everyone|here)/g, '@\u200b$1');
-    }
-
-    if (split) content = Util.splitMessage(content, split);
-  }
-
-  if (content instanceof Array) {
-    return new Promise((resolve, reject) => {
-      const messages = [];
-      (function sendChunk() {
-        const opt = content.length ? { tts } : { tts, embed, files };
-        channel.send(content.shift(), opt).then(message => {
-          messages.push(message);
-          if (content.length === 0) return resolve(messages);
-          return sendChunk();
-        }).catch(reject);
-      }());
-    });
-  }
-
-  return channel.client.api.channels[channel.id].messages.post({
-    data: { content, tts, nonce, embed },
-    files,
-  }).then(data => channel.client.actions.MessageCreate.handle(data).message);
+  return channel.client.api.channels[channel.id].messages.post({ data, files })
+    .then(d => channel.client.actions.MessageCreate.handle(d).message);
 };
 
 
 /***/ }),
-/* 100 */
+/* 101 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Collection = __webpack_require__(3);
 const { UserFlags } = __webpack_require__(0);
-const UserConnection = __webpack_require__(60);
+const UserConnection = __webpack_require__(61);
 const Base = __webpack_require__(6);
 
 /**
@@ -16022,7 +15939,7 @@ module.exports = UserProfile;
 
 
 /***/ }),
-/* 101 */
+/* 102 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16056,7 +15973,7 @@ module.exports = ResumedHandler;
 
 
 /***/ }),
-/* 102 */
+/* 103 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16095,7 +16012,7 @@ module.exports = GuildCreateHandler;
 
 
 /***/ }),
-/* 103 */
+/* 104 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16117,7 +16034,7 @@ module.exports = GuildDeleteHandler;
 
 
 /***/ }),
-/* 104 */
+/* 105 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16134,7 +16051,7 @@ module.exports = GuildUpdateHandler;
 
 
 /***/ }),
-/* 105 */
+/* 106 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // ##untested handler##
@@ -16163,7 +16080,7 @@ module.exports = GuildBanAddHandler;
 
 
 /***/ }),
-/* 106 */
+/* 107 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // ##untested handler##
@@ -16189,7 +16106,7 @@ module.exports = GuildBanRemoveHandler;
 
 
 /***/ }),
-/* 107 */
+/* 108 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // ##untested handler##
@@ -16222,7 +16139,7 @@ module.exports = GuildMemberAddHandler;
 
 
 /***/ }),
-/* 108 */
+/* 109 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // ##untested handler##
@@ -16241,7 +16158,7 @@ module.exports = GuildMemberRemoveHandler;
 
 
 /***/ }),
-/* 109 */
+/* 110 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // ##untested handler##
@@ -16276,7 +16193,7 @@ module.exports = GuildMemberUpdateHandler;
 
 
 /***/ }),
-/* 110 */
+/* 111 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16293,7 +16210,7 @@ module.exports = GuildRoleCreateHandler;
 
 
 /***/ }),
-/* 111 */
+/* 112 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16310,7 +16227,7 @@ module.exports = GuildRoleDeleteHandler;
 
 
 /***/ }),
-/* 112 */
+/* 113 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16327,7 +16244,7 @@ module.exports = GuildRoleUpdateHandler;
 
 
 /***/ }),
-/* 113 */
+/* 114 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16344,7 +16261,7 @@ module.exports = GuildEmojisUpdate;
 
 
 /***/ }),
-/* 114 */
+/* 115 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16378,7 +16295,7 @@ module.exports = GuildMembersChunkHandler;
 
 
 /***/ }),
-/* 115 */
+/* 116 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16399,7 +16316,7 @@ module.exports = ChannelCreateHandler;
 
 
 /***/ }),
-/* 116 */
+/* 117 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16414,7 +16331,7 @@ module.exports = ChannelDeleteHandler;
 
 
 /***/ }),
-/* 117 */
+/* 118 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16440,7 +16357,7 @@ module.exports = ChannelUpdateHandler;
 
 
 /***/ }),
-/* 118 */
+/* 119 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16477,7 +16394,7 @@ module.exports = ChannelPinsUpdate;
 
 
 /***/ }),
-/* 119 */
+/* 120 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16557,7 +16474,7 @@ module.exports = PresenceUpdateHandler;
 
 
 /***/ }),
-/* 120 */
+/* 121 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16574,7 +16491,7 @@ module.exports = UserUpdateHandler;
 
 
 /***/ }),
-/* 121 */
+/* 122 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16592,7 +16509,7 @@ module.exports = UserNoteUpdateHandler;
 
 
 /***/ }),
-/* 122 */
+/* 123 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16616,12 +16533,12 @@ module.exports = UserSettingsUpdateHandler;
 
 
 /***/ }),
-/* 123 */
+/* 124 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
 const { Events } = __webpack_require__(0);
-const ClientUserGuildSettings = __webpack_require__(38);
+const ClientUserGuildSettings = __webpack_require__(39);
 
 class UserGuildSettingsUpdateHandler extends AbstractHandler {
   handle(packet) {
@@ -16643,7 +16560,7 @@ module.exports = UserGuildSettingsUpdateHandler;
 
 
 /***/ }),
-/* 124 */
+/* 125 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16685,7 +16602,7 @@ module.exports = VoiceStateUpdateHandler;
 
 
 /***/ }),
-/* 125 */
+/* 126 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16759,7 +16676,7 @@ module.exports = TypingStartHandler;
 
 
 /***/ }),
-/* 126 */
+/* 127 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16774,7 +16691,7 @@ module.exports = MessageCreateHandler;
 
 
 /***/ }),
-/* 127 */
+/* 128 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16789,7 +16706,7 @@ module.exports = MessageDeleteHandler;
 
 
 /***/ }),
-/* 128 */
+/* 129 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16815,7 +16732,7 @@ module.exports = MessageUpdateHandler;
 
 
 /***/ }),
-/* 129 */
+/* 130 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16830,7 +16747,7 @@ module.exports = MessageDeleteBulkHandler;
 
 
 /***/ }),
-/* 130 */
+/* 131 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16855,7 +16772,7 @@ module.exports = VoiceServerUpdate;
 
 
 /***/ }),
-/* 131 */
+/* 132 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16872,7 +16789,7 @@ module.exports = GuildSyncHandler;
 
 
 /***/ }),
-/* 132 */
+/* 133 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16897,7 +16814,7 @@ module.exports = RelationshipAddHandler;
 
 
 /***/ }),
-/* 133 */
+/* 134 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16922,7 +16839,7 @@ module.exports = RelationshipRemoveHandler;
 
 
 /***/ }),
-/* 134 */
+/* 135 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16941,7 +16858,7 @@ module.exports = MessageReactionAddHandler;
 
 
 /***/ }),
-/* 135 */
+/* 136 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16958,7 +16875,7 @@ module.exports = MessageReactionRemove;
 
 
 /***/ }),
-/* 136 */
+/* 137 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16973,12 +16890,6 @@ class MessageReactionRemoveAll extends AbstractHandler {
 
 module.exports = MessageReactionRemoveAll;
 
-
-/***/ }),
-/* 137 */
-/***/ (function(module, exports) {
-
-/* (ignored) */
 
 /***/ }),
 /* 138 */
@@ -17000,17 +16911,23 @@ module.exports = MessageReactionRemoveAll;
 
 /***/ }),
 /* 141 */
+/***/ (function(module, exports) {
+
+/* (ignored) */
+
+/***/ }),
+/* 142 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
 
-var zlib_deflate = __webpack_require__(142);
+var zlib_deflate = __webpack_require__(143);
 var utils        = __webpack_require__(11);
-var strings      = __webpack_require__(67);
-var msg          = __webpack_require__(39);
-var ZStream      = __webpack_require__(68);
+var strings      = __webpack_require__(68);
+var msg          = __webpack_require__(40);
+var ZStream      = __webpack_require__(69);
 
 var toString = Object.prototype.toString;
 
@@ -17406,7 +17323,7 @@ exports.gzip = gzip;
 
 
 /***/ }),
-/* 142 */
+/* 143 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -17432,10 +17349,10 @@ exports.gzip = gzip;
 // 3. This notice may not be removed or altered from any source distribution.
 
 var utils   = __webpack_require__(11);
-var trees   = __webpack_require__(143);
-var adler32 = __webpack_require__(65);
-var crc32   = __webpack_require__(66);
-var msg     = __webpack_require__(39);
+var trees   = __webpack_require__(144);
+var adler32 = __webpack_require__(66);
+var crc32   = __webpack_require__(67);
+var msg     = __webpack_require__(40);
 
 /* Public constants ==========================================================*/
 /* ===========================================================================*/
@@ -19287,7 +19204,7 @@ exports.deflateTune = deflateTune;
 
 
 /***/ }),
-/* 143 */
+/* 144 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -20514,20 +20431,20 @@ exports._tr_align = _tr_align;
 
 
 /***/ }),
-/* 144 */
+/* 145 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
 
-var zlib_inflate = __webpack_require__(145);
+var zlib_inflate = __webpack_require__(146);
 var utils        = __webpack_require__(11);
-var strings      = __webpack_require__(67);
-var c            = __webpack_require__(69);
-var msg          = __webpack_require__(39);
-var ZStream      = __webpack_require__(68);
-var GZheader     = __webpack_require__(148);
+var strings      = __webpack_require__(68);
+var c            = __webpack_require__(70);
+var msg          = __webpack_require__(40);
+var ZStream      = __webpack_require__(69);
+var GZheader     = __webpack_require__(149);
 
 var toString = Object.prototype.toString;
 
@@ -20939,7 +20856,7 @@ exports.ungzip  = inflate;
 
 
 /***/ }),
-/* 145 */
+/* 146 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -20965,10 +20882,10 @@ exports.ungzip  = inflate;
 // 3. This notice may not be removed or altered from any source distribution.
 
 var utils         = __webpack_require__(11);
-var adler32       = __webpack_require__(65);
-var crc32         = __webpack_require__(66);
-var inflate_fast  = __webpack_require__(146);
-var inflate_table = __webpack_require__(147);
+var adler32       = __webpack_require__(66);
+var crc32         = __webpack_require__(67);
+var inflate_fast  = __webpack_require__(147);
+var inflate_table = __webpack_require__(148);
 
 var CODES = 0;
 var LENS = 1;
@@ -22502,7 +22419,7 @@ exports.inflateUndermine = inflateUndermine;
 
 
 /***/ }),
-/* 146 */
+/* 147 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -22854,7 +22771,7 @@ module.exports = function inflate_fast(strm, start) {
 
 
 /***/ }),
-/* 147 */
+/* 148 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -23204,7 +23121,7 @@ module.exports = function inflate_table(type, lens, lens_index, codes, table, ta
 
 
 /***/ }),
-/* 148 */
+/* 149 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -23269,14 +23186,13 @@ module.exports = GZheader;
 
 
 /***/ }),
-/* 149 */
+/* 150 */
 /***/ (function(module, exports, __webpack_require__) {
 
 class ActionsManager {
   constructor(client) {
     this.client = client;
 
-    this.register(__webpack_require__(150));
     this.register(__webpack_require__(151));
     this.register(__webpack_require__(152));
     this.register(__webpack_require__(153));
@@ -23302,6 +23218,7 @@ class ActionsManager {
     this.register(__webpack_require__(173));
     this.register(__webpack_require__(174));
     this.register(__webpack_require__(175));
+    this.register(__webpack_require__(176));
   }
 
   register(Action) {
@@ -23313,7 +23230,7 @@ module.exports = ActionsManager;
 
 
 /***/ }),
-/* 150 */
+/* 151 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23358,7 +23275,7 @@ module.exports = MessageCreateAction;
 
 
 /***/ }),
-/* 151 */
+/* 152 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23392,7 +23309,7 @@ module.exports = MessageDeleteAction;
 
 
 /***/ }),
-/* 152 */
+/* 153 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23432,7 +23349,7 @@ module.exports = MessageDeleteBulkAction;
 
 
 /***/ }),
-/* 153 */
+/* 154 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23461,7 +23378,7 @@ module.exports = MessageUpdateAction;
 
 
 /***/ }),
-/* 154 */
+/* 155 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23506,7 +23423,7 @@ module.exports = MessageReactionAdd;
 
 
 /***/ }),
-/* 155 */
+/* 156 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23552,7 +23469,7 @@ module.exports = MessageReactionRemove;
 
 
 /***/ }),
-/* 156 */
+/* 157 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23583,7 +23500,7 @@ module.exports = MessageReactionRemoveAll;
 
 
 /***/ }),
-/* 157 */
+/* 158 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23605,7 +23522,7 @@ module.exports = ChannelCreateAction;
 
 
 /***/ }),
-/* 158 */
+/* 159 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23640,7 +23557,7 @@ module.exports = ChannelDeleteAction;
 
 
 /***/ }),
-/* 159 */
+/* 160 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23666,7 +23583,7 @@ module.exports = ChannelUpdateAction;
 
 
 /***/ }),
-/* 160 */
+/* 161 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23729,7 +23646,7 @@ module.exports = GuildDeleteAction;
 
 
 /***/ }),
-/* 161 */
+/* 162 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23767,7 +23684,7 @@ module.exports = GuildUpdateAction;
 
 
 /***/ }),
-/* 162 */
+/* 163 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23800,7 +23717,7 @@ module.exports = GuildMemberRemoveAction;
 
 
 /***/ }),
-/* 163 */
+/* 164 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23819,7 +23736,7 @@ module.exports = GuildBanRemove;
 
 
 /***/ }),
-/* 164 */
+/* 165 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23849,7 +23766,7 @@ module.exports = GuildRoleCreate;
 
 
 /***/ }),
-/* 165 */
+/* 166 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23883,7 +23800,7 @@ module.exports = GuildRoleDeleteAction;
 
 
 /***/ }),
-/* 166 */
+/* 167 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23927,7 +23844,7 @@ module.exports = GuildRoleUpdateAction;
 
 
 /***/ }),
-/* 167 */
+/* 168 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23964,7 +23881,7 @@ module.exports = UserUpdateAction;
 
 
 /***/ }),
-/* 168 */
+/* 169 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -24000,7 +23917,7 @@ module.exports = UserNoteUpdateAction;
 
 
 /***/ }),
-/* 169 */
+/* 170 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -24035,7 +23952,7 @@ module.exports = GuildSync;
 
 
 /***/ }),
-/* 170 */
+/* 171 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -24059,7 +23976,7 @@ module.exports = GuildEmojiCreateAction;
 
 
 /***/ }),
-/* 171 */
+/* 172 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -24083,7 +24000,7 @@ module.exports = GuildEmojiDeleteAction;
 
 
 /***/ }),
-/* 172 */
+/* 173 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -24108,7 +24025,7 @@ module.exports = GuildEmojiUpdateAction;
 
 
 /***/ }),
-/* 173 */
+/* 174 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -24152,7 +24069,7 @@ module.exports = GuildEmojisUpdateAction;
 
 
 /***/ }),
-/* 174 */
+/* 175 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -24177,7 +24094,7 @@ module.exports = GuildRolesPositionUpdate;
 
 
 /***/ }),
-/* 175 */
+/* 176 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -24200,12 +24117,6 @@ class GuildChannelsPositionUpdate extends Action {
 
 module.exports = GuildChannelsPositionUpdate;
 
-
-/***/ }),
-/* 176 */
-/***/ (function(module, exports) {
-
-/* (ignored) */
 
 /***/ }),
 /* 177 */
@@ -24233,10 +24144,16 @@ module.exports = GuildChannelsPositionUpdate;
 
 /***/ }),
 /* 181 */
+/***/ (function(module, exports) {
+
+/* (ignored) */
+
+/***/ }),
+/* 182 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Webhook = __webpack_require__(17);
-const BaseClient = __webpack_require__(29);
+const Webhook = __webpack_require__(15);
+const BaseClient = __webpack_require__(30);
 
 /**
  * The webhook client.
