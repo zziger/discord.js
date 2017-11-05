@@ -6362,7 +6362,9 @@ class Guild extends Base {
    * @returns {Promise<GuildMember>}
    */
   addMember(user, options) {
-    if (this.members.has(user.id)) return Promise.resolve(this.members.get(user.id));
+    user = this.client.users.resolveID(user);
+    if (!user) return Promise.reject(new TypeError('INVALID_TYPE', 'user', 'UserResolvable'));
+    if (this.members.has(user)) return Promise.resolve(this.members.get(user));
     options.access_token = options.accessToken;
     if (options.roles) {
       const roles = [];
@@ -6375,7 +6377,7 @@ class Guild extends Base {
         roles.push(role.id);
       }
     }
-    return this.client.api.guilds(this.id).members(user.id).put({ data: options })
+    return this.client.api.guilds(this.id).members(user).put({ data: options })
       .then(data => this.members.create(data));
   }
 
