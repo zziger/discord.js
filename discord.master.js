@@ -61,14 +61,14 @@ window["Discord"] =
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 77);
+/******/ 	return __webpack_require__(__webpack_require__.s = 76);
 /******/ })
 /************************************************************************/
 /******/ ([
 /* 0 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Package = exports.Package = __webpack_require__(41);
+const Package = exports.Package = __webpack_require__(40);
 const { Error, RangeError } = __webpack_require__(4);
 const browser = exports.browser = typeof window !== 'undefined';
 
@@ -1268,71 +1268,15 @@ module.exports = Collection;
 /* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
-module.exports = __webpack_require__(42);
-module.exports.Messages = __webpack_require__(84);
+module.exports = __webpack_require__(41);
+module.exports.Messages = __webpack_require__(83);
 
 
 /***/ }),
 /* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Collection = __webpack_require__(3);
-
-/**
- * Manages the creation, retrieval and deletion of a specific data model.
- * @extends {Collection}
- */
-class DataStore extends Collection {
-  constructor(client, iterable, holds) {
-    super();
-    Object.defineProperty(this, 'client', { value: client });
-    Object.defineProperty(this, 'holds', { value: holds });
-    if (iterable) for (const item of iterable) this.create(item);
-  }
-
-  create(data, cache = true, { id, extras = [] } = {}) {
-    const existing = this.get(id || data.id);
-    if (existing) return existing;
-
-    const entry = this.holds ? new this.holds(this.client, data, ...extras) : data;
-    if (cache) this.set(id || entry.id, entry);
-    return entry;
-  }
-
-  remove(key) { return this.delete(key); }
-
-  /**
-   * Resolves a data entry to a data Object.
-   * @param {string|Object} idOrInstance The id or instance of something in this DataStore
-   * @returns {?Object} An instance from this DataStore
-   */
-  resolve(idOrInstance) {
-    if (idOrInstance instanceof this.holds) return idOrInstance;
-    if (typeof idOrInstance === 'string') return this.get(idOrInstance) || null;
-    return null;
-  }
-
-  /**
-   * Resolves a data entry to a instance ID.
-   * @param {string|Instance} idOrInstance The id or instance of something in this DataStore
-   * @returns {?Snowflake}
-   */
-  resolveID(idOrInstance) {
-    if (idOrInstance instanceof this.holds) return idOrInstance.id;
-    if (typeof idOrInstance === 'string') return idOrInstance;
-    return null;
-  }
-}
-
-module.exports = DataStore;
-
-
-/***/ }),
-/* 6 */
-/***/ (function(module, exports, __webpack_require__) {
-
-const Long = __webpack_require__(27);
-const snekfetch = __webpack_require__(28);
+const snekfetch = __webpack_require__(27);
 const { Colors, DefaultOptions, Endpoints } = __webpack_require__(0);
 const { Error: DiscordError, RangeError, TypeError } = __webpack_require__(4);
 const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
@@ -1632,7 +1576,9 @@ class Util {
    */
   static discordSort(collection) {
     return collection
-      .sort((a, b) => a.rawPosition - b.rawPosition || Long.fromString(a.id).sub(Long.fromString(b.id)).toNumber());
+      .sort((a, b) => a.rawPosition - b.rawPosition ||
+        parseInt(a.id.slice(0, -10)) - parseInt(b.id.slice(0, -10)) ||
+        parseInt(a.id.slice(10)) - parseInt(b.id.slice(10)));
   }
 
   static setPosition(item, position, relative, sorted, route, reason) {
@@ -1649,9 +1595,112 @@ class Util {
     }
     return f;
   }
+
+  /**
+   * Transform a snowflake from a decimal string to a bit string
+   * @param  {string} num Snowflake to be transformed
+   * @returns {string}
+   * @private
+   */
+  static idToBinary(num) {
+    let bin = '';
+    let high = parseInt(num.slice(0, -10)) || 0;
+    let low = parseInt(num.slice(-10));
+    while (low > 0 || high > 0) {
+      bin = String(low & 1) + bin;
+      low = Math.floor(low / 2);
+      if (high > 0) {
+        low += 5000000000 * (high % 2);
+        high = Math.floor(high / 2);
+      }
+    }
+    return bin;
+  }
+
+
+  /**
+   * Transform a snowflake from a bit string to a decimal string
+   * @param  {string} num Bit string to be transformed
+   * @returns {string}
+   * @private
+   */
+  static binaryToID(num) {
+    let dec = '';
+
+    while (num.length > 50) {
+      const high = parseInt(num.slice(0, -32), 2);
+      const low = parseInt((high % 10).toString(2) + num.slice(-32), 2);
+
+      dec = (low % 10).toString() + dec;
+      num = Math.floor(high / 10).toString(2) + Math.floor(low / 10).toString(2).padStart(32, '0');
+    }
+
+    num = parseInt(num, 2);
+    while (num > 0) {
+      dec = (num % 10).toString() + dec;
+      num = Math.floor(num / 10);
+    }
+
+    return dec;
+  }
 }
 
 module.exports = Util;
+
+
+/***/ }),
+/* 6 */
+/***/ (function(module, exports, __webpack_require__) {
+
+const Collection = __webpack_require__(3);
+
+/**
+ * Manages the creation, retrieval and deletion of a specific data model.
+ * @extends {Collection}
+ */
+class DataStore extends Collection {
+  constructor(client, iterable, holds) {
+    super();
+    Object.defineProperty(this, 'client', { value: client });
+    Object.defineProperty(this, 'holds', { value: holds });
+    if (iterable) for (const item of iterable) this.create(item);
+  }
+
+  create(data, cache = true, { id, extras = [] } = {}) {
+    const existing = this.get(id || data.id);
+    if (existing) return existing;
+
+    const entry = this.holds ? new this.holds(this.client, data, ...extras) : data;
+    if (cache) this.set(id || entry.id, entry);
+    return entry;
+  }
+
+  remove(key) { return this.delete(key); }
+
+  /**
+   * Resolves a data entry to a data Object.
+   * @param {string|Object} idOrInstance The id or instance of something in this DataStore
+   * @returns {?Object} An instance from this DataStore
+   */
+  resolve(idOrInstance) {
+    if (idOrInstance instanceof this.holds) return idOrInstance;
+    if (typeof idOrInstance === 'string') return this.get(idOrInstance) || null;
+    return null;
+  }
+
+  /**
+   * Resolves a data entry to a instance ID.
+   * @param {string|Instance} idOrInstance The id or instance of something in this DataStore
+   * @returns {?Snowflake}
+   */
+  resolveID(idOrInstance) {
+    if (idOrInstance instanceof this.holds) return idOrInstance.id;
+    if (typeof idOrInstance === 'string') return idOrInstance;
+    return null;
+  }
+}
+
+module.exports = DataStore;
 
 
 /***/ }),
@@ -1692,7 +1741,7 @@ module.exports = Base;
 /* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Long = __webpack_require__(27);
+const Util = __webpack_require__(5);
 
 // Discord epoch (2015-01-01T00:00:00.000Z)
 const EPOCH = 1420070400000;
@@ -1725,8 +1774,9 @@ class SnowflakeUtil {
    */
   static generate() {
     if (INCREMENT >= 4095) INCREMENT = 0;
-    const BINARY = `${pad((Date.now() - EPOCH).toString(2), 42)}0000100000${pad((INCREMENT++).toString(2), 12)}`;
-    return Long.fromString(BINARY, 2).toString();
+    // eslint-disable-next-line max-len
+    const BINARY = `${(Date.now() - EPOCH).toString(2).padStart(42, '0')}0000100000${(INCREMENT++).toString(2).padStart(12, '0')}`;
+    return Util.binaryToID(BINARY);
   }
 
   /**
@@ -1746,7 +1796,7 @@ class SnowflakeUtil {
    * @returns {DeconstructedSnowflake} Deconstructed snowflake
    */
   static deconstruct(snowflake) {
-    const BINARY = pad(Long.fromString(snowflake).toString(2), 64);
+    const BINARY = Util.idToBinary(snowflake).toString(2).padStart(64, '0');
     const res = {
       timestamp: parseInt(BINARY.substring(0, 42), 2) + EPOCH,
       workerID: parseInt(BINARY.substring(42, 47), 2),
@@ -1762,10 +1812,6 @@ class SnowflakeUtil {
   }
 }
 
-function pad(v, n, c = '0') {
-  return String(v).length >= n ? String(v) : (String(c).repeat(n) + v).slice(-n);
-}
-
 module.exports = SnowflakeUtil;
 
 
@@ -1773,10 +1819,10 @@ module.exports = SnowflakeUtil;
 /* 9 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const path = __webpack_require__(49);
-const fs = __webpack_require__(49);
-const snekfetch = __webpack_require__(28);
-const Util = __webpack_require__(6);
+const path = __webpack_require__(48);
+const fs = __webpack_require__(48);
+const snekfetch = __webpack_require__(27);
+const Util = __webpack_require__(5);
 const { Error, TypeError } = __webpack_require__(4);
 const { browser } = __webpack_require__(0);
 
@@ -2284,11 +2330,11 @@ class Channel extends Base {
   }
 
   static create(client, data, guild) {
-    const DMChannel = __webpack_require__(46);
-    const GroupDMChannel = __webpack_require__(52);
-    const TextChannel = __webpack_require__(53);
-    const VoiceChannel = __webpack_require__(55);
-    const CategoryChannel = __webpack_require__(56);
+    const DMChannel = __webpack_require__(45);
+    const GroupDMChannel = __webpack_require__(51);
+    const TextChannel = __webpack_require__(52);
+    const VoiceChannel = __webpack_require__(54);
+    const CategoryChannel = __webpack_require__(55);
     const GuildChannel = __webpack_require__(17);
     let channel;
     if (data.type === ChannelTypes.DM) {
@@ -3309,7 +3355,7 @@ module.exports = Webhook;
 
 const TextBasedChannel = __webpack_require__(18);
 const { Presence } = __webpack_require__(14);
-const UserProfile = __webpack_require__(103);
+const UserProfile = __webpack_require__(102);
 const Snowflake = __webpack_require__(8);
 const Base = __webpack_require__(7);
 const { Error } = __webpack_require__(4);
@@ -3584,8 +3630,8 @@ module.exports = User;
 const Channel = __webpack_require__(12);
 const Role = __webpack_require__(22);
 const Invite = __webpack_require__(25);
-const PermissionOverwrites = __webpack_require__(54);
-const Util = __webpack_require__(6);
+const PermissionOverwrites = __webpack_require__(53);
+const Util = __webpack_require__(5);
 const Permissions = __webpack_require__(10);
 const Collection = __webpack_require__(3);
 const { MessageNotificationTypes } = __webpack_require__(0);
@@ -4091,7 +4137,7 @@ module.exports = GuildChannel;
 /* 18 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const MessageCollector = __webpack_require__(45);
+const MessageCollector = __webpack_require__(44);
 const Shared = __webpack_require__(21);
 const Snowflake = __webpack_require__(8);
 const Collection = __webpack_require__(3);
@@ -4420,9 +4466,9 @@ const MessageStore = __webpack_require__(19);
 /* 19 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const DataStore = __webpack_require__(5);
+const DataStore = __webpack_require__(6);
 const Collection = __webpack_require__(3);
-const Message = __webpack_require__(32);
+const Message = __webpack_require__(31);
 const { Error } = __webpack_require__(4);
 
 /**
@@ -4854,9 +4900,9 @@ function isUndefined(arg) {
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = {
-  search: __webpack_require__(100),
-  sendMessage: __webpack_require__(102),
-  createMessage: __webpack_require__(61),
+  search: __webpack_require__(99),
+  sendMessage: __webpack_require__(101),
+  createMessage: __webpack_require__(60),
 };
 
 
@@ -4866,7 +4912,7 @@ module.exports = {
 
 const Snowflake = __webpack_require__(8);
 const Permissions = __webpack_require__(10);
-const Util = __webpack_require__(6);
+const Util = __webpack_require__(5);
 const Base = __webpack_require__(7);
 const { TypeError } = __webpack_require__(4);
 
@@ -5349,7 +5395,7 @@ module.exports = MessageAttachment;
 /***/ (function(module, exports, __webpack_require__) {
 
 const MessageAttachment = __webpack_require__(23);
-const Util = __webpack_require__(6);
+const Util = __webpack_require__(5);
 const { RangeError } = __webpack_require__(4);
 
 /**
@@ -5852,22 +5898,22 @@ module.exports = Invite;
 /***/ (function(module, exports, __webpack_require__) {
 
 const Invite = __webpack_require__(25);
-const GuildAuditLogs = __webpack_require__(57);
+const GuildAuditLogs = __webpack_require__(56);
 const Webhook = __webpack_require__(15);
 const GuildMember = __webpack_require__(13);
-const VoiceRegion = __webpack_require__(36);
+const VoiceRegion = __webpack_require__(35);
 const { ChannelTypes, Events, browser } = __webpack_require__(0);
 const Collection = __webpack_require__(3);
-const Util = __webpack_require__(6);
+const Util = __webpack_require__(5);
 const DataResolver = __webpack_require__(9);
 const Snowflake = __webpack_require__(8);
 const Permissions = __webpack_require__(10);
 const Shared = __webpack_require__(21);
-const GuildMemberStore = __webpack_require__(58);
-const RoleStore = __webpack_require__(59);
-const EmojiStore = __webpack_require__(37);
-const GuildChannelStore = __webpack_require__(60);
-const PresenceStore = __webpack_require__(38);
+const GuildMemberStore = __webpack_require__(57);
+const RoleStore = __webpack_require__(58);
+const EmojiStore = __webpack_require__(36);
+const GuildChannelStore = __webpack_require__(59);
+const PresenceStore = __webpack_require__(37);
 const Base = __webpack_require__(7);
 const { Error, TypeError } = __webpack_require__(4);
 
@@ -7050,1245 +7096,27 @@ module.exports = Guild;
 /* 27 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*
- Copyright 2013 Daniel Wirtz <dcode@dcode.io>
- Copyright 2009 The Closure Library Authors. All Rights Reserved.
-
- Licensed under the Apache License, Version 2.0 (the "License");
- you may not use this file except in compliance with the License.
- You may obtain a copy of the License at
-
- http://www.apache.org/licenses/LICENSE-2.0
-
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS-IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
- */
-
-/**
- * @license long.js (c) 2013 Daniel Wirtz <dcode@dcode.io>
- * Released under the Apache License, Version 2.0
- * see: https://github.com/dcodeIO/long.js for details
- */
-(function(global, factory) {
-
-    /* AMD */ if (true)
-        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory),
-				__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
-				(__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__),
-				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-    /* CommonJS */ else if (typeof require === 'function' && typeof module === "object" && module && module["exports"])
-        module["exports"] = factory();
-    /* Global */ else
-        (global["dcodeIO"] = global["dcodeIO"] || {})["Long"] = factory();
-
-})(this, function() {
-    "use strict";
-
-    /**
-     * Constructs a 64 bit two's-complement integer, given its low and high 32 bit values as *signed* integers.
-     *  See the from* functions below for more convenient ways of constructing Longs.
-     * @exports Long
-     * @class A Long class for representing a 64 bit two's-complement integer value.
-     * @param {number} low The low (signed) 32 bits of the long
-     * @param {number} high The high (signed) 32 bits of the long
-     * @param {boolean=} unsigned Whether unsigned or not, defaults to `false` for signed
-     * @constructor
-     */
-    function Long(low, high, unsigned) {
-
-        /**
-         * The low 32 bits as a signed value.
-         * @type {number}
-         */
-        this.low = low | 0;
-
-        /**
-         * The high 32 bits as a signed value.
-         * @type {number}
-         */
-        this.high = high | 0;
-
-        /**
-         * Whether unsigned or not.
-         * @type {boolean}
-         */
-        this.unsigned = !!unsigned;
-    }
-
-    // The internal representation of a long is the two given signed, 32-bit values.
-    // We use 32-bit pieces because these are the size of integers on which
-    // Javascript performs bit-operations.  For operations like addition and
-    // multiplication, we split each number into 16 bit pieces, which can easily be
-    // multiplied within Javascript's floating-point representation without overflow
-    // or change in sign.
-    //
-    // In the algorithms below, we frequently reduce the negative case to the
-    // positive case by negating the input(s) and then post-processing the result.
-    // Note that we must ALWAYS check specially whether those values are MIN_VALUE
-    // (-2^63) because -MIN_VALUE == MIN_VALUE (since 2^63 cannot be represented as
-    // a positive number, it overflows back into a negative).  Not handling this
-    // case would often result in infinite recursion.
-    //
-    // Common constant values ZERO, ONE, NEG_ONE, etc. are defined below the from*
-    // methods on which they depend.
-
-    /**
-     * An indicator used to reliably determine if an object is a Long or not.
-     * @type {boolean}
-     * @const
-     * @private
-     */
-    Long.prototype.__isLong__;
-
-    Object.defineProperty(Long.prototype, "__isLong__", {
-        value: true,
-        enumerable: false,
-        configurable: false
-    });
-
-    /**
-     * @function
-     * @param {*} obj Object
-     * @returns {boolean}
-     * @inner
-     */
-    function isLong(obj) {
-        return (obj && obj["__isLong__"]) === true;
-    }
-
-    /**
-     * Tests if the specified object is a Long.
-     * @function
-     * @param {*} obj Object
-     * @returns {boolean}
-     */
-    Long.isLong = isLong;
-
-    /**
-     * A cache of the Long representations of small integer values.
-     * @type {!Object}
-     * @inner
-     */
-    var INT_CACHE = {};
-
-    /**
-     * A cache of the Long representations of small unsigned integer values.
-     * @type {!Object}
-     * @inner
-     */
-    var UINT_CACHE = {};
-
-    /**
-     * @param {number} value
-     * @param {boolean=} unsigned
-     * @returns {!Long}
-     * @inner
-     */
-    function fromInt(value, unsigned) {
-        var obj, cachedObj, cache;
-        if (unsigned) {
-            value >>>= 0;
-            if (cache = (0 <= value && value < 256)) {
-                cachedObj = UINT_CACHE[value];
-                if (cachedObj)
-                    return cachedObj;
-            }
-            obj = fromBits(value, (value | 0) < 0 ? -1 : 0, true);
-            if (cache)
-                UINT_CACHE[value] = obj;
-            return obj;
-        } else {
-            value |= 0;
-            if (cache = (-128 <= value && value < 128)) {
-                cachedObj = INT_CACHE[value];
-                if (cachedObj)
-                    return cachedObj;
-            }
-            obj = fromBits(value, value < 0 ? -1 : 0, false);
-            if (cache)
-                INT_CACHE[value] = obj;
-            return obj;
-        }
-    }
-
-    /**
-     * Returns a Long representing the given 32 bit integer value.
-     * @function
-     * @param {number} value The 32 bit integer in question
-     * @param {boolean=} unsigned Whether unsigned or not, defaults to `false` for signed
-     * @returns {!Long} The corresponding Long value
-     */
-    Long.fromInt = fromInt;
-
-    /**
-     * @param {number} value
-     * @param {boolean=} unsigned
-     * @returns {!Long}
-     * @inner
-     */
-    function fromNumber(value, unsigned) {
-        if (isNaN(value) || !isFinite(value))
-            return unsigned ? UZERO : ZERO;
-        if (unsigned) {
-            if (value < 0)
-                return UZERO;
-            if (value >= TWO_PWR_64_DBL)
-                return MAX_UNSIGNED_VALUE;
-        } else {
-            if (value <= -TWO_PWR_63_DBL)
-                return MIN_VALUE;
-            if (value + 1 >= TWO_PWR_63_DBL)
-                return MAX_VALUE;
-        }
-        if (value < 0)
-            return fromNumber(-value, unsigned).neg();
-        return fromBits((value % TWO_PWR_32_DBL) | 0, (value / TWO_PWR_32_DBL) | 0, unsigned);
-    }
-
-    /**
-     * Returns a Long representing the given value, provided that it is a finite number. Otherwise, zero is returned.
-     * @function
-     * @param {number} value The number in question
-     * @param {boolean=} unsigned Whether unsigned or not, defaults to `false` for signed
-     * @returns {!Long} The corresponding Long value
-     */
-    Long.fromNumber = fromNumber;
-
-    /**
-     * @param {number} lowBits
-     * @param {number} highBits
-     * @param {boolean=} unsigned
-     * @returns {!Long}
-     * @inner
-     */
-    function fromBits(lowBits, highBits, unsigned) {
-        return new Long(lowBits, highBits, unsigned);
-    }
-
-    /**
-     * Returns a Long representing the 64 bit integer that comes by concatenating the given low and high bits. Each is
-     *  assumed to use 32 bits.
-     * @function
-     * @param {number} lowBits The low 32 bits
-     * @param {number} highBits The high 32 bits
-     * @param {boolean=} unsigned Whether unsigned or not, defaults to `false` for signed
-     * @returns {!Long} The corresponding Long value
-     */
-    Long.fromBits = fromBits;
-
-    /**
-     * @function
-     * @param {number} base
-     * @param {number} exponent
-     * @returns {number}
-     * @inner
-     */
-    var pow_dbl = Math.pow; // Used 4 times (4*8 to 15+4)
-
-    /**
-     * @param {string} str
-     * @param {(boolean|number)=} unsigned
-     * @param {number=} radix
-     * @returns {!Long}
-     * @inner
-     */
-    function fromString(str, unsigned, radix) {
-        if (str.length === 0)
-            throw Error('empty string');
-        if (str === "NaN" || str === "Infinity" || str === "+Infinity" || str === "-Infinity")
-            return ZERO;
-        if (typeof unsigned === 'number') {
-            // For goog.math.long compatibility
-            radix = unsigned,
-            unsigned = false;
-        } else {
-            unsigned = !! unsigned;
-        }
-        radix = radix || 10;
-        if (radix < 2 || 36 < radix)
-            throw RangeError('radix');
-
-        var p;
-        if ((p = str.indexOf('-')) > 0)
-            throw Error('interior hyphen');
-        else if (p === 0) {
-            return fromString(str.substring(1), unsigned, radix).neg();
-        }
-
-        // Do several (8) digits each time through the loop, so as to
-        // minimize the calls to the very expensive emulated div.
-        var radixToPower = fromNumber(pow_dbl(radix, 8));
-
-        var result = ZERO;
-        for (var i = 0; i < str.length; i += 8) {
-            var size = Math.min(8, str.length - i),
-                value = parseInt(str.substring(i, i + size), radix);
-            if (size < 8) {
-                var power = fromNumber(pow_dbl(radix, size));
-                result = result.mul(power).add(fromNumber(value));
-            } else {
-                result = result.mul(radixToPower);
-                result = result.add(fromNumber(value));
-            }
-        }
-        result.unsigned = unsigned;
-        return result;
-    }
-
-    /**
-     * Returns a Long representation of the given string, written using the specified radix.
-     * @function
-     * @param {string} str The textual representation of the Long
-     * @param {(boolean|number)=} unsigned Whether unsigned or not, defaults to `false` for signed
-     * @param {number=} radix The radix in which the text is written (2-36), defaults to 10
-     * @returns {!Long} The corresponding Long value
-     */
-    Long.fromString = fromString;
-
-    /**
-     * @function
-     * @param {!Long|number|string|!{low: number, high: number, unsigned: boolean}} val
-     * @returns {!Long}
-     * @inner
-     */
-    function fromValue(val) {
-        if (val /* is compatible */ instanceof Long)
-            return val;
-        if (typeof val === 'number')
-            return fromNumber(val);
-        if (typeof val === 'string')
-            return fromString(val);
-        // Throws for non-objects, converts non-instanceof Long:
-        return fromBits(val.low, val.high, val.unsigned);
-    }
-
-    /**
-     * Converts the specified value to a Long.
-     * @function
-     * @param {!Long|number|string|!{low: number, high: number, unsigned: boolean}} val Value
-     * @returns {!Long}
-     */
-    Long.fromValue = fromValue;
-
-    // NOTE: the compiler should inline these constant values below and then remove these variables, so there should be
-    // no runtime penalty for these.
-
-    /**
-     * @type {number}
-     * @const
-     * @inner
-     */
-    var TWO_PWR_16_DBL = 1 << 16;
-
-    /**
-     * @type {number}
-     * @const
-     * @inner
-     */
-    var TWO_PWR_24_DBL = 1 << 24;
-
-    /**
-     * @type {number}
-     * @const
-     * @inner
-     */
-    var TWO_PWR_32_DBL = TWO_PWR_16_DBL * TWO_PWR_16_DBL;
-
-    /**
-     * @type {number}
-     * @const
-     * @inner
-     */
-    var TWO_PWR_64_DBL = TWO_PWR_32_DBL * TWO_PWR_32_DBL;
-
-    /**
-     * @type {number}
-     * @const
-     * @inner
-     */
-    var TWO_PWR_63_DBL = TWO_PWR_64_DBL / 2;
-
-    /**
-     * @type {!Long}
-     * @const
-     * @inner
-     */
-    var TWO_PWR_24 = fromInt(TWO_PWR_24_DBL);
-
-    /**
-     * @type {!Long}
-     * @inner
-     */
-    var ZERO = fromInt(0);
-
-    /**
-     * Signed zero.
-     * @type {!Long}
-     */
-    Long.ZERO = ZERO;
-
-    /**
-     * @type {!Long}
-     * @inner
-     */
-    var UZERO = fromInt(0, true);
-
-    /**
-     * Unsigned zero.
-     * @type {!Long}
-     */
-    Long.UZERO = UZERO;
-
-    /**
-     * @type {!Long}
-     * @inner
-     */
-    var ONE = fromInt(1);
-
-    /**
-     * Signed one.
-     * @type {!Long}
-     */
-    Long.ONE = ONE;
-
-    /**
-     * @type {!Long}
-     * @inner
-     */
-    var UONE = fromInt(1, true);
-
-    /**
-     * Unsigned one.
-     * @type {!Long}
-     */
-    Long.UONE = UONE;
-
-    /**
-     * @type {!Long}
-     * @inner
-     */
-    var NEG_ONE = fromInt(-1);
-
-    /**
-     * Signed negative one.
-     * @type {!Long}
-     */
-    Long.NEG_ONE = NEG_ONE;
-
-    /**
-     * @type {!Long}
-     * @inner
-     */
-    var MAX_VALUE = fromBits(0xFFFFFFFF|0, 0x7FFFFFFF|0, false);
-
-    /**
-     * Maximum signed value.
-     * @type {!Long}
-     */
-    Long.MAX_VALUE = MAX_VALUE;
-
-    /**
-     * @type {!Long}
-     * @inner
-     */
-    var MAX_UNSIGNED_VALUE = fromBits(0xFFFFFFFF|0, 0xFFFFFFFF|0, true);
-
-    /**
-     * Maximum unsigned value.
-     * @type {!Long}
-     */
-    Long.MAX_UNSIGNED_VALUE = MAX_UNSIGNED_VALUE;
-
-    /**
-     * @type {!Long}
-     * @inner
-     */
-    var MIN_VALUE = fromBits(0, 0x80000000|0, false);
-
-    /**
-     * Minimum signed value.
-     * @type {!Long}
-     */
-    Long.MIN_VALUE = MIN_VALUE;
-
-    /**
-     * @alias Long.prototype
-     * @inner
-     */
-    var LongPrototype = Long.prototype;
-
-    /**
-     * Converts the Long to a 32 bit integer, assuming it is a 32 bit integer.
-     * @returns {number}
-     */
-    LongPrototype.toInt = function toInt() {
-        return this.unsigned ? this.low >>> 0 : this.low;
-    };
-
-    /**
-     * Converts the Long to a the nearest floating-point representation of this value (double, 53 bit mantissa).
-     * @returns {number}
-     */
-    LongPrototype.toNumber = function toNumber() {
-        if (this.unsigned)
-            return ((this.high >>> 0) * TWO_PWR_32_DBL) + (this.low >>> 0);
-        return this.high * TWO_PWR_32_DBL + (this.low >>> 0);
-    };
-
-    /**
-     * Converts the Long to a string written in the specified radix.
-     * @param {number=} radix Radix (2-36), defaults to 10
-     * @returns {string}
-     * @override
-     * @throws {RangeError} If `radix` is out of range
-     */
-    LongPrototype.toString = function toString(radix) {
-        radix = radix || 10;
-        if (radix < 2 || 36 < radix)
-            throw RangeError('radix');
-        if (this.isZero())
-            return '0';
-        if (this.isNegative()) { // Unsigned Longs are never negative
-            if (this.eq(MIN_VALUE)) {
-                // We need to change the Long value before it can be negated, so we remove
-                // the bottom-most digit in this base and then recurse to do the rest.
-                var radixLong = fromNumber(radix),
-                    div = this.div(radixLong),
-                    rem1 = div.mul(radixLong).sub(this);
-                return div.toString(radix) + rem1.toInt().toString(radix);
-            } else
-                return '-' + this.neg().toString(radix);
-        }
-
-        // Do several (6) digits each time through the loop, so as to
-        // minimize the calls to the very expensive emulated div.
-        var radixToPower = fromNumber(pow_dbl(radix, 6), this.unsigned),
-            rem = this;
-        var result = '';
-        while (true) {
-            var remDiv = rem.div(radixToPower),
-                intval = rem.sub(remDiv.mul(radixToPower)).toInt() >>> 0,
-                digits = intval.toString(radix);
-            rem = remDiv;
-            if (rem.isZero())
-                return digits + result;
-            else {
-                while (digits.length < 6)
-                    digits = '0' + digits;
-                result = '' + digits + result;
-            }
-        }
-    };
-
-    /**
-     * Gets the high 32 bits as a signed integer.
-     * @returns {number} Signed high bits
-     */
-    LongPrototype.getHighBits = function getHighBits() {
-        return this.high;
-    };
-
-    /**
-     * Gets the high 32 bits as an unsigned integer.
-     * @returns {number} Unsigned high bits
-     */
-    LongPrototype.getHighBitsUnsigned = function getHighBitsUnsigned() {
-        return this.high >>> 0;
-    };
-
-    /**
-     * Gets the low 32 bits as a signed integer.
-     * @returns {number} Signed low bits
-     */
-    LongPrototype.getLowBits = function getLowBits() {
-        return this.low;
-    };
-
-    /**
-     * Gets the low 32 bits as an unsigned integer.
-     * @returns {number} Unsigned low bits
-     */
-    LongPrototype.getLowBitsUnsigned = function getLowBitsUnsigned() {
-        return this.low >>> 0;
-    };
-
-    /**
-     * Gets the number of bits needed to represent the absolute value of this Long.
-     * @returns {number}
-     */
-    LongPrototype.getNumBitsAbs = function getNumBitsAbs() {
-        if (this.isNegative()) // Unsigned Longs are never negative
-            return this.eq(MIN_VALUE) ? 64 : this.neg().getNumBitsAbs();
-        var val = this.high != 0 ? this.high : this.low;
-        for (var bit = 31; bit > 0; bit--)
-            if ((val & (1 << bit)) != 0)
-                break;
-        return this.high != 0 ? bit + 33 : bit + 1;
-    };
-
-    /**
-     * Tests if this Long's value equals zero.
-     * @returns {boolean}
-     */
-    LongPrototype.isZero = function isZero() {
-        return this.high === 0 && this.low === 0;
-    };
-
-    /**
-     * Tests if this Long's value is negative.
-     * @returns {boolean}
-     */
-    LongPrototype.isNegative = function isNegative() {
-        return !this.unsigned && this.high < 0;
-    };
-
-    /**
-     * Tests if this Long's value is positive.
-     * @returns {boolean}
-     */
-    LongPrototype.isPositive = function isPositive() {
-        return this.unsigned || this.high >= 0;
-    };
-
-    /**
-     * Tests if this Long's value is odd.
-     * @returns {boolean}
-     */
-    LongPrototype.isOdd = function isOdd() {
-        return (this.low & 1) === 1;
-    };
-
-    /**
-     * Tests if this Long's value is even.
-     * @returns {boolean}
-     */
-    LongPrototype.isEven = function isEven() {
-        return (this.low & 1) === 0;
-    };
-
-    /**
-     * Tests if this Long's value equals the specified's.
-     * @param {!Long|number|string} other Other value
-     * @returns {boolean}
-     */
-    LongPrototype.equals = function equals(other) {
-        if (!isLong(other))
-            other = fromValue(other);
-        if (this.unsigned !== other.unsigned && (this.high >>> 31) === 1 && (other.high >>> 31) === 1)
-            return false;
-        return this.high === other.high && this.low === other.low;
-    };
-
-    /**
-     * Tests if this Long's value equals the specified's. This is an alias of {@link Long#equals}.
-     * @function
-     * @param {!Long|number|string} other Other value
-     * @returns {boolean}
-     */
-    LongPrototype.eq = LongPrototype.equals;
-
-    /**
-     * Tests if this Long's value differs from the specified's.
-     * @param {!Long|number|string} other Other value
-     * @returns {boolean}
-     */
-    LongPrototype.notEquals = function notEquals(other) {
-        return !this.eq(/* validates */ other);
-    };
-
-    /**
-     * Tests if this Long's value differs from the specified's. This is an alias of {@link Long#notEquals}.
-     * @function
-     * @param {!Long|number|string} other Other value
-     * @returns {boolean}
-     */
-    LongPrototype.neq = LongPrototype.notEquals;
-
-    /**
-     * Tests if this Long's value is less than the specified's.
-     * @param {!Long|number|string} other Other value
-     * @returns {boolean}
-     */
-    LongPrototype.lessThan = function lessThan(other) {
-        return this.comp(/* validates */ other) < 0;
-    };
-
-    /**
-     * Tests if this Long's value is less than the specified's. This is an alias of {@link Long#lessThan}.
-     * @function
-     * @param {!Long|number|string} other Other value
-     * @returns {boolean}
-     */
-    LongPrototype.lt = LongPrototype.lessThan;
-
-    /**
-     * Tests if this Long's value is less than or equal the specified's.
-     * @param {!Long|number|string} other Other value
-     * @returns {boolean}
-     */
-    LongPrototype.lessThanOrEqual = function lessThanOrEqual(other) {
-        return this.comp(/* validates */ other) <= 0;
-    };
-
-    /**
-     * Tests if this Long's value is less than or equal the specified's. This is an alias of {@link Long#lessThanOrEqual}.
-     * @function
-     * @param {!Long|number|string} other Other value
-     * @returns {boolean}
-     */
-    LongPrototype.lte = LongPrototype.lessThanOrEqual;
-
-    /**
-     * Tests if this Long's value is greater than the specified's.
-     * @param {!Long|number|string} other Other value
-     * @returns {boolean}
-     */
-    LongPrototype.greaterThan = function greaterThan(other) {
-        return this.comp(/* validates */ other) > 0;
-    };
-
-    /**
-     * Tests if this Long's value is greater than the specified's. This is an alias of {@link Long#greaterThan}.
-     * @function
-     * @param {!Long|number|string} other Other value
-     * @returns {boolean}
-     */
-    LongPrototype.gt = LongPrototype.greaterThan;
-
-    /**
-     * Tests if this Long's value is greater than or equal the specified's.
-     * @param {!Long|number|string} other Other value
-     * @returns {boolean}
-     */
-    LongPrototype.greaterThanOrEqual = function greaterThanOrEqual(other) {
-        return this.comp(/* validates */ other) >= 0;
-    };
-
-    /**
-     * Tests if this Long's value is greater than or equal the specified's. This is an alias of {@link Long#greaterThanOrEqual}.
-     * @function
-     * @param {!Long|number|string} other Other value
-     * @returns {boolean}
-     */
-    LongPrototype.gte = LongPrototype.greaterThanOrEqual;
-
-    /**
-     * Compares this Long's value with the specified's.
-     * @param {!Long|number|string} other Other value
-     * @returns {number} 0 if they are the same, 1 if the this is greater and -1
-     *  if the given one is greater
-     */
-    LongPrototype.compare = function compare(other) {
-        if (!isLong(other))
-            other = fromValue(other);
-        if (this.eq(other))
-            return 0;
-        var thisNeg = this.isNegative(),
-            otherNeg = other.isNegative();
-        if (thisNeg && !otherNeg)
-            return -1;
-        if (!thisNeg && otherNeg)
-            return 1;
-        // At this point the sign bits are the same
-        if (!this.unsigned)
-            return this.sub(other).isNegative() ? -1 : 1;
-        // Both are positive if at least one is unsigned
-        return (other.high >>> 0) > (this.high >>> 0) || (other.high === this.high && (other.low >>> 0) > (this.low >>> 0)) ? -1 : 1;
-    };
-
-    /**
-     * Compares this Long's value with the specified's. This is an alias of {@link Long#compare}.
-     * @function
-     * @param {!Long|number|string} other Other value
-     * @returns {number} 0 if they are the same, 1 if the this is greater and -1
-     *  if the given one is greater
-     */
-    LongPrototype.comp = LongPrototype.compare;
-
-    /**
-     * Negates this Long's value.
-     * @returns {!Long} Negated Long
-     */
-    LongPrototype.negate = function negate() {
-        if (!this.unsigned && this.eq(MIN_VALUE))
-            return MIN_VALUE;
-        return this.not().add(ONE);
-    };
-
-    /**
-     * Negates this Long's value. This is an alias of {@link Long#negate}.
-     * @function
-     * @returns {!Long} Negated Long
-     */
-    LongPrototype.neg = LongPrototype.negate;
-
-    /**
-     * Returns the sum of this and the specified Long.
-     * @param {!Long|number|string} addend Addend
-     * @returns {!Long} Sum
-     */
-    LongPrototype.add = function add(addend) {
-        if (!isLong(addend))
-            addend = fromValue(addend);
-
-        // Divide each number into 4 chunks of 16 bits, and then sum the chunks.
-
-        var a48 = this.high >>> 16;
-        var a32 = this.high & 0xFFFF;
-        var a16 = this.low >>> 16;
-        var a00 = this.low & 0xFFFF;
-
-        var b48 = addend.high >>> 16;
-        var b32 = addend.high & 0xFFFF;
-        var b16 = addend.low >>> 16;
-        var b00 = addend.low & 0xFFFF;
-
-        var c48 = 0, c32 = 0, c16 = 0, c00 = 0;
-        c00 += a00 + b00;
-        c16 += c00 >>> 16;
-        c00 &= 0xFFFF;
-        c16 += a16 + b16;
-        c32 += c16 >>> 16;
-        c16 &= 0xFFFF;
-        c32 += a32 + b32;
-        c48 += c32 >>> 16;
-        c32 &= 0xFFFF;
-        c48 += a48 + b48;
-        c48 &= 0xFFFF;
-        return fromBits((c16 << 16) | c00, (c48 << 16) | c32, this.unsigned);
-    };
-
-    /**
-     * Returns the difference of this and the specified Long.
-     * @param {!Long|number|string} subtrahend Subtrahend
-     * @returns {!Long} Difference
-     */
-    LongPrototype.subtract = function subtract(subtrahend) {
-        if (!isLong(subtrahend))
-            subtrahend = fromValue(subtrahend);
-        return this.add(subtrahend.neg());
-    };
-
-    /**
-     * Returns the difference of this and the specified Long. This is an alias of {@link Long#subtract}.
-     * @function
-     * @param {!Long|number|string} subtrahend Subtrahend
-     * @returns {!Long} Difference
-     */
-    LongPrototype.sub = LongPrototype.subtract;
-
-    /**
-     * Returns the product of this and the specified Long.
-     * @param {!Long|number|string} multiplier Multiplier
-     * @returns {!Long} Product
-     */
-    LongPrototype.multiply = function multiply(multiplier) {
-        if (this.isZero())
-            return ZERO;
-        if (!isLong(multiplier))
-            multiplier = fromValue(multiplier);
-        if (multiplier.isZero())
-            return ZERO;
-        if (this.eq(MIN_VALUE))
-            return multiplier.isOdd() ? MIN_VALUE : ZERO;
-        if (multiplier.eq(MIN_VALUE))
-            return this.isOdd() ? MIN_VALUE : ZERO;
-
-        if (this.isNegative()) {
-            if (multiplier.isNegative())
-                return this.neg().mul(multiplier.neg());
-            else
-                return this.neg().mul(multiplier).neg();
-        } else if (multiplier.isNegative())
-            return this.mul(multiplier.neg()).neg();
-
-        // If both longs are small, use float multiplication
-        if (this.lt(TWO_PWR_24) && multiplier.lt(TWO_PWR_24))
-            return fromNumber(this.toNumber() * multiplier.toNumber(), this.unsigned);
-
-        // Divide each long into 4 chunks of 16 bits, and then add up 4x4 products.
-        // We can skip products that would overflow.
-
-        var a48 = this.high >>> 16;
-        var a32 = this.high & 0xFFFF;
-        var a16 = this.low >>> 16;
-        var a00 = this.low & 0xFFFF;
-
-        var b48 = multiplier.high >>> 16;
-        var b32 = multiplier.high & 0xFFFF;
-        var b16 = multiplier.low >>> 16;
-        var b00 = multiplier.low & 0xFFFF;
-
-        var c48 = 0, c32 = 0, c16 = 0, c00 = 0;
-        c00 += a00 * b00;
-        c16 += c00 >>> 16;
-        c00 &= 0xFFFF;
-        c16 += a16 * b00;
-        c32 += c16 >>> 16;
-        c16 &= 0xFFFF;
-        c16 += a00 * b16;
-        c32 += c16 >>> 16;
-        c16 &= 0xFFFF;
-        c32 += a32 * b00;
-        c48 += c32 >>> 16;
-        c32 &= 0xFFFF;
-        c32 += a16 * b16;
-        c48 += c32 >>> 16;
-        c32 &= 0xFFFF;
-        c32 += a00 * b32;
-        c48 += c32 >>> 16;
-        c32 &= 0xFFFF;
-        c48 += a48 * b00 + a32 * b16 + a16 * b32 + a00 * b48;
-        c48 &= 0xFFFF;
-        return fromBits((c16 << 16) | c00, (c48 << 16) | c32, this.unsigned);
-    };
-
-    /**
-     * Returns the product of this and the specified Long. This is an alias of {@link Long#multiply}.
-     * @function
-     * @param {!Long|number|string} multiplier Multiplier
-     * @returns {!Long} Product
-     */
-    LongPrototype.mul = LongPrototype.multiply;
-
-    /**
-     * Returns this Long divided by the specified. The result is signed if this Long is signed or
-     *  unsigned if this Long is unsigned.
-     * @param {!Long|number|string} divisor Divisor
-     * @returns {!Long} Quotient
-     */
-    LongPrototype.divide = function divide(divisor) {
-        if (!isLong(divisor))
-            divisor = fromValue(divisor);
-        if (divisor.isZero())
-            throw Error('division by zero');
-        if (this.isZero())
-            return this.unsigned ? UZERO : ZERO;
-        var approx, rem, res;
-        if (!this.unsigned) {
-            // This section is only relevant for signed longs and is derived from the
-            // closure library as a whole.
-            if (this.eq(MIN_VALUE)) {
-                if (divisor.eq(ONE) || divisor.eq(NEG_ONE))
-                    return MIN_VALUE;  // recall that -MIN_VALUE == MIN_VALUE
-                else if (divisor.eq(MIN_VALUE))
-                    return ONE;
-                else {
-                    // At this point, we have |other| >= 2, so |this/other| < |MIN_VALUE|.
-                    var halfThis = this.shr(1);
-                    approx = halfThis.div(divisor).shl(1);
-                    if (approx.eq(ZERO)) {
-                        return divisor.isNegative() ? ONE : NEG_ONE;
-                    } else {
-                        rem = this.sub(divisor.mul(approx));
-                        res = approx.add(rem.div(divisor));
-                        return res;
-                    }
-                }
-            } else if (divisor.eq(MIN_VALUE))
-                return this.unsigned ? UZERO : ZERO;
-            if (this.isNegative()) {
-                if (divisor.isNegative())
-                    return this.neg().div(divisor.neg());
-                return this.neg().div(divisor).neg();
-            } else if (divisor.isNegative())
-                return this.div(divisor.neg()).neg();
-            res = ZERO;
-        } else {
-            // The algorithm below has not been made for unsigned longs. It's therefore
-            // required to take special care of the MSB prior to running it.
-            if (!divisor.unsigned)
-                divisor = divisor.toUnsigned();
-            if (divisor.gt(this))
-                return UZERO;
-            if (divisor.gt(this.shru(1))) // 15 >>> 1 = 7 ; with divisor = 8 ; true
-                return UONE;
-            res = UZERO;
-        }
-
-        // Repeat the following until the remainder is less than other:  find a
-        // floating-point that approximates remainder / other *from below*, add this
-        // into the result, and subtract it from the remainder.  It is critical that
-        // the approximate value is less than or equal to the real value so that the
-        // remainder never becomes negative.
-        rem = this;
-        while (rem.gte(divisor)) {
-            // Approximate the result of division. This may be a little greater or
-            // smaller than the actual value.
-            approx = Math.max(1, Math.floor(rem.toNumber() / divisor.toNumber()));
-
-            // We will tweak the approximate result by changing it in the 48-th digit or
-            // the smallest non-fractional digit, whichever is larger.
-            var log2 = Math.ceil(Math.log(approx) / Math.LN2),
-                delta = (log2 <= 48) ? 1 : pow_dbl(2, log2 - 48),
-
-            // Decrease the approximation until it is smaller than the remainder.  Note
-            // that if it is too large, the product overflows and is negative.
-                approxRes = fromNumber(approx),
-                approxRem = approxRes.mul(divisor);
-            while (approxRem.isNegative() || approxRem.gt(rem)) {
-                approx -= delta;
-                approxRes = fromNumber(approx, this.unsigned);
-                approxRem = approxRes.mul(divisor);
-            }
-
-            // We know the answer can't be zero... and actually, zero would cause
-            // infinite recursion since we would make no progress.
-            if (approxRes.isZero())
-                approxRes = ONE;
-
-            res = res.add(approxRes);
-            rem = rem.sub(approxRem);
-        }
-        return res;
-    };
-
-    /**
-     * Returns this Long divided by the specified. This is an alias of {@link Long#divide}.
-     * @function
-     * @param {!Long|number|string} divisor Divisor
-     * @returns {!Long} Quotient
-     */
-    LongPrototype.div = LongPrototype.divide;
-
-    /**
-     * Returns this Long modulo the specified.
-     * @param {!Long|number|string} divisor Divisor
-     * @returns {!Long} Remainder
-     */
-    LongPrototype.modulo = function modulo(divisor) {
-        if (!isLong(divisor))
-            divisor = fromValue(divisor);
-        return this.sub(this.div(divisor).mul(divisor));
-    };
-
-    /**
-     * Returns this Long modulo the specified. This is an alias of {@link Long#modulo}.
-     * @function
-     * @param {!Long|number|string} divisor Divisor
-     * @returns {!Long} Remainder
-     */
-    LongPrototype.mod = LongPrototype.modulo;
-
-    /**
-     * Returns the bitwise NOT of this Long.
-     * @returns {!Long}
-     */
-    LongPrototype.not = function not() {
-        return fromBits(~this.low, ~this.high, this.unsigned);
-    };
-
-    /**
-     * Returns the bitwise AND of this Long and the specified.
-     * @param {!Long|number|string} other Other Long
-     * @returns {!Long}
-     */
-    LongPrototype.and = function and(other) {
-        if (!isLong(other))
-            other = fromValue(other);
-        return fromBits(this.low & other.low, this.high & other.high, this.unsigned);
-    };
-
-    /**
-     * Returns the bitwise OR of this Long and the specified.
-     * @param {!Long|number|string} other Other Long
-     * @returns {!Long}
-     */
-    LongPrototype.or = function or(other) {
-        if (!isLong(other))
-            other = fromValue(other);
-        return fromBits(this.low | other.low, this.high | other.high, this.unsigned);
-    };
-
-    /**
-     * Returns the bitwise XOR of this Long and the given one.
-     * @param {!Long|number|string} other Other Long
-     * @returns {!Long}
-     */
-    LongPrototype.xor = function xor(other) {
-        if (!isLong(other))
-            other = fromValue(other);
-        return fromBits(this.low ^ other.low, this.high ^ other.high, this.unsigned);
-    };
-
-    /**
-     * Returns this Long with bits shifted to the left by the given amount.
-     * @param {number|!Long} numBits Number of bits
-     * @returns {!Long} Shifted Long
-     */
-    LongPrototype.shiftLeft = function shiftLeft(numBits) {
-        if (isLong(numBits))
-            numBits = numBits.toInt();
-        if ((numBits &= 63) === 0)
-            return this;
-        else if (numBits < 32)
-            return fromBits(this.low << numBits, (this.high << numBits) | (this.low >>> (32 - numBits)), this.unsigned);
-        else
-            return fromBits(0, this.low << (numBits - 32), this.unsigned);
-    };
-
-    /**
-     * Returns this Long with bits shifted to the left by the given amount. This is an alias of {@link Long#shiftLeft}.
-     * @function
-     * @param {number|!Long} numBits Number of bits
-     * @returns {!Long} Shifted Long
-     */
-    LongPrototype.shl = LongPrototype.shiftLeft;
-
-    /**
-     * Returns this Long with bits arithmetically shifted to the right by the given amount.
-     * @param {number|!Long} numBits Number of bits
-     * @returns {!Long} Shifted Long
-     */
-    LongPrototype.shiftRight = function shiftRight(numBits) {
-        if (isLong(numBits))
-            numBits = numBits.toInt();
-        if ((numBits &= 63) === 0)
-            return this;
-        else if (numBits < 32)
-            return fromBits((this.low >>> numBits) | (this.high << (32 - numBits)), this.high >> numBits, this.unsigned);
-        else
-            return fromBits(this.high >> (numBits - 32), this.high >= 0 ? 0 : -1, this.unsigned);
-    };
-
-    /**
-     * Returns this Long with bits arithmetically shifted to the right by the given amount. This is an alias of {@link Long#shiftRight}.
-     * @function
-     * @param {number|!Long} numBits Number of bits
-     * @returns {!Long} Shifted Long
-     */
-    LongPrototype.shr = LongPrototype.shiftRight;
-
-    /**
-     * Returns this Long with bits logically shifted to the right by the given amount.
-     * @param {number|!Long} numBits Number of bits
-     * @returns {!Long} Shifted Long
-     */
-    LongPrototype.shiftRightUnsigned = function shiftRightUnsigned(numBits) {
-        if (isLong(numBits))
-            numBits = numBits.toInt();
-        numBits &= 63;
-        if (numBits === 0)
-            return this;
-        else {
-            var high = this.high;
-            if (numBits < 32) {
-                var low = this.low;
-                return fromBits((low >>> numBits) | (high << (32 - numBits)), high >>> numBits, this.unsigned);
-            } else if (numBits === 32)
-                return fromBits(high, 0, this.unsigned);
-            else
-                return fromBits(high >>> (numBits - 32), 0, this.unsigned);
-        }
-    };
-
-    /**
-     * Returns this Long with bits logically shifted to the right by the given amount. This is an alias of {@link Long#shiftRightUnsigned}.
-     * @function
-     * @param {number|!Long} numBits Number of bits
-     * @returns {!Long} Shifted Long
-     */
-    LongPrototype.shru = LongPrototype.shiftRightUnsigned;
-
-    /**
-     * Converts this Long to signed.
-     * @returns {!Long} Signed long
-     */
-    LongPrototype.toSigned = function toSigned() {
-        if (!this.unsigned)
-            return this;
-        return fromBits(this.low, this.high, false);
-    };
-
-    /**
-     * Converts this Long to unsigned.
-     * @returns {!Long} Unsigned long
-     */
-    LongPrototype.toUnsigned = function toUnsigned() {
-        if (this.unsigned)
-            return this;
-        return fromBits(this.low, this.high, true);
-    };
-
-    /**
-     * Converts this Long to its byte representation.
-     * @param {boolean=} le Whether little or big endian, defaults to big endian
-     * @returns {!Array.<number>} Byte representation
-     */
-    LongPrototype.toBytes = function(le) {
-        return le ? this.toBytesLE() : this.toBytesBE();
-    }
-
-    /**
-     * Converts this Long to its little endian byte representation.
-     * @returns {!Array.<number>} Little endian byte representation
-     */
-    LongPrototype.toBytesLE = function() {
-        var hi = this.high,
-            lo = this.low;
-        return [
-             lo         & 0xff,
-            (lo >>>  8) & 0xff,
-            (lo >>> 16) & 0xff,
-            (lo >>> 24) & 0xff,
-             hi         & 0xff,
-            (hi >>>  8) & 0xff,
-            (hi >>> 16) & 0xff,
-            (hi >>> 24) & 0xff
-        ];
-    }
-
-    /**
-     * Converts this Long to its big endian byte representation.
-     * @returns {!Array.<number>} Big endian byte representation
-     */
-    LongPrototype.toBytesBE = function() {
-        var hi = this.high,
-            lo = this.low;
-        return [
-            (hi >>> 24) & 0xff,
-            (hi >>> 16) & 0xff,
-            (hi >>>  8) & 0xff,
-             hi         & 0xff,
-            (lo >>> 24) & 0xff,
-            (lo >>> 16) & 0xff,
-            (lo >>>  8) & 0xff,
-             lo         & 0xff
-        ];
-    }
-
-    return Long;
-});
+module.exports = __webpack_require__(77);
 
 
 /***/ }),
 /* 28 */
 /***/ (function(module, exports, __webpack_require__) {
 
-module.exports = __webpack_require__(78);
+"use strict";
+
+
+exports.decode = exports.parse = __webpack_require__(78);
+exports.encode = exports.stringify = __webpack_require__(79);
 
 
 /***/ }),
 /* 29 */
 /***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
-
-
-exports.decode = exports.parse = __webpack_require__(79);
-exports.encode = exports.stringify = __webpack_require__(80);
-
-
-/***/ }),
-/* 30 */
-/***/ (function(module, exports, __webpack_require__) {
-
 const EventEmitter = __webpack_require__(20);
-const RESTManager = __webpack_require__(85);
-const Util = __webpack_require__(6);
+const RESTManager = __webpack_require__(84);
+const Util = __webpack_require__(5);
 const { DefaultOptions } = __webpack_require__(0);
 
 /**
@@ -8399,7 +7227,7 @@ module.exports = BaseClient;
 
 
 /***/ }),
-/* 31 */
+/* 30 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Collection = __webpack_require__(3);
@@ -8613,17 +7441,17 @@ module.exports = Collector;
 
 
 /***/ }),
-/* 32 */
+/* 31 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Mentions = __webpack_require__(47);
+const Mentions = __webpack_require__(46);
 const MessageAttachment = __webpack_require__(23);
 const Embed = __webpack_require__(24);
-const ReactionCollector = __webpack_require__(48);
-const ClientApplication = __webpack_require__(33);
-const Util = __webpack_require__(6);
+const ReactionCollector = __webpack_require__(47);
+const ClientApplication = __webpack_require__(32);
+const Util = __webpack_require__(5);
 const Collection = __webpack_require__(3);
-const ReactionStore = __webpack_require__(101);
+const ReactionStore = __webpack_require__(100);
 const { MessageTypes } = __webpack_require__(0);
 const Permissions = __webpack_require__(10);
 const Base = __webpack_require__(7);
@@ -9172,7 +8000,7 @@ module.exports = Message;
 
 
 /***/ }),
-/* 33 */
+/* 32 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Snowflake = __webpack_require__(8);
@@ -9388,7 +8216,7 @@ module.exports = ClientApplication;
 
 
 /***/ }),
-/* 34 */
+/* 33 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Collection = __webpack_require__(3);
@@ -9632,7 +8460,7 @@ module.exports = Emoji;
 
 
 /***/ }),
-/* 35 */
+/* 34 */
 /***/ (function(module, exports) {
 
 /**
@@ -9688,7 +8516,7 @@ module.exports = ReactionEmoji;
 
 
 /***/ }),
-/* 36 */
+/* 35 */
 /***/ (function(module, exports) {
 
 /**
@@ -9744,12 +8572,12 @@ module.exports = VoiceRegion;
 
 
 /***/ }),
-/* 37 */
+/* 36 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const DataStore = __webpack_require__(5);
-const Emoji = __webpack_require__(34);
-const ReactionEmoji = __webpack_require__(35);
+const DataStore = __webpack_require__(6);
+const Emoji = __webpack_require__(33);
+const ReactionEmoji = __webpack_require__(34);
 
 /**
  * Stores emojis.
@@ -9821,10 +8649,10 @@ module.exports = EmojiStore;
 
 
 /***/ }),
-/* 38 */
+/* 37 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const DataStore = __webpack_require__(5);
+const DataStore = __webpack_require__(6);
 const { Presence } = __webpack_require__(14);
 
 /**
@@ -9879,12 +8707,12 @@ module.exports = PresenceStore;
 
 
 /***/ }),
-/* 39 */
+/* 38 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const { UserGuildSettingsMap } = __webpack_require__(0);
 const Collection = __webpack_require__(3);
-const ClientUserChannelOverride = __webpack_require__(65);
+const ClientUserChannelOverride = __webpack_require__(64);
 
 /**
  * A wrapper around the ClientUser's guild settings.
@@ -9945,7 +8773,7 @@ module.exports = ClientUserGuildSettings;
 
 
 /***/ }),
-/* 40 */
+/* 39 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -9984,13 +8812,13 @@ module.exports = {
 
 
 /***/ }),
-/* 41 */
+/* 40 */
 /***/ (function(module, exports) {
 
 module.exports = ({"version":"12.0.0-dev","homepage":"https://github.com/hydrabolt/discord.js#readme"})
 
 /***/ }),
-/* 42 */
+/* 41 */
 /***/ (function(module, exports) {
 
 // Heavily inspired by node's `internal/errors` module
@@ -10055,7 +8883,7 @@ module.exports = {
 
 
 /***/ }),
-/* 43 */
+/* 42 */
 /***/ (function(module, exports) {
 
 /**
@@ -10115,15 +8943,15 @@ module.exports = DiscordAPIError;
 
 
 /***/ }),
-/* 44 */
+/* 43 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const User = __webpack_require__(16);
 const Collection = __webpack_require__(3);
-const ClientUserSettings = __webpack_require__(64);
-const ClientUserGuildSettings = __webpack_require__(39);
+const ClientUserSettings = __webpack_require__(63);
+const ClientUserGuildSettings = __webpack_require__(38);
 const { Events } = __webpack_require__(0);
-const Util = __webpack_require__(6);
+const Util = __webpack_require__(5);
 const DataResolver = __webpack_require__(9);
 const Guild = __webpack_require__(26);
 
@@ -10454,10 +9282,10 @@ module.exports = ClientUser;
 
 
 /***/ }),
-/* 45 */
+/* 44 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Collector = __webpack_require__(31);
+const Collector = __webpack_require__(30);
 const { Events } = __webpack_require__(0);
 
 /**
@@ -10547,7 +9375,7 @@ module.exports = MessageCollector;
 
 
 /***/ }),
-/* 46 */
+/* 45 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Channel = __webpack_require__(12);
@@ -10611,7 +9439,7 @@ module.exports = DMChannel;
 
 
 /***/ }),
-/* 47 */
+/* 46 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Collection = __webpack_require__(3);
@@ -10777,10 +9605,10 @@ module.exports = MessageMentions;
 
 
 /***/ }),
-/* 48 */
+/* 47 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Collector = __webpack_require__(31);
+const Collector = __webpack_require__(30);
 const Collection = __webpack_require__(3);
 const { Events } = __webpack_require__(0);
 
@@ -10909,18 +9737,18 @@ module.exports = ReactionCollector;
 
 
 /***/ }),
-/* 49 */
+/* 48 */
 /***/ (function(module, exports) {
 
 
 
 /***/ }),
-/* 50 */
+/* 49 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Emoji = __webpack_require__(34);
-const ReactionEmoji = __webpack_require__(35);
-const ReactionUserStore = __webpack_require__(51);
+const Emoji = __webpack_require__(33);
+const ReactionEmoji = __webpack_require__(34);
+const ReactionUserStore = __webpack_require__(50);
 const { Error } = __webpack_require__(4);
 
 /**
@@ -11021,10 +9849,10 @@ module.exports = MessageReaction;
 
 
 /***/ }),
-/* 51 */
+/* 50 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const DataStore = __webpack_require__(5);
+const DataStore = __webpack_require__(6);
 /**
  * A data store to store User models who reacted to a MessageReaction.
  * @extends {DataStore}
@@ -11060,7 +9888,7 @@ module.exports = ReactionUserStore;
 
 
 /***/ }),
-/* 52 */
+/* 51 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Channel = __webpack_require__(12);
@@ -11300,7 +10128,7 @@ module.exports = GroupDMChannel;
 
 
 /***/ }),
-/* 53 */
+/* 52 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const GuildChannel = __webpack_require__(17);
@@ -11407,7 +10235,7 @@ module.exports = TextChannel;
 
 
 /***/ }),
-/* 54 */
+/* 53 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Permissions = __webpack_require__(10);
@@ -11477,7 +10305,7 @@ module.exports = PermissionOverwrites;
 
 
 /***/ }),
-/* 55 */
+/* 54 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const GuildChannel = __webpack_require__(17);
@@ -11619,7 +10447,7 @@ module.exports = VoiceChannel;
 
 
 /***/ }),
-/* 56 */
+/* 55 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const GuildChannel = __webpack_require__(17);
@@ -11643,7 +10471,7 @@ module.exports = CategoryChannel;
 
 
 /***/ }),
-/* 57 */
+/* 56 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Collection = __webpack_require__(3);
@@ -12029,10 +10857,10 @@ module.exports = GuildAuditLogs;
 
 
 /***/ }),
-/* 58 */
+/* 57 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const DataStore = __webpack_require__(5);
+const DataStore = __webpack_require__(6);
 const GuildMember = __webpack_require__(13);
 const { Events, OPCodes } = __webpack_require__(0);
 const Collection = __webpack_require__(3);
@@ -12180,10 +11008,10 @@ module.exports = GuildMemberStore;
 
 
 /***/ }),
-/* 59 */
+/* 58 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const DataStore = __webpack_require__(5);
+const DataStore = __webpack_require__(6);
 const Role = __webpack_require__(22);
 
 /**
@@ -12231,10 +11059,10 @@ module.exports = RoleStore;
 
 
 /***/ }),
-/* 60 */
+/* 59 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const DataStore = __webpack_require__(5);
+const DataStore = __webpack_require__(6);
 const Channel = __webpack_require__(12);
 const GuildChannel = __webpack_require__(17);
 
@@ -12286,7 +11114,7 @@ module.exports = GuildChannelStore;
 
 
 /***/ }),
-/* 61 */
+/* 60 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Embed = __webpack_require__(24);
@@ -12294,14 +11122,14 @@ const DataResolver = __webpack_require__(9);
 const MessageEmbed = __webpack_require__(24);
 const MessageAttachment = __webpack_require__(23);
 const { browser } = __webpack_require__(0);
-const Util = __webpack_require__(6);
+const Util = __webpack_require__(5);
 
 // eslint-disable-next-line complexity
 module.exports = async function createMessage(channel, options) {
   const User = __webpack_require__(16);
   const GuildMember = __webpack_require__(13);
   const Webhook = __webpack_require__(15);
-  const WebhookClient = __webpack_require__(62);
+  const WebhookClient = __webpack_require__(61);
 
   const webhook = channel instanceof Webhook || channel instanceof WebhookClient;
 
@@ -12400,11 +11228,11 @@ module.exports = async function createMessage(channel, options) {
 
 
 /***/ }),
-/* 62 */
+/* 61 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Webhook = __webpack_require__(15);
-const BaseClient = __webpack_require__(30);
+const BaseClient = __webpack_require__(29);
 
 /**
  * The webhook client.
@@ -12435,7 +11263,7 @@ module.exports = WebhookClient;
 
 
 /***/ }),
-/* 63 */
+/* 62 */
 /***/ (function(module, exports) {
 
 /**
@@ -12489,11 +11317,11 @@ module.exports = UserConnection;
 
 
 /***/ }),
-/* 64 */
+/* 63 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const { UserSettingsMap } = __webpack_require__(0);
-const Util = __webpack_require__(6);
+const Util = __webpack_require__(5);
 const { Error } = __webpack_require__(4);
 
 /**
@@ -12575,7 +11403,7 @@ module.exports = ClientUserSettings;
 
 
 /***/ }),
-/* 65 */
+/* 64 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const { UserChannelOverrideMap } = __webpack_require__(0);
@@ -12609,13 +11437,13 @@ module.exports = ClientUserChannelOverride;
 
 
 /***/ }),
-/* 66 */
+/* 65 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const { browser } = __webpack_require__(0);
-const querystring = __webpack_require__(29);
+const querystring = __webpack_require__(28);
 try {
-  var erlpack = __webpack_require__(140);
+  var erlpack = __webpack_require__(139);
   if (!erlpack.pack) erlpack = null;
 } catch (err) {} // eslint-disable-line no-empty
 
@@ -12623,9 +11451,9 @@ if (browser) {
   exports.WebSocket = window.WebSocket; // eslint-disable-line no-undef
 } else {
   try {
-    exports.WebSocket = __webpack_require__(141);
+    exports.WebSocket = __webpack_require__(140);
   } catch (err) {
-    exports.WebSocket = __webpack_require__(142);
+    exports.WebSocket = __webpack_require__(141);
   }
 }
 
@@ -12652,7 +11480,7 @@ for (const state of ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED']) exports[state] 
 
 
 /***/ }),
-/* 67 */
+/* 66 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -12661,9 +11489,9 @@ for (const state of ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED']) exports[state] 
 
 var assign    = __webpack_require__(11).assign;
 
-var deflate   = __webpack_require__(144);
-var inflate   = __webpack_require__(147);
-var constants = __webpack_require__(72);
+var deflate   = __webpack_require__(143);
+var inflate   = __webpack_require__(146);
+var constants = __webpack_require__(71);
 
 var pako = {};
 
@@ -12673,7 +11501,7 @@ module.exports = pako;
 
 
 /***/ }),
-/* 68 */
+/* 67 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -12731,7 +11559,7 @@ module.exports = adler32;
 
 
 /***/ }),
-/* 69 */
+/* 68 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -12797,7 +11625,7 @@ module.exports = crc32;
 
 
 /***/ }),
-/* 70 */
+/* 69 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -12989,7 +11817,7 @@ exports.utf8border = function (buf, max) {
 
 
 /***/ }),
-/* 71 */
+/* 70 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -13043,7 +11871,7 @@ module.exports = ZStream;
 
 
 /***/ }),
-/* 72 */
+/* 71 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -13118,13 +11946,13 @@ module.exports = {
 
 
 /***/ }),
-/* 73 */
+/* 72 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const DataStore = __webpack_require__(5);
+const DataStore = __webpack_require__(6);
 const User = __webpack_require__(16);
 const GuildMember = __webpack_require__(13);
-const Message = __webpack_require__(32);
+const Message = __webpack_require__(31);
 
 /**
  * A data store to store User models.
@@ -13185,10 +12013,10 @@ module.exports = UserStore;
 
 
 /***/ }),
-/* 74 */
+/* 73 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const DataStore = __webpack_require__(5);
+const DataStore = __webpack_require__(6);
 const Channel = __webpack_require__(12);
 const { Events } = __webpack_require__(0);
 
@@ -13293,10 +12121,10 @@ module.exports = ChannelStore;
 
 
 /***/ }),
-/* 75 */
+/* 74 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const DataStore = __webpack_require__(5);
+const DataStore = __webpack_require__(6);
 const Guild = __webpack_require__(26);
 
 /**
@@ -13339,10 +12167,10 @@ module.exports = GuildStore;
 
 
 /***/ }),
-/* 76 */
+/* 75 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const PresenceStore = __webpack_require__(38);
+const PresenceStore = __webpack_require__(37);
 const Collection = __webpack_require__(3);
 const { ActivityTypes, OPCodes } = __webpack_require__(0);
 const { Presence } = __webpack_require__(14);
@@ -13412,45 +12240,45 @@ module.exports = ClientPresenceStore;
 
 
 /***/ }),
-/* 77 */
+/* 76 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Util = __webpack_require__(6);
+const Util = __webpack_require__(5);
 
 module.exports = {
   // "Root" classes (starting points)
-  BaseClient: __webpack_require__(30),
-  Client: __webpack_require__(93),
-  Shard: __webpack_require__(181),
-  ShardClientUtil: __webpack_require__(182),
-  ShardingManager: __webpack_require__(183),
-  WebhookClient: __webpack_require__(62),
+  BaseClient: __webpack_require__(29),
+  Client: __webpack_require__(92),
+  Shard: __webpack_require__(180),
+  ShardClientUtil: __webpack_require__(181),
+  ShardingManager: __webpack_require__(182),
+  WebhookClient: __webpack_require__(61),
 
   // Utilities
   Collection: __webpack_require__(3),
   Constants: __webpack_require__(0),
   DataResolver: __webpack_require__(9),
-  DataStore: __webpack_require__(5),
-  DiscordAPIError: __webpack_require__(43),
+  DataStore: __webpack_require__(6),
+  DiscordAPIError: __webpack_require__(42),
   Permissions: __webpack_require__(10),
   Snowflake: __webpack_require__(8),
   SnowflakeUtil: __webpack_require__(8),
   Util: Util,
   util: Util,
-  version: __webpack_require__(41).version,
+  version: __webpack_require__(40).version,
 
   // Stores
-  ChannelStore: __webpack_require__(74),
-  ClientPresenceStore: __webpack_require__(76),
-  EmojiStore: __webpack_require__(37),
-  GuildChannelStore: __webpack_require__(60),
-  GuildMemberStore: __webpack_require__(58),
-  GuildStore: __webpack_require__(75),
-  ReactionUserStore: __webpack_require__(51),
+  ChannelStore: __webpack_require__(73),
+  ClientPresenceStore: __webpack_require__(75),
+  EmojiStore: __webpack_require__(36),
+  GuildChannelStore: __webpack_require__(59),
+  GuildMemberStore: __webpack_require__(57),
+  GuildStore: __webpack_require__(74),
+  ReactionUserStore: __webpack_require__(50),
   MessageStore: __webpack_require__(19),
-  PresenceStore: __webpack_require__(38),
-  RoleStore: __webpack_require__(59),
-  UserStore: __webpack_require__(73),
+  PresenceStore: __webpack_require__(37),
+  RoleStore: __webpack_require__(58),
+  UserStore: __webpack_require__(72),
 
   // Shortcuts to Util methods
   escapeMarkdown: Util.escapeMarkdown,
@@ -13460,53 +12288,53 @@ module.exports = {
   // Structures
   Base: __webpack_require__(7),
   Activity: __webpack_require__(14).Activity,
-  CategoryChannel: __webpack_require__(56),
+  CategoryChannel: __webpack_require__(55),
   Channel: __webpack_require__(12),
-  ClientApplication: __webpack_require__(33),
-  ClientUser: __webpack_require__(44),
-  ClientUserChannelOverride: __webpack_require__(65),
-  ClientUserGuildSettings: __webpack_require__(39),
-  ClientUserSettings: __webpack_require__(64),
-  Collector: __webpack_require__(31),
-  DMChannel: __webpack_require__(46),
-  Emoji: __webpack_require__(34),
-  GroupDMChannel: __webpack_require__(52),
+  ClientApplication: __webpack_require__(32),
+  ClientUser: __webpack_require__(43),
+  ClientUserChannelOverride: __webpack_require__(64),
+  ClientUserGuildSettings: __webpack_require__(38),
+  ClientUserSettings: __webpack_require__(63),
+  Collector: __webpack_require__(30),
+  DMChannel: __webpack_require__(45),
+  Emoji: __webpack_require__(33),
+  GroupDMChannel: __webpack_require__(51),
   Guild: __webpack_require__(26),
-  GuildAuditLogs: __webpack_require__(57),
+  GuildAuditLogs: __webpack_require__(56),
   GuildChannel: __webpack_require__(17),
   GuildMember: __webpack_require__(13),
   Invite: __webpack_require__(25),
-  Message: __webpack_require__(32),
+  Message: __webpack_require__(31),
   MessageAttachment: __webpack_require__(23),
-  MessageCollector: __webpack_require__(45),
+  MessageCollector: __webpack_require__(44),
   MessageEmbed: __webpack_require__(24),
-  MessageMentions: __webpack_require__(47),
-  MessageReaction: __webpack_require__(50),
-  PermissionOverwrites: __webpack_require__(54),
+  MessageMentions: __webpack_require__(46),
+  MessageReaction: __webpack_require__(49),
+  PermissionOverwrites: __webpack_require__(53),
   Presence: __webpack_require__(14).Presence,
-  ReactionCollector: __webpack_require__(48),
-  ReactionEmoji: __webpack_require__(35),
+  ReactionCollector: __webpack_require__(47),
+  ReactionEmoji: __webpack_require__(34),
   RichPresenceAssets: __webpack_require__(14).RichPresenceAssets,
   Role: __webpack_require__(22),
-  TextChannel: __webpack_require__(53),
+  TextChannel: __webpack_require__(52),
   User: __webpack_require__(16),
-  UserConnection: __webpack_require__(63),
-  VoiceChannel: __webpack_require__(55),
-  VoiceRegion: __webpack_require__(36),
+  UserConnection: __webpack_require__(62),
+  VoiceChannel: __webpack_require__(54),
+  VoiceRegion: __webpack_require__(35),
   Webhook: __webpack_require__(15),
 
-  WebSocket: __webpack_require__(66),
+  WebSocket: __webpack_require__(65),
 };
 
 
 /***/ }),
-/* 78 */
+/* 77 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const browser = typeof window !== 'undefined';
-const querystring = __webpack_require__(29);
-const Package = __webpack_require__(81);
-const transport = browser ? __webpack_require__(82) : __webpack_require__(83);
+const querystring = __webpack_require__(28);
+const Package = __webpack_require__(80);
+const transport = browser ? __webpack_require__(81) : __webpack_require__(82);
 
 /**
  * Snekfetch
@@ -13765,7 +12593,7 @@ module.exports = Snekfetch;
 
 
 /***/ }),
-/* 79 */
+/* 78 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -13856,7 +12684,7 @@ var isArray = Array.isArray || function (xs) {
 
 
 /***/ }),
-/* 80 */
+/* 79 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -13948,13 +12776,13 @@ var objectKeys = Object.keys || function (obj) {
 
 
 /***/ }),
-/* 81 */
+/* 80 */
 /***/ (function(module, exports) {
 
 module.exports = ({"name":"snekfetch","homepage":"https://github.com/devsnek/snekfetch"})
 
 /***/ }),
-/* 82 */
+/* 81 */
 /***/ (function(module, exports) {
 
 function buildRequest(method, url) {
@@ -13997,16 +12825,16 @@ module.exports = {
 
 
 /***/ }),
-/* 83 */
+/* 82 */
 /***/ (function(module, exports) {
 
 /* (ignored) */
 
 /***/ }),
-/* 84 */
+/* 83 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const { register } = __webpack_require__(42);
+const { register } = __webpack_require__(41);
 
 const Messages = {
   CLIENT_INVALID_OPTION: (prop, must) => `The ${prop} option must be ${must}`,
@@ -14106,12 +12934,12 @@ for (const [name, message] of Object.entries(Messages)) register(name, message);
 
 
 /***/ }),
-/* 85 */
+/* 84 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const handlers = __webpack_require__(86);
-const APIRequest = __webpack_require__(90);
-const routeBuilder = __webpack_require__(92);
+const handlers = __webpack_require__(85);
+const APIRequest = __webpack_require__(89);
+const routeBuilder = __webpack_require__(91);
 const { Error } = __webpack_require__(4);
 const { Endpoints } = __webpack_require__(0);
 
@@ -14187,18 +13015,18 @@ module.exports = RESTManager;
 
 
 /***/ }),
-/* 86 */
+/* 85 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = {
-  sequential: __webpack_require__(87),
-  burst: __webpack_require__(88),
-  RequestHandler: __webpack_require__(89),
+  sequential: __webpack_require__(86),
+  burst: __webpack_require__(87),
+  RequestHandler: __webpack_require__(88),
 };
 
 
 /***/ }),
-/* 87 */
+/* 86 */
 /***/ (function(module, exports) {
 
 module.exports = function sequential() {
@@ -14220,7 +13048,7 @@ module.exports = function sequential() {
 
 
 /***/ }),
-/* 88 */
+/* 87 */
 /***/ (function(module, exports) {
 
 module.exports = function burst() {
@@ -14239,10 +13067,10 @@ module.exports = function burst() {
 
 
 /***/ }),
-/* 89 */
+/* 88 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const DiscordAPIError = __webpack_require__(43);
+const DiscordAPIError = __webpack_require__(42);
 const { Events: { RATE_LIMIT } } = __webpack_require__(0);
 
 class RequestHandler {
@@ -14342,12 +13170,12 @@ module.exports = RequestHandler;
 
 
 /***/ }),
-/* 90 */
+/* 89 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const querystring = __webpack_require__(29);
-const snekfetch = __webpack_require__(28);
-const https = __webpack_require__(91);
+const querystring = __webpack_require__(28);
+const snekfetch = __webpack_require__(27);
+const https = __webpack_require__(90);
 const { browser, UserAgent } = __webpack_require__(0);
 
 if (https.Agent) var agent = new https.Agent({ keepAlive: true });
@@ -14392,13 +13220,13 @@ module.exports = APIRequest;
 
 
 /***/ }),
-/* 91 */
+/* 90 */
 /***/ (function(module, exports) {
 
 /* (ignored) */
 
 /***/ }),
-/* 92 */
+/* 91 */
 /***/ (function(module, exports) {
 
 const noop = () => {}; // eslint-disable-line no-empty-function
@@ -14437,27 +13265,27 @@ module.exports = buildRoute;
 
 
 /***/ }),
-/* 93 */
+/* 92 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const BaseClient = __webpack_require__(30);
+const BaseClient = __webpack_require__(29);
 const Permissions = __webpack_require__(10);
-const ClientManager = __webpack_require__(94);
-const ClientVoiceManager = __webpack_require__(95);
-const WebSocketManager = __webpack_require__(96);
-const ActionsManager = __webpack_require__(152);
+const ClientManager = __webpack_require__(93);
+const ClientVoiceManager = __webpack_require__(94);
+const WebSocketManager = __webpack_require__(95);
+const ActionsManager = __webpack_require__(151);
 const Collection = __webpack_require__(3);
-const VoiceRegion = __webpack_require__(36);
+const VoiceRegion = __webpack_require__(35);
 const Webhook = __webpack_require__(15);
 const Invite = __webpack_require__(25);
-const ClientApplication = __webpack_require__(33);
-const ShardClientUtil = __webpack_require__(179);
-const VoiceBroadcast = __webpack_require__(180);
-const UserStore = __webpack_require__(73);
-const ChannelStore = __webpack_require__(74);
-const GuildStore = __webpack_require__(75);
-const ClientPresenceStore = __webpack_require__(76);
-const EmojiStore = __webpack_require__(37);
+const ClientApplication = __webpack_require__(32);
+const ShardClientUtil = __webpack_require__(178);
+const VoiceBroadcast = __webpack_require__(179);
+const UserStore = __webpack_require__(72);
+const ChannelStore = __webpack_require__(73);
+const GuildStore = __webpack_require__(74);
+const ClientPresenceStore = __webpack_require__(75);
+const EmojiStore = __webpack_require__(36);
 const { Events, browser } = __webpack_require__(0);
 const DataResolver = __webpack_require__(9);
 const { Error, TypeError, RangeError } = __webpack_require__(4);
@@ -14912,7 +13740,7 @@ module.exports = Client;
 
 
 /***/ }),
-/* 94 */
+/* 93 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const { Events, Status } = __webpack_require__(0);
@@ -14991,18 +13819,18 @@ module.exports = ClientManager;
 
 
 /***/ }),
-/* 95 */
+/* 94 */
 /***/ (function(module, exports) {
 
 /* (ignored) */
 
 /***/ }),
-/* 96 */
+/* 95 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const EventEmitter = __webpack_require__(20);
 const { Events, Status } = __webpack_require__(0);
-const WebSocketConnection = __webpack_require__(97);
+const WebSocketConnection = __webpack_require__(96);
 
 /**
  * WebSocket Manager of the client.
@@ -15093,18 +13921,18 @@ module.exports = WebSocketManager;
 
 
 /***/ }),
-/* 97 */
+/* 96 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const EventEmitter = __webpack_require__(20);
 const { Events, OPCodes, Status, WSCodes } = __webpack_require__(0);
-const PacketManager = __webpack_require__(98);
-const WebSocket = __webpack_require__(66);
+const PacketManager = __webpack_require__(97);
+const WebSocket = __webpack_require__(65);
 try {
-  var zlib = __webpack_require__(143);
-  if (!zlib.Inflate) zlib = __webpack_require__(67);
+  var zlib = __webpack_require__(142);
+  if (!zlib.Inflate) zlib = __webpack_require__(66);
 } catch (err) {
-  zlib = __webpack_require__(67);
+  zlib = __webpack_require__(66);
 }
 
 /**
@@ -15579,7 +14407,7 @@ module.exports = WebSocketConnection;
 
 
 /***/ }),
-/* 98 */
+/* 97 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const { OPCodes, Status, WSEvents } = __webpack_require__(0);
@@ -15600,43 +14428,43 @@ class WebSocketPacketManager {
     this.handlers = {};
     this.queue = [];
 
-    this.register(WSEvents.READY, __webpack_require__(99));
-    this.register(WSEvents.RESUMED, __webpack_require__(104));
-    this.register(WSEvents.GUILD_CREATE, __webpack_require__(105));
-    this.register(WSEvents.GUILD_DELETE, __webpack_require__(106));
-    this.register(WSEvents.GUILD_UPDATE, __webpack_require__(107));
-    this.register(WSEvents.GUILD_BAN_ADD, __webpack_require__(108));
-    this.register(WSEvents.GUILD_BAN_REMOVE, __webpack_require__(109));
-    this.register(WSEvents.GUILD_MEMBER_ADD, __webpack_require__(110));
-    this.register(WSEvents.GUILD_MEMBER_REMOVE, __webpack_require__(111));
-    this.register(WSEvents.GUILD_MEMBER_UPDATE, __webpack_require__(112));
-    this.register(WSEvents.GUILD_ROLE_CREATE, __webpack_require__(113));
-    this.register(WSEvents.GUILD_ROLE_DELETE, __webpack_require__(114));
-    this.register(WSEvents.GUILD_ROLE_UPDATE, __webpack_require__(115));
-    this.register(WSEvents.GUILD_EMOJIS_UPDATE, __webpack_require__(116));
-    this.register(WSEvents.GUILD_MEMBERS_CHUNK, __webpack_require__(117));
-    this.register(WSEvents.CHANNEL_CREATE, __webpack_require__(118));
-    this.register(WSEvents.CHANNEL_DELETE, __webpack_require__(119));
-    this.register(WSEvents.CHANNEL_UPDATE, __webpack_require__(120));
-    this.register(WSEvents.CHANNEL_PINS_UPDATE, __webpack_require__(121));
-    this.register(WSEvents.PRESENCE_UPDATE, __webpack_require__(122));
-    this.register(WSEvents.USER_UPDATE, __webpack_require__(123));
-    this.register(WSEvents.USER_NOTE_UPDATE, __webpack_require__(124));
-    this.register(WSEvents.USER_SETTINGS_UPDATE, __webpack_require__(125));
-    this.register(WSEvents.USER_GUILD_SETTINGS_UPDATE, __webpack_require__(126));
-    this.register(WSEvents.VOICE_STATE_UPDATE, __webpack_require__(127));
-    this.register(WSEvents.TYPING_START, __webpack_require__(128));
-    this.register(WSEvents.MESSAGE_CREATE, __webpack_require__(129));
-    this.register(WSEvents.MESSAGE_DELETE, __webpack_require__(130));
-    this.register(WSEvents.MESSAGE_UPDATE, __webpack_require__(131));
-    this.register(WSEvents.MESSAGE_DELETE_BULK, __webpack_require__(132));
-    this.register(WSEvents.VOICE_SERVER_UPDATE, __webpack_require__(133));
-    this.register(WSEvents.GUILD_SYNC, __webpack_require__(134));
-    this.register(WSEvents.RELATIONSHIP_ADD, __webpack_require__(135));
-    this.register(WSEvents.RELATIONSHIP_REMOVE, __webpack_require__(136));
-    this.register(WSEvents.MESSAGE_REACTION_ADD, __webpack_require__(137));
-    this.register(WSEvents.MESSAGE_REACTION_REMOVE, __webpack_require__(138));
-    this.register(WSEvents.MESSAGE_REACTION_REMOVE_ALL, __webpack_require__(139));
+    this.register(WSEvents.READY, __webpack_require__(98));
+    this.register(WSEvents.RESUMED, __webpack_require__(103));
+    this.register(WSEvents.GUILD_CREATE, __webpack_require__(104));
+    this.register(WSEvents.GUILD_DELETE, __webpack_require__(105));
+    this.register(WSEvents.GUILD_UPDATE, __webpack_require__(106));
+    this.register(WSEvents.GUILD_BAN_ADD, __webpack_require__(107));
+    this.register(WSEvents.GUILD_BAN_REMOVE, __webpack_require__(108));
+    this.register(WSEvents.GUILD_MEMBER_ADD, __webpack_require__(109));
+    this.register(WSEvents.GUILD_MEMBER_REMOVE, __webpack_require__(110));
+    this.register(WSEvents.GUILD_MEMBER_UPDATE, __webpack_require__(111));
+    this.register(WSEvents.GUILD_ROLE_CREATE, __webpack_require__(112));
+    this.register(WSEvents.GUILD_ROLE_DELETE, __webpack_require__(113));
+    this.register(WSEvents.GUILD_ROLE_UPDATE, __webpack_require__(114));
+    this.register(WSEvents.GUILD_EMOJIS_UPDATE, __webpack_require__(115));
+    this.register(WSEvents.GUILD_MEMBERS_CHUNK, __webpack_require__(116));
+    this.register(WSEvents.CHANNEL_CREATE, __webpack_require__(117));
+    this.register(WSEvents.CHANNEL_DELETE, __webpack_require__(118));
+    this.register(WSEvents.CHANNEL_UPDATE, __webpack_require__(119));
+    this.register(WSEvents.CHANNEL_PINS_UPDATE, __webpack_require__(120));
+    this.register(WSEvents.PRESENCE_UPDATE, __webpack_require__(121));
+    this.register(WSEvents.USER_UPDATE, __webpack_require__(122));
+    this.register(WSEvents.USER_NOTE_UPDATE, __webpack_require__(123));
+    this.register(WSEvents.USER_SETTINGS_UPDATE, __webpack_require__(124));
+    this.register(WSEvents.USER_GUILD_SETTINGS_UPDATE, __webpack_require__(125));
+    this.register(WSEvents.VOICE_STATE_UPDATE, __webpack_require__(126));
+    this.register(WSEvents.TYPING_START, __webpack_require__(127));
+    this.register(WSEvents.MESSAGE_CREATE, __webpack_require__(128));
+    this.register(WSEvents.MESSAGE_DELETE, __webpack_require__(129));
+    this.register(WSEvents.MESSAGE_UPDATE, __webpack_require__(130));
+    this.register(WSEvents.MESSAGE_DELETE_BULK, __webpack_require__(131));
+    this.register(WSEvents.VOICE_SERVER_UPDATE, __webpack_require__(132));
+    this.register(WSEvents.GUILD_SYNC, __webpack_require__(133));
+    this.register(WSEvents.RELATIONSHIP_ADD, __webpack_require__(134));
+    this.register(WSEvents.RELATIONSHIP_REMOVE, __webpack_require__(135));
+    this.register(WSEvents.MESSAGE_REACTION_ADD, __webpack_require__(136));
+    this.register(WSEvents.MESSAGE_REACTION_REMOVE, __webpack_require__(137));
+    this.register(WSEvents.MESSAGE_REACTION_REMOVE_ALL, __webpack_require__(138));
   }
 
   get client() {
@@ -15693,12 +14521,12 @@ module.exports = WebSocketPacketManager;
 
 
 /***/ }),
-/* 99 */
+/* 98 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
 const { Events } = __webpack_require__(0);
-const ClientUser = __webpack_require__(44);
+const ClientUser = __webpack_require__(43);
 
 class ReadyHandler extends AbstractHandler {
   handle(packet) {
@@ -15776,10 +14604,10 @@ module.exports = ReadyHandler;
 
 
 /***/ }),
-/* 100 */
+/* 99 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const long = __webpack_require__(27);
+const Util = __webpack_require__(5);
 const { TypeError } = __webpack_require__(4);
 
 /**
@@ -15821,17 +14649,17 @@ module.exports = function search(target, options) {
   if (typeof options === 'string') options = { content: options };
   if (options.before) {
     if (!(options.before instanceof Date)) options.before = new Date(options.before);
-    options.maxID = long.fromNumber(options.before.getTime() - 14200704e5).shiftLeft(22).toString();
+    options.maxID = Util.binaryToID((options.before.getTime() - 14200704e5).toString(2) + '0'.repeat(22));
   }
   if (options.after) {
     if (!(options.after instanceof Date)) options.after = new Date(options.after);
-    options.minID = long.fromNumber(options.after.getTime() - 14200704e5).shiftLeft(22).toString();
+    options.minID = Util.binaryToID((options.after.getTime() - 14200704e5).toString(2) + '0'.repeat(22));
   }
   if (options.during) {
     if (!(options.during instanceof Date)) options.during = new Date(options.during);
     const t = options.during.getTime() - 14200704e5;
-    options.minID = long.fromNumber(t).shiftLeft(22).toString();
-    options.maxID = long.fromNumber(t + 864e5).shiftLeft(22).toString();
+    options.minID = Util.binaryToID(t.toString(2) + '0'.repeat(22));
+    options.maxID = Util.binaryToID((t + 864e5).toString(2) + '0'.repeat(22));
   }
   if (options.channel) options.channel = target.client.channels.resolveID(options.channel);
   if (options.author) options.author = target.client.users.resolveID(options.author);
@@ -15882,11 +14710,11 @@ module.exports = function search(target, options) {
 
 
 /***/ }),
-/* 101 */
+/* 100 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const DataStore = __webpack_require__(5);
-const MessageReaction = __webpack_require__(50);
+const DataStore = __webpack_require__(6);
+const MessageReaction = __webpack_require__(49);
 
 /**
  * Stores reactions.
@@ -15933,10 +14761,10 @@ module.exports = ReactionStore;
 
 
 /***/ }),
-/* 102 */
+/* 101 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const createMessage = __webpack_require__(61);
+const createMessage = __webpack_require__(60);
 
 module.exports = async function sendMessage(channel, options) { // eslint-disable-line complexity
   const User = __webpack_require__(16);
@@ -15962,12 +14790,12 @@ module.exports = async function sendMessage(channel, options) { // eslint-disabl
 
 
 /***/ }),
-/* 103 */
+/* 102 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Collection = __webpack_require__(3);
 const { UserFlags } = __webpack_require__(0);
-const UserConnection = __webpack_require__(63);
+const UserConnection = __webpack_require__(62);
 const Base = __webpack_require__(7);
 
 /**
@@ -16047,7 +14875,7 @@ module.exports = UserProfile;
 
 
 /***/ }),
-/* 104 */
+/* 103 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16081,7 +14909,7 @@ module.exports = ResumedHandler;
 
 
 /***/ }),
-/* 105 */
+/* 104 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16120,7 +14948,7 @@ module.exports = GuildCreateHandler;
 
 
 /***/ }),
-/* 106 */
+/* 105 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16142,7 +14970,7 @@ module.exports = GuildDeleteHandler;
 
 
 /***/ }),
-/* 107 */
+/* 106 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16159,7 +14987,7 @@ module.exports = GuildUpdateHandler;
 
 
 /***/ }),
-/* 108 */
+/* 107 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // ##untested handler##
@@ -16188,7 +15016,7 @@ module.exports = GuildBanAddHandler;
 
 
 /***/ }),
-/* 109 */
+/* 108 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // ##untested handler##
@@ -16214,7 +15042,7 @@ module.exports = GuildBanRemoveHandler;
 
 
 /***/ }),
-/* 110 */
+/* 109 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // ##untested handler##
@@ -16247,7 +15075,7 @@ module.exports = GuildMemberAddHandler;
 
 
 /***/ }),
-/* 111 */
+/* 110 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // ##untested handler##
@@ -16266,7 +15094,7 @@ module.exports = GuildMemberRemoveHandler;
 
 
 /***/ }),
-/* 112 */
+/* 111 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // ##untested handler##
@@ -16301,7 +15129,7 @@ module.exports = GuildMemberUpdateHandler;
 
 
 /***/ }),
-/* 113 */
+/* 112 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16318,7 +15146,7 @@ module.exports = GuildRoleCreateHandler;
 
 
 /***/ }),
-/* 114 */
+/* 113 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16335,7 +15163,7 @@ module.exports = GuildRoleDeleteHandler;
 
 
 /***/ }),
-/* 115 */
+/* 114 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16352,7 +15180,7 @@ module.exports = GuildRoleUpdateHandler;
 
 
 /***/ }),
-/* 116 */
+/* 115 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16369,7 +15197,7 @@ module.exports = GuildEmojisUpdate;
 
 
 /***/ }),
-/* 117 */
+/* 116 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16403,7 +15231,7 @@ module.exports = GuildMembersChunkHandler;
 
 
 /***/ }),
-/* 118 */
+/* 117 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16424,7 +15252,7 @@ module.exports = ChannelCreateHandler;
 
 
 /***/ }),
-/* 119 */
+/* 118 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16439,7 +15267,7 @@ module.exports = ChannelDeleteHandler;
 
 
 /***/ }),
-/* 120 */
+/* 119 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16465,7 +15293,7 @@ module.exports = ChannelUpdateHandler;
 
 
 /***/ }),
-/* 121 */
+/* 120 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16502,7 +15330,7 @@ module.exports = ChannelPinsUpdate;
 
 
 /***/ }),
-/* 122 */
+/* 121 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16582,7 +15410,7 @@ module.exports = PresenceUpdateHandler;
 
 
 /***/ }),
-/* 123 */
+/* 122 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16599,7 +15427,7 @@ module.exports = UserUpdateHandler;
 
 
 /***/ }),
-/* 124 */
+/* 123 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16617,7 +15445,7 @@ module.exports = UserNoteUpdateHandler;
 
 
 /***/ }),
-/* 125 */
+/* 124 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16641,12 +15469,12 @@ module.exports = UserSettingsUpdateHandler;
 
 
 /***/ }),
-/* 126 */
+/* 125 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
 const { Events } = __webpack_require__(0);
-const ClientUserGuildSettings = __webpack_require__(39);
+const ClientUserGuildSettings = __webpack_require__(38);
 
 class UserGuildSettingsUpdateHandler extends AbstractHandler {
   handle(packet) {
@@ -16668,7 +15496,7 @@ module.exports = UserGuildSettingsUpdateHandler;
 
 
 /***/ }),
-/* 127 */
+/* 126 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16710,7 +15538,7 @@ module.exports = VoiceStateUpdateHandler;
 
 
 /***/ }),
-/* 128 */
+/* 127 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16784,7 +15612,7 @@ module.exports = TypingStartHandler;
 
 
 /***/ }),
-/* 129 */
+/* 128 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16799,7 +15627,7 @@ module.exports = MessageCreateHandler;
 
 
 /***/ }),
-/* 130 */
+/* 129 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16814,7 +15642,7 @@ module.exports = MessageDeleteHandler;
 
 
 /***/ }),
-/* 131 */
+/* 130 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16840,7 +15668,7 @@ module.exports = MessageUpdateHandler;
 
 
 /***/ }),
-/* 132 */
+/* 131 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16855,7 +15683,7 @@ module.exports = MessageDeleteBulkHandler;
 
 
 /***/ }),
-/* 133 */
+/* 132 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16880,7 +15708,7 @@ module.exports = VoiceServerUpdate;
 
 
 /***/ }),
-/* 134 */
+/* 133 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16897,7 +15725,7 @@ module.exports = GuildSyncHandler;
 
 
 /***/ }),
-/* 135 */
+/* 134 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16922,7 +15750,7 @@ module.exports = RelationshipAddHandler;
 
 
 /***/ }),
-/* 136 */
+/* 135 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16947,7 +15775,7 @@ module.exports = RelationshipRemoveHandler;
 
 
 /***/ }),
-/* 137 */
+/* 136 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16966,7 +15794,7 @@ module.exports = MessageReactionAddHandler;
 
 
 /***/ }),
-/* 138 */
+/* 137 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16983,7 +15811,7 @@ module.exports = MessageReactionRemove;
 
 
 /***/ }),
-/* 139 */
+/* 138 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -16998,6 +15826,12 @@ class MessageReactionRemoveAll extends AbstractHandler {
 
 module.exports = MessageReactionRemoveAll;
 
+
+/***/ }),
+/* 139 */
+/***/ (function(module, exports) {
+
+/* (ignored) */
 
 /***/ }),
 /* 140 */
@@ -17019,23 +15853,17 @@ module.exports = MessageReactionRemoveAll;
 
 /***/ }),
 /* 143 */
-/***/ (function(module, exports) {
-
-/* (ignored) */
-
-/***/ }),
-/* 144 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
 
-var zlib_deflate = __webpack_require__(145);
+var zlib_deflate = __webpack_require__(144);
 var utils        = __webpack_require__(11);
-var strings      = __webpack_require__(70);
-var msg          = __webpack_require__(40);
-var ZStream      = __webpack_require__(71);
+var strings      = __webpack_require__(69);
+var msg          = __webpack_require__(39);
+var ZStream      = __webpack_require__(70);
 
 var toString = Object.prototype.toString;
 
@@ -17431,7 +16259,7 @@ exports.gzip = gzip;
 
 
 /***/ }),
-/* 145 */
+/* 144 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -17457,10 +16285,10 @@ exports.gzip = gzip;
 // 3. This notice may not be removed or altered from any source distribution.
 
 var utils   = __webpack_require__(11);
-var trees   = __webpack_require__(146);
-var adler32 = __webpack_require__(68);
-var crc32   = __webpack_require__(69);
-var msg     = __webpack_require__(40);
+var trees   = __webpack_require__(145);
+var adler32 = __webpack_require__(67);
+var crc32   = __webpack_require__(68);
+var msg     = __webpack_require__(39);
 
 /* Public constants ==========================================================*/
 /* ===========================================================================*/
@@ -19312,7 +18140,7 @@ exports.deflateTune = deflateTune;
 
 
 /***/ }),
-/* 146 */
+/* 145 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -20539,20 +19367,20 @@ exports._tr_align = _tr_align;
 
 
 /***/ }),
-/* 147 */
+/* 146 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
 
-var zlib_inflate = __webpack_require__(148);
+var zlib_inflate = __webpack_require__(147);
 var utils        = __webpack_require__(11);
-var strings      = __webpack_require__(70);
-var c            = __webpack_require__(72);
-var msg          = __webpack_require__(40);
-var ZStream      = __webpack_require__(71);
-var GZheader     = __webpack_require__(151);
+var strings      = __webpack_require__(69);
+var c            = __webpack_require__(71);
+var msg          = __webpack_require__(39);
+var ZStream      = __webpack_require__(70);
+var GZheader     = __webpack_require__(150);
 
 var toString = Object.prototype.toString;
 
@@ -20964,7 +19792,7 @@ exports.ungzip  = inflate;
 
 
 /***/ }),
-/* 148 */
+/* 147 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -20990,10 +19818,10 @@ exports.ungzip  = inflate;
 // 3. This notice may not be removed or altered from any source distribution.
 
 var utils         = __webpack_require__(11);
-var adler32       = __webpack_require__(68);
-var crc32         = __webpack_require__(69);
-var inflate_fast  = __webpack_require__(149);
-var inflate_table = __webpack_require__(150);
+var adler32       = __webpack_require__(67);
+var crc32         = __webpack_require__(68);
+var inflate_fast  = __webpack_require__(148);
+var inflate_table = __webpack_require__(149);
 
 var CODES = 0;
 var LENS = 1;
@@ -22527,7 +21355,7 @@ exports.inflateUndermine = inflateUndermine;
 
 
 /***/ }),
-/* 149 */
+/* 148 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -22879,7 +21707,7 @@ module.exports = function inflate_fast(strm, start) {
 
 
 /***/ }),
-/* 150 */
+/* 149 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -23229,7 +22057,7 @@ module.exports = function inflate_table(type, lens, lens_index, codes, table, ta
 
 
 /***/ }),
-/* 151 */
+/* 150 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -23294,13 +22122,14 @@ module.exports = GZheader;
 
 
 /***/ }),
-/* 152 */
+/* 151 */
 /***/ (function(module, exports, __webpack_require__) {
 
 class ActionsManager {
   constructor(client) {
     this.client = client;
 
+    this.register(__webpack_require__(152));
     this.register(__webpack_require__(153));
     this.register(__webpack_require__(154));
     this.register(__webpack_require__(155));
@@ -23326,7 +22155,6 @@ class ActionsManager {
     this.register(__webpack_require__(175));
     this.register(__webpack_require__(176));
     this.register(__webpack_require__(177));
-    this.register(__webpack_require__(178));
   }
 
   register(Action) {
@@ -23338,7 +22166,7 @@ module.exports = ActionsManager;
 
 
 /***/ }),
-/* 153 */
+/* 152 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23383,7 +22211,7 @@ module.exports = MessageCreateAction;
 
 
 /***/ }),
-/* 154 */
+/* 153 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23417,7 +22245,7 @@ module.exports = MessageDeleteAction;
 
 
 /***/ }),
-/* 155 */
+/* 154 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23457,7 +22285,7 @@ module.exports = MessageDeleteBulkAction;
 
 
 /***/ }),
-/* 156 */
+/* 155 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23486,7 +22314,7 @@ module.exports = MessageUpdateAction;
 
 
 /***/ }),
-/* 157 */
+/* 156 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23531,7 +22359,7 @@ module.exports = MessageReactionAdd;
 
 
 /***/ }),
-/* 158 */
+/* 157 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23577,7 +22405,7 @@ module.exports = MessageReactionRemove;
 
 
 /***/ }),
-/* 159 */
+/* 158 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23608,7 +22436,7 @@ module.exports = MessageReactionRemoveAll;
 
 
 /***/ }),
-/* 160 */
+/* 159 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23630,7 +22458,7 @@ module.exports = ChannelCreateAction;
 
 
 /***/ }),
-/* 161 */
+/* 160 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23665,7 +22493,7 @@ module.exports = ChannelDeleteAction;
 
 
 /***/ }),
-/* 162 */
+/* 161 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23691,7 +22519,7 @@ module.exports = ChannelUpdateAction;
 
 
 /***/ }),
-/* 163 */
+/* 162 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23754,7 +22582,7 @@ module.exports = GuildDeleteAction;
 
 
 /***/ }),
-/* 164 */
+/* 163 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23792,7 +22620,7 @@ module.exports = GuildUpdateAction;
 
 
 /***/ }),
-/* 165 */
+/* 164 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23825,7 +22653,7 @@ module.exports = GuildMemberRemoveAction;
 
 
 /***/ }),
-/* 166 */
+/* 165 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23844,7 +22672,7 @@ module.exports = GuildBanRemove;
 
 
 /***/ }),
-/* 167 */
+/* 166 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23874,7 +22702,7 @@ module.exports = GuildRoleCreate;
 
 
 /***/ }),
-/* 168 */
+/* 167 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23908,7 +22736,7 @@ module.exports = GuildRoleDeleteAction;
 
 
 /***/ }),
-/* 169 */
+/* 168 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23952,7 +22780,7 @@ module.exports = GuildRoleUpdateAction;
 
 
 /***/ }),
-/* 170 */
+/* 169 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -23989,7 +22817,7 @@ module.exports = UserUpdateAction;
 
 
 /***/ }),
-/* 171 */
+/* 170 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -24025,7 +22853,7 @@ module.exports = UserNoteUpdateAction;
 
 
 /***/ }),
-/* 172 */
+/* 171 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -24060,7 +22888,7 @@ module.exports = GuildSync;
 
 
 /***/ }),
-/* 173 */
+/* 172 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -24084,7 +22912,7 @@ module.exports = GuildEmojiCreateAction;
 
 
 /***/ }),
-/* 174 */
+/* 173 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -24108,7 +22936,7 @@ module.exports = GuildEmojiDeleteAction;
 
 
 /***/ }),
-/* 175 */
+/* 174 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -24133,7 +22961,7 @@ module.exports = GuildEmojiUpdateAction;
 
 
 /***/ }),
-/* 176 */
+/* 175 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -24177,7 +23005,7 @@ module.exports = GuildEmojisUpdateAction;
 
 
 /***/ }),
-/* 177 */
+/* 176 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -24202,7 +23030,7 @@ module.exports = GuildRolesPositionUpdate;
 
 
 /***/ }),
-/* 178 */
+/* 177 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
@@ -24227,6 +23055,12 @@ module.exports = GuildChannelsPositionUpdate;
 
 
 /***/ }),
+/* 178 */
+/***/ (function(module, exports) {
+
+/* (ignored) */
+
+/***/ }),
 /* 179 */
 /***/ (function(module, exports) {
 
@@ -24246,12 +23080,6 @@ module.exports = GuildChannelsPositionUpdate;
 
 /***/ }),
 /* 182 */
-/***/ (function(module, exports) {
-
-/* (ignored) */
-
-/***/ }),
-/* 183 */
 /***/ (function(module, exports) {
 
 /* (ignored) */
