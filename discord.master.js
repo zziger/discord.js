@@ -122,7 +122,7 @@ exports.DefaultOptions = {
    * WebSocket options (these are left as snake_case to match the API)
    * @typedef {Object} WebsocketOptions
    * @property {number} [large_threshold=250] Number of members in a guild to be considered large
-   * @property {boolean} [compress=true] Whether to compress data sent on the connection
+   * @property {boolean} [compress=false] Whether to compress data sent on the connection
    * (defaults to `false` for browsers)
    */
   ws: {
@@ -2404,36 +2404,42 @@ class GuildMember extends Base {
   /**
    * Whether this member is deafened server-wide
    * @type {boolean}
+   * @readonly
    */
   get serverDeaf() { return this.voiceState.deaf; }
 
   /**
    * Whether this member is muted server-wide
    * @type {boolean}
+   * @readonly
    */
   get serverMute() { return this.voiceState.mute; }
 
   /**
    * Whether this member is self-muted
    * @type {boolean}
+   * @readonly
    */
   get selfMute() { return this.voiceState.self_mute; }
 
   /**
    * Whether this member is self-deafened
    * @type {boolean}
+   * @readonly
    */
   get selfDeaf() { return this.voiceState.self_deaf; }
 
   /**
    * The voice session ID of this member (if any)
    * @type {?Snowflake}
+   * @readonly
    */
   get voiceSessionID() { return this.voiceState.session_id; }
 
   /**
    * The voice channel ID of this member, (if any)
    * @type {?Snowflake}
+   * @readonly
    */
   get voiceChannelID() { return this.voiceState.channel_id; }
 
@@ -6168,7 +6174,7 @@ class Guild extends Base {
 
   /**
    * System channel for this guild
-   * @type {?GuildChannel}
+   * @type {?TextChannel}
    * @readonly
    */
   get systemChannel() {
@@ -6653,6 +6659,7 @@ class Guild extends Base {
    * @returns {Promise<Guild>}
    */
   allowDMs(allow) {
+    if (this.client.user.bot) return Promise.reject(new Error('FEATURE_USER_ONLY'));
     const settings = this.client.user.settings;
     if (allow) return settings.removeRestrictedGuild(this);
     else return settings.addRestrictedGuild(this);
@@ -6665,7 +6672,7 @@ class Guild extends Base {
    * string, the ban reason. Supplying an object allows you to do both.
    * @param {number} [options.days=0] Number of days of messages to delete
    * @param {string} [options.reason] Reason for banning
-   * @returns {Promise<GuildMember|User|string>} Result object will be resolved as specifically as possible.
+   * @returns {Promise<GuildMember|User|Snowflake>} Result object will be resolved as specifically as possible.
    * If the GuildMember cannot be resolved, the User will instead be attempted to be resolved. If that also cannot
    * be resolved, the user ID will be the result.
    * @example
@@ -8323,6 +8330,7 @@ class BaseClient extends EventEmitter {
   /**
    * API shortcut
    * @type {Object}
+   * @readonly
    * @private
    */
   get api() {
@@ -10360,7 +10368,7 @@ class ClientUser extends User {
   /**
    * Fetches messages that mentioned the client's user.
    * <warn>This is only available when using a user account.</warn>
-   * @param {Object} [options] Options for the fetch
+   * @param {Object} [options={}] Options for the fetch
    * @param {number} [options.limit=25] Maximum number of mentions to retrieve
    * @param {boolean} [options.roles=true] Whether to include role mentions
    * @param {boolean} [options.everyone=true] Whether to include everyone/here mentions
@@ -12400,7 +12408,7 @@ const BaseClient = __webpack_require__(30);
 
 /**
  * The webhook client.
- * @extends {Webhook}
+ * @implements {Webhook}
  * @extends {BaseClient}
  */
 class WebhookClient extends BaseClient {
@@ -14275,12 +14283,13 @@ class RequestHandler {
             /**
              * Emitted when the client hits a rate limit while making a request
              * @event Client#rateLimit
-             * @prop {number} timeout Timeout in ms
-             * @prop {number} limit Number of requests that can be made to this endpoint
-             * @prop {number} timeDifference Delta-T in ms between your system and Discord servers
-             * @prop {string} method HTTP method used for request that triggered this event
-             * @prop {string} path Path used for request that triggered this event
-             * @prop {string} route Route used for request that triggered this event
+             * @param {Object} rateLimitInfo Object containing the rate limit info
+             * @param {number} rateLimitInfo.timeout Timeout in ms
+             * @param {number} rateLimitInfo.limit Number of requests that can be made to this endpoint
+             * @param {number} rateLimitInfo.timeDifference Delta-T in ms between your system and Discord servers
+             * @param {string} rateLimitInfo.method HTTP method used for request that triggered this event
+             * @param {string} rateLimitInfo.path Path used for request that triggered this event
+             * @param {string} rateLimitInfo.route Route used for request that triggered this event
              */
             this.client.emit(RATE_LIMIT, {
               timeout,
@@ -14596,6 +14605,7 @@ class Client extends BaseClient {
   /**
    * Timestamp of the latest ping's start time
    * @type {number}
+   * @readonly
    * @private
    */
   get _pingTimestamp() {
