@@ -6014,7 +6014,7 @@ class Guild extends Base {
 
     /**
      * An array of enabled guild features, here are the possible values:
-     * * INVITE_SPLASH 
+     * * INVITE_SPLASH
      * * MORE_EMOJI
      * * VERIFIED
      * * VIP_REGIONS
