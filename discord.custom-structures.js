@@ -1664,7 +1664,7 @@ class DataStore extends Collection {
   constructor(client, iterable, holds) {
     super();
     Object.defineProperty(this, 'client', { value: client });
-    Object.defineProperty(this, 'holds', { value: Structures.get(holds.name) });
+    Object.defineProperty(this, 'holds', { value: Structures.get(holds) });
     if (iterable) for (const item of iterable) this.create(item);
   }
 
@@ -9606,6 +9606,17 @@ module.exports = DMChannel;
 class Structures {
   constructor() {
     throw new Error(`The ${this.constructor.name} class may not be instantiated.`);
+  }
+
+  /**
+   * Retrieves a structure class.
+   * @param {string|Function} structure Name of the structure or a class/prototype function to use the name of
+   * @returns {Function}
+   */
+  static get(structure) {
+    if (typeof structure === 'string') return structures[structure];
+    if (typeof structure === 'function') return structures[structure.name];
+    throw new TypeError(`Structure to retrieve must be a string or class/prototype function, not ${typeof structure}.`);
   }
 
   /**
