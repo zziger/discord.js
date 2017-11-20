@@ -1654,7 +1654,7 @@ module.exports = Util;
 /***/ (function(module, exports, __webpack_require__) {
 
 const Collection = __webpack_require__(3);
-const Structures = __webpack_require__(47);
+let Structures;
 
 /**
  * Manages the creation, retrieval and deletion of a specific data model.
@@ -1663,6 +1663,7 @@ const Structures = __webpack_require__(47);
 class DataStore extends Collection {
   constructor(client, iterable, holds) {
     super();
+    if (!Structures) Structures = __webpack_require__(47);
     Object.defineProperty(this, 'client', { value: client });
     Object.defineProperty(this, 'holds', { value: Structures.get(holds) });
     if (iterable) for (const item of iterable) this.create(item);
