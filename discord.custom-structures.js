@@ -9626,7 +9626,7 @@ class Structures {
    *   }
    * );
    */
-  extend(name, extender) {
+  static extend(name, extender) {
     if (!structures[name]) throw new RangeError(`"${name}" is not a valid extensible structure.`);
     if (typeof extender !== 'function') {
       throw new TypeError('The extender must be a function that returns the extended structure class/prototype.');
