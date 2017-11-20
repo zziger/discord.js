@@ -9667,7 +9667,7 @@ const structures = {
   Guild: __webpack_require__(21),
   Message: __webpack_require__(26),
   MessageReaction: __webpack_require__(38),
-  Presence: __webpack_require__(13),
+  Presence: __webpack_require__(13).Presence,
   Role: __webpack_require__(20),
   User: __webpack_require__(15),
 };
