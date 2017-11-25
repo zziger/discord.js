@@ -1644,6 +1644,18 @@ class Util {
 
     return dec;
   }
+
+  /**
+   * Creates a Promise that resolves after a specified duration.
+   * @param {number} ms How long to wait before resolving (in milliseconds)
+   * @returns {Promise<void>}
+   * @private
+   */
+  static delayFor(ms) {
+    return new Promise(resolve => {
+      setTimeout(resolve, ms);
+    });
+  }
 }
 
 module.exports = Util;
@@ -12911,9 +12923,13 @@ const Messages = {
   SHARDING_REQUIRED: 'This session would have handled too many guilds - Sharding is required.',
   SHARDING_CHILD_CONNECTION: 'Failed to send message to shard\'s process.',
   SHARDING_PARENT_CONNECTION: 'Failed to send message to master process.',
-  SHARDING_NO_SHARDS: 'No shards have been spawned',
-  SHARDING_IN_PROCESS: 'Shards are still being spawned',
-  SHARDING_ALREADY_SPAWNED: count => `Already spawned ${count} shards`,
+  SHARDING_NO_SHARDS: 'No shards have been spawned.',
+  SHARDING_IN_PROCESS: 'Shards are still being spawned.',
+  SHARDING_ALREADY_SPAWNED: count => `Already spawned ${count} shards.`,
+  SHARDING_PROCESS_EXISTS: id => `Shard ${id} already has an active process.`,
+  SHARDING_READY_TIMEOUT: id => `Shard ${id}'s Client took too long to become ready.`,
+  SHARDING_READY_DISCONNECTED: id => `Shard ${id}'s Client disconnected before becoming ready.`,
+  SHARDING_READY_DIED: id => `Shard ${id}'s process exited before its Client became ready.`,
 
   COLOR_RANGE: 'Color must be within the range 0 - 16777215 (0xFFFFFF).',
   COLOR_CONVERT: 'Unable to convert color to a number.',
