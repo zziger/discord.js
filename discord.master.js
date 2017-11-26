@@ -2907,8 +2907,7 @@ class GuildMember extends Base {
 
   /**
    * Bans this guild member.
-   * @param {Object} [options] Ban options. If a number, the number of days to delete messages for, if a
-   * string, the ban reason. Supplying an object allows you to do both.
+   * @param {Object} [options] Options for the ban
    * @param {number} [options.days=0] Number of days of messages to delete
    * @param {string} [options.reason] Reason for banning
    * @returns {Promise<GuildMember>}
@@ -6727,8 +6726,7 @@ class Guild extends Base {
   /**
    * Bans a user from the guild.
    * @param {UserResolvable} user The user to ban
-   * @param {Object} [options] Ban options. If a number, the number of days to delete messages for, if a
-   * string, the ban reason. Supplying an object allows you to do both.
+   * @param {Object} [options] Options for the ban
    * @param {number} [options.days=0] Number of days of messages to delete
    * @param {string} [options.reason] Reason for banning
    * @returns {Promise<GuildMember|User|Snowflake>} Result object will be resolved as specifically as possible.
@@ -9625,19 +9623,27 @@ class MessageMentions {
   }
 
   /**
-   * Check if a user is mentioned.
+   * Checks if a user, guild member, role, or channel is mentioned.
    * Takes into account user mentions, role mentions, and @everyone/@here mentions.
    * @param {UserResolvable|GuildMember|Role|GuildChannel} data User/GuildMember/Role/Channel to check
-   * @param {boolean} [strict=true] If role mentions and everyone/here mentions should be included
+   * @param {Object} [options] Options
+   * @param {boolean} [options.ignoreDirect=false] - Whether to ignore direct mentions to the item
+   * @param {boolean} [options.ignoreRoles=false] - Whether to ignore role mentions to a guild member
+   * @param {boolean} [options.ignoreEveryone=false] - Whether to ignore everyone/here mentions
    * @returns {boolean}
    */
-  has(data, strict = true) {
-    if (strict && this.everyone) return true;
-    if (strict && data instanceof GuildMember) {
+  has(data, { ignoreDirect = false, ignoreRoles = false, ignoreEveryone = false } = {}) {
+    if (!ignoreEveryone && this.everyone) return true;
+    if (!ignoreRoles && data instanceof GuildMember) {
       for (const role of this.roles.values()) if (data.roles.has(role.id)) return true;
     }
-    const id = data.id || data;
-    return this.users.has(id) || this.channels.has(id) || this.roles.has(id);
+
+    if (!ignoreDirect) {
+      const id = data.id || data;
+      return this.users.has(id) || this.channels.has(id) || this.roles.has(id);
+    }
+
+    return false;
   }
 }
 
