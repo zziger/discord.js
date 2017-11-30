@@ -1677,7 +1677,7 @@ class DataStore extends Collection {
     super();
     if (!Structures) Structures = __webpack_require__(23);
     Object.defineProperty(this, 'client', { value: client });
-    Object.defineProperty(this, 'holds', { value: Structures.get(holds.name) });
+    Object.defineProperty(this, 'holds', { value: Structures.get(holds.name) || holds });
     if (iterable) for (const item of iterable) this.create(item);
   }
 
