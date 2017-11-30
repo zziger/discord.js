@@ -420,6 +420,21 @@ exports.Events = {
 };
 
 /**
+ * The type of an activity of a users presence, e.g. `PLAYING`. Here are the available types:
+ * * PLAYING
+ * * STREAMING
+ * * LISTENING
+ * * WATCHING
+ * @typedef {string} ActivityType
+ */
+exports.ActivityTypes = [
+  'PLAYING',
+  'STREAMING',
+  'LISTENING',
+  'WATCHING',
+];
+
+/**
  * The type of a websocket message event, e.g. `MESSAGE_CREATE`. Here are the available events:
  * * READY
  * * RESUMED
@@ -9481,6 +9496,7 @@ class Guild {
  * @name Guild#defaultChannel
  * @type {TextChannel}
  * @readonly
+ * @deprecated
  */
 Object.defineProperty(Guild.prototype, 'defaultChannel', {
   get: util.deprecate(function defaultChannel() {
@@ -14927,6 +14943,7 @@ const Collection = __webpack_require__(3);
 const ClientUserSettings = __webpack_require__(55);
 const ClientUserGuildSettings = __webpack_require__(85);
 const Constants = __webpack_require__(0);
+const util = __webpack_require__(7);
 
 /**
  * Represents the logged in client's Discord user.
@@ -15089,6 +15106,7 @@ class ClientUser extends User {
    * @property {Object} [game] Game the user is playing
    * @property {string} [game.name] Name of the game
    * @property {string} [game.url] Twitch stream URL
+   * @property {?ActivityType|number} [game.type] Type of the activity
    */
 
   /**
@@ -15123,7 +15141,10 @@ class ClientUser extends User {
 
       if (data.game) {
         game = data.game;
-        game.type = game.url ? 1 : 0;
+        game.type = game.url && typeof game.type === 'undefined' ? 1 : game.type || 0;
+        if (typeof game.type === 'string') {
+          game.type = Constants.ActivityTypes.indexOf(game.type.toUpperCase());
+        }
       } else if (typeof data.game !== 'undefined') {
         game = null;
       }
@@ -15167,8 +15188,9 @@ class ClientUser extends User {
   /**
    * Sets the game the client user is playing.
    * @param {?string} game Game being played
-   * @param {string} [streamingURL] Twitch stream URL
+   * @param {?string} [streamingURL] Twitch stream URL
    * @returns {Promise<ClientUser>}
+   * @deprecated
    */
   setGame(game, streamingURL) {
     if (!game) return this.setPresence({ game: null });
@@ -15177,6 +15199,21 @@ class ClientUser extends User {
         name: game,
         url: streamingURL,
       },
+    });
+  }
+
+  /**
+   * Sets the activity the client user is playing.
+   * @param {?string} name Activity being played
+   * @param {Object} [options] Options for setting the activity
+   * @param {string} [options.url] Twitch stream URL
+   * @param {ActivityType|number} [options.type] Type of the activity
+   * @returns {Promise<Presence>}
+   */
+  setActivity(name, { url, type } = {}) {
+    if (!name) return this.setPresence({ activity: null });
+    return this.setPresence({
+      game: { name, type, url },
     });
   }
 
@@ -15275,6 +15312,9 @@ class ClientUser extends User {
     return this.client.rest.methods.acceptInvite(invite);
   }
 }
+
+ClientUser.prototype.setGame =
+  util.deprecate(ClientUser.prototype.setGame, 'ClientUser#setGame: use ClientUser#setActivity instead');
 
 module.exports = ClientUser;
 
