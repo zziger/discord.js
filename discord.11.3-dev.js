@@ -18340,6 +18340,7 @@ class ClientDataManager {
     if (channel && !already) {
       if (this.pastReady) this.client.emit(Constants.Events.CHANNEL_CREATE, channel);
       this.client.channels.set(channel.id, channel);
+      return channel;
     } else if (already) {
       return channel;
     }
