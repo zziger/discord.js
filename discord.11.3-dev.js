@@ -2531,315 +2531,6 @@ function hasOwnProperty(obj, prop) {
 /* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const TextBasedChannel = __webpack_require__(14);
-const Constants = __webpack_require__(0);
-const Presence = __webpack_require__(10).Presence;
-const Snowflake = __webpack_require__(5);
-
-/**
- * Represents a user on Discord.
- * @implements {TextBasedChannel}
- */
-class User {
-  constructor(client, data) {
-    /**
-     * The client that created the instance of the user
-     * @name User#client
-     * @type {Client}
-     * @readonly
-     */
-    Object.defineProperty(this, 'client', { value: client });
-
-    if (data) this.setup(data);
-  }
-
-  setup(data) {
-    /**
-     * The ID of the user
-     * @type {Snowflake}
-     */
-    this.id = data.id;
-
-    /**
-     * The username of the user
-     * @type {string}
-     */
-    this.username = data.username;
-
-    /**
-     * A discriminator based on username for the user
-     * @type {string}
-     */
-    this.discriminator = data.discriminator;
-
-    /**
-     * The ID of the user's avatar
-     * @type {string}
-     */
-    this.avatar = data.avatar;
-
-    /**
-     * Whether or not the user is a bot
-     * @type {boolean}
-     */
-    this.bot = Boolean(data.bot);
-
-    /**
-     * The ID of the last message sent by the user, if one was sent
-     * @type {?Snowflake}
-     */
-    this.lastMessageID = null;
-
-    /**
-     * The Message object of the last message sent by the user, if one was sent
-     * @type {?Message}
-     */
-    this.lastMessage = null;
-  }
-
-  patch(data) {
-    for (const prop of ['id', 'username', 'discriminator', 'avatar', 'bot']) {
-      if (typeof data[prop] !== 'undefined') this[prop] = data[prop];
-    }
-    if (data.token) this.client.token = data.token;
-  }
-
-  /**
-   * The timestamp the user was created at
-   * @type {number}
-   * @readonly
-   */
-  get createdTimestamp() {
-    return Snowflake.deconstruct(this.id).timestamp;
-  }
-
-  /**
-   * The time the user was created
-   * @type {Date}
-   * @readonly
-   */
-  get createdAt() {
-    return new Date(this.createdTimestamp);
-  }
-
-  /**
-   * The presence of this user
-   * @type {Presence}
-   * @readonly
-   */
-  get presence() {
-    if (this.client.presences.has(this.id)) return this.client.presences.get(this.id);
-    for (const guild of this.client.guilds.values()) {
-      if (guild.presences.has(this.id)) return guild.presences.get(this.id);
-    }
-    return new Presence();
-  }
-
-  /**
-   * A link to the user's avatar
-   * @type {?string}
-   * @readonly
-   */
-  get avatarURL() {
-    if (!this.avatar) return null;
-    return Constants.Endpoints.User(this).Avatar(this.client.options.http.cdn, this.avatar);
-  }
-
-  /**
-   * A link to the user's default avatar
-   * @type {string}
-   * @readonly
-   */
-  get defaultAvatarURL() {
-    const avatars = Object.keys(Constants.DefaultAvatars);
-    const avatar = avatars[this.discriminator % avatars.length];
-    return Constants.Endpoints.CDN(this.client.options.http.host).Asset(`${Constants.DefaultAvatars[avatar]}.png`);
-  }
-
-  /**
-   * A link to the user's avatar if they have one. Otherwise a link to their default avatar will be returned
-   * @type {string}
-   * @readonly
-   */
-  get displayAvatarURL() {
-    return this.avatarURL || this.defaultAvatarURL;
-  }
-
-  /**
-   * The Discord "tag" for this user
-   * @type {string}
-   * @readonly
-   */
-  get tag() {
-    return `${this.username}#${this.discriminator}`;
-  }
-
-  /**
-   * The note that is set for the user
-   * <warn>This is only available when using a user account.</warn>
-   * @type {?string}
-   * @readonly
-   */
-  get note() {
-    return this.client.user.notes.get(this.id) || null;
-  }
-
-  /**
-   * Check whether the user is typing in a channel.
-   * @param {ChannelResolvable} channel The channel to check in
-   * @returns {boolean}
-   */
-  typingIn(channel) {
-    channel = this.client.resolver.resolveChannel(channel);
-    return channel._typing.has(this.id);
-  }
-
-  /**
-   * Get the time that the user started typing.
-   * @param {ChannelResolvable} channel The channel to get the time in
-   * @returns {?Date}
-   */
-  typingSinceIn(channel) {
-    channel = this.client.resolver.resolveChannel(channel);
-    return channel._typing.has(this.id) ? new Date(channel._typing.get(this.id).since) : null;
-  }
-
-  /**
-   * Get the amount of time the user has been typing in a channel for (in milliseconds), or -1 if they're not typing.
-   * @param {ChannelResolvable} channel The channel to get the time in
-   * @returns {number}
-   */
-  typingDurationIn(channel) {
-    channel = this.client.resolver.resolveChannel(channel);
-    return channel._typing.has(this.id) ? channel._typing.get(this.id).elapsedTime : -1;
-  }
-
-  /**
-   * The DM between the client's user and this user
-   * @type {?DMChannel}
-   * @readonly
-   */
-  get dmChannel() {
-    return this.client.channels.filter(c => c.type === 'dm').find(c => c.recipient.id === this.id);
-  }
-
-  /**
-   * Creates a DM channel between the client and the user.
-   * @returns {Promise<DMChannel>}
-   */
-  createDM() {
-    return this.client.rest.methods.createDM(this);
-  }
-
-  /**
-   * Deletes a DM channel (if one exists) between the client and the user. Resolves with the channel if successful.
-   * @returns {Promise<DMChannel>}
-   */
-  deleteDM() {
-    return this.client.rest.methods.deleteChannel(this);
-  }
-
-  /**
-   * Sends a friend request to the user.
-   * <warn>This is only available when using a user account.</warn>
-   * @returns {Promise<User>}
-   */
-  addFriend() {
-    return this.client.rest.methods.addFriend(this);
-  }
-
-  /**
-   * Removes the user from your friends.
-   * <warn>This is only available when using a user account.</warn>
-   * @returns {Promise<User>}
-   */
-  removeFriend() {
-    return this.client.rest.methods.removeFriend(this);
-  }
-
-  /**
-   * Blocks the user.
-   * <warn>This is only available when using a user account.</warn>
-   * @returns {Promise<User>}
-   */
-  block() {
-    return this.client.rest.methods.blockUser(this);
-  }
-
-  /**
-   * Unblocks the user.
-   * <warn>This is only available when using a user account.</warn>
-   * @returns {Promise<User>}
-   */
-  unblock() {
-    return this.client.rest.methods.unblockUser(this);
-  }
-
-  /**
-   * Get the profile of the user.
-   * <warn>This is only available when using a user account.</warn>
-   * @returns {Promise<UserProfile>}
-   */
-  fetchProfile() {
-    return this.client.rest.methods.fetchUserProfile(this);
-  }
-
-  /**
-   * Sets a note for the user.
-   * <warn>This is only available when using a user account.</warn>
-   * @param {string} note The note to set for the user
-   * @returns {Promise<User>}
-   */
-  setNote(note) {
-    return this.client.rest.methods.setNote(this, note);
-  }
-
-  /**
-   * Checks if the user is equal to another. It compares ID, username, discriminator, avatar, and bot flags.
-   * It is recommended to compare equality by using `user.id === user2.id` unless you want to compare all properties.
-   * @param {User} user User to compare with
-   * @returns {boolean}
-   */
-  equals(user) {
-    let equal = user &&
-      this.id === user.id &&
-      this.username === user.username &&
-      this.discriminator === user.discriminator &&
-      this.avatar === user.avatar &&
-      this.bot === Boolean(user.bot);
-
-    return equal;
-  }
-
-  /**
-   * When concatenated with a string, this automatically concatenates the user's mention instead of the User object.
-   * @returns {string}
-   * @example
-   * // logs: Hello from <@123456789>!
-   * console.log(`Hello from ${user}!`);
-   */
-  toString() {
-    return `<@${this.id}>`;
-  }
-
-  // These are here only for documentation purposes - they are implemented by TextBasedChannel
-  /* eslint-disable no-empty-function */
-  send() {}
-  sendMessage() {}
-  sendEmbed() {}
-  sendFile() {}
-  sendCode() {}
-}
-
-TextBasedChannel.applyToClass(User);
-
-module.exports = User;
-
-
-/***/ }),
-/* 9 */
-/***/ (function(module, exports, __webpack_require__) {
-
 const Snowflake = __webpack_require__(5);
 const Permissions = __webpack_require__(6);
 const util = __webpack_require__(7);
@@ -3205,6 +2896,315 @@ Role.prototype.hasPermissions = util
     'Role#hasPermissions is deprecated - use Role#hasPermission instead, it now takes an array');
 
 module.exports = Role;
+
+
+/***/ }),
+/* 9 */
+/***/ (function(module, exports, __webpack_require__) {
+
+const TextBasedChannel = __webpack_require__(14);
+const Constants = __webpack_require__(0);
+const Presence = __webpack_require__(10).Presence;
+const Snowflake = __webpack_require__(5);
+
+/**
+ * Represents a user on Discord.
+ * @implements {TextBasedChannel}
+ */
+class User {
+  constructor(client, data) {
+    /**
+     * The client that created the instance of the user
+     * @name User#client
+     * @type {Client}
+     * @readonly
+     */
+    Object.defineProperty(this, 'client', { value: client });
+
+    if (data) this.setup(data);
+  }
+
+  setup(data) {
+    /**
+     * The ID of the user
+     * @type {Snowflake}
+     */
+    this.id = data.id;
+
+    /**
+     * The username of the user
+     * @type {string}
+     */
+    this.username = data.username;
+
+    /**
+     * A discriminator based on username for the user
+     * @type {string}
+     */
+    this.discriminator = data.discriminator;
+
+    /**
+     * The ID of the user's avatar
+     * @type {string}
+     */
+    this.avatar = data.avatar;
+
+    /**
+     * Whether or not the user is a bot
+     * @type {boolean}
+     */
+    this.bot = Boolean(data.bot);
+
+    /**
+     * The ID of the last message sent by the user, if one was sent
+     * @type {?Snowflake}
+     */
+    this.lastMessageID = null;
+
+    /**
+     * The Message object of the last message sent by the user, if one was sent
+     * @type {?Message}
+     */
+    this.lastMessage = null;
+  }
+
+  patch(data) {
+    for (const prop of ['id', 'username', 'discriminator', 'avatar', 'bot']) {
+      if (typeof data[prop] !== 'undefined') this[prop] = data[prop];
+    }
+    if (data.token) this.client.token = data.token;
+  }
+
+  /**
+   * The timestamp the user was created at
+   * @type {number}
+   * @readonly
+   */
+  get createdTimestamp() {
+    return Snowflake.deconstruct(this.id).timestamp;
+  }
+
+  /**
+   * The time the user was created
+   * @type {Date}
+   * @readonly
+   */
+  get createdAt() {
+    return new Date(this.createdTimestamp);
+  }
+
+  /**
+   * The presence of this user
+   * @type {Presence}
+   * @readonly
+   */
+  get presence() {
+    if (this.client.presences.has(this.id)) return this.client.presences.get(this.id);
+    for (const guild of this.client.guilds.values()) {
+      if (guild.presences.has(this.id)) return guild.presences.get(this.id);
+    }
+    return new Presence();
+  }
+
+  /**
+   * A link to the user's avatar
+   * @type {?string}
+   * @readonly
+   */
+  get avatarURL() {
+    if (!this.avatar) return null;
+    return Constants.Endpoints.User(this).Avatar(this.client.options.http.cdn, this.avatar);
+  }
+
+  /**
+   * A link to the user's default avatar
+   * @type {string}
+   * @readonly
+   */
+  get defaultAvatarURL() {
+    const avatars = Object.keys(Constants.DefaultAvatars);
+    const avatar = avatars[this.discriminator % avatars.length];
+    return Constants.Endpoints.CDN(this.client.options.http.host).Asset(`${Constants.DefaultAvatars[avatar]}.png`);
+  }
+
+  /**
+   * A link to the user's avatar if they have one. Otherwise a link to their default avatar will be returned
+   * @type {string}
+   * @readonly
+   */
+  get displayAvatarURL() {
+    return this.avatarURL || this.defaultAvatarURL;
+  }
+
+  /**
+   * The Discord "tag" for this user
+   * @type {string}
+   * @readonly
+   */
+  get tag() {
+    return `${this.username}#${this.discriminator}`;
+  }
+
+  /**
+   * The note that is set for the user
+   * <warn>This is only available when using a user account.</warn>
+   * @type {?string}
+   * @readonly
+   */
+  get note() {
+    return this.client.user.notes.get(this.id) || null;
+  }
+
+  /**
+   * Check whether the user is typing in a channel.
+   * @param {ChannelResolvable} channel The channel to check in
+   * @returns {boolean}
+   */
+  typingIn(channel) {
+    channel = this.client.resolver.resolveChannel(channel);
+    return channel._typing.has(this.id);
+  }
+
+  /**
+   * Get the time that the user started typing.
+   * @param {ChannelResolvable} channel The channel to get the time in
+   * @returns {?Date}
+   */
+  typingSinceIn(channel) {
+    channel = this.client.resolver.resolveChannel(channel);
+    return channel._typing.has(this.id) ? new Date(channel._typing.get(this.id).since) : null;
+  }
+
+  /**
+   * Get the amount of time the user has been typing in a channel for (in milliseconds), or -1 if they're not typing.
+   * @param {ChannelResolvable} channel The channel to get the time in
+   * @returns {number}
+   */
+  typingDurationIn(channel) {
+    channel = this.client.resolver.resolveChannel(channel);
+    return channel._typing.has(this.id) ? channel._typing.get(this.id).elapsedTime : -1;
+  }
+
+  /**
+   * The DM between the client's user and this user
+   * @type {?DMChannel}
+   * @readonly
+   */
+  get dmChannel() {
+    return this.client.channels.filter(c => c.type === 'dm').find(c => c.recipient.id === this.id);
+  }
+
+  /**
+   * Creates a DM channel between the client and the user.
+   * @returns {Promise<DMChannel>}
+   */
+  createDM() {
+    return this.client.rest.methods.createDM(this);
+  }
+
+  /**
+   * Deletes a DM channel (if one exists) between the client and the user. Resolves with the channel if successful.
+   * @returns {Promise<DMChannel>}
+   */
+  deleteDM() {
+    return this.client.rest.methods.deleteChannel(this);
+  }
+
+  /**
+   * Sends a friend request to the user.
+   * <warn>This is only available when using a user account.</warn>
+   * @returns {Promise<User>}
+   */
+  addFriend() {
+    return this.client.rest.methods.addFriend(this);
+  }
+
+  /**
+   * Removes the user from your friends.
+   * <warn>This is only available when using a user account.</warn>
+   * @returns {Promise<User>}
+   */
+  removeFriend() {
+    return this.client.rest.methods.removeFriend(this);
+  }
+
+  /**
+   * Blocks the user.
+   * <warn>This is only available when using a user account.</warn>
+   * @returns {Promise<User>}
+   */
+  block() {
+    return this.client.rest.methods.blockUser(this);
+  }
+
+  /**
+   * Unblocks the user.
+   * <warn>This is only available when using a user account.</warn>
+   * @returns {Promise<User>}
+   */
+  unblock() {
+    return this.client.rest.methods.unblockUser(this);
+  }
+
+  /**
+   * Get the profile of the user.
+   * <warn>This is only available when using a user account.</warn>
+   * @returns {Promise<UserProfile>}
+   */
+  fetchProfile() {
+    return this.client.rest.methods.fetchUserProfile(this);
+  }
+
+  /**
+   * Sets a note for the user.
+   * <warn>This is only available when using a user account.</warn>
+   * @param {string} note The note to set for the user
+   * @returns {Promise<User>}
+   */
+  setNote(note) {
+    return this.client.rest.methods.setNote(this, note);
+  }
+
+  /**
+   * Checks if the user is equal to another. It compares ID, username, discriminator, avatar, and bot flags.
+   * It is recommended to compare equality by using `user.id === user2.id` unless you want to compare all properties.
+   * @param {User} user User to compare with
+   * @returns {boolean}
+   */
+  equals(user) {
+    let equal = user &&
+      this.id === user.id &&
+      this.username === user.username &&
+      this.discriminator === user.discriminator &&
+      this.avatar === user.avatar &&
+      this.bot === Boolean(user.bot);
+
+    return equal;
+  }
+
+  /**
+   * When concatenated with a string, this automatically concatenates the user's mention instead of the User object.
+   * @returns {string}
+   * @example
+   * // logs: Hello from <@123456789>!
+   * console.log(`Hello from ${user}!`);
+   */
+  toString() {
+    return `<@${this.id}>`;
+  }
+
+  // These are here only for documentation purposes - they are implemented by TextBasedChannel
+  /* eslint-disable no-empty-function */
+  send() {}
+  sendMessage() {}
+  sendEmbed() {}
+  sendFile() {}
+  sendCode() {}
+}
+
+TextBasedChannel.applyToClass(User);
+
+module.exports = User;
 
 
 /***/ }),
@@ -6703,7 +6703,7 @@ module.exports = Emoji;
 /***/ (function(module, exports, __webpack_require__) {
 
 const TextBasedChannel = __webpack_require__(14);
-const Role = __webpack_require__(9);
+const Role = __webpack_require__(8);
 const Permissions = __webpack_require__(6);
 const Collection = __webpack_require__(3);
 const Presence = __webpack_require__(10).Presence;
@@ -7241,7 +7241,7 @@ module.exports = GuildMember;
 /***/ (function(module, exports, __webpack_require__) {
 
 const Channel = __webpack_require__(11);
-const Role = __webpack_require__(9);
+const Role = __webpack_require__(8);
 const PermissionOverwrites = __webpack_require__(49);
 const Permissions = __webpack_require__(6);
 const Collection = __webpack_require__(3);
@@ -7397,7 +7397,7 @@ class GuildChannel extends Channel {
    * @param {Role|Snowflake|UserResolvable} userOrRole The user or role to update
    * @param {PermissionOverwriteOptions} options The configuration for the update
    * @param {string} [reason] Reason for creating/editing this overwrite
-   * @returns {Promise}
+   * @returns {Promise<GuildChannel>}
    * @example
    * // Overwrite permissions for a message author
    * message.channel.overwritePermissions(message.author, {
@@ -7445,7 +7445,7 @@ class GuildChannel extends Channel {
       }
     }
 
-    return this.client.rest.methods.setChannelOverwrite(this, payload, reason);
+    return this.client.rest.methods.setChannelOverwrite(this, payload, reason).then(() => this);
   }
 
   /**
@@ -8282,8 +8282,8 @@ module.exports = Attachment;
 
 const util = __webpack_require__(7);
 const Long = __webpack_require__(25);
-const User = __webpack_require__(8);
-const Role = __webpack_require__(9);
+const User = __webpack_require__(9);
+const Role = __webpack_require__(8);
 const Emoji = __webpack_require__(16);
 const Presence = __webpack_require__(10).Presence;
 const GuildMember = __webpack_require__(17);
@@ -9156,10 +9156,18 @@ class Guild {
   }
 
   /**
+   * Can be used to overwrite permissions when creating a channel.
+   * @typedef {Object} ChannelCreationOverwrites
+   * @property {PermissionResolvable[]|number} [allow] The permissions to allow
+   * @property {PermissionResolvable[]|number} [deny] The permissions to deny
+   * @property {RoleResolvable|UserResolvable} id ID of the role or member this overwrite is for
+   */
+
+  /**
    * Creates a new channel in the guild.
    * @param {string} name The name of the new channel
    * @param {string} type The type of the new channel, either `text` or `voice` or `category`
-   * @param {Array<PermissionOverwrites|Object>} [overwrites] Permission overwrites to apply to the new channel
+   * @param {Array<PermissionOverwrites|ChannelCreationOverwrites>} [overwrites] Permission overwrites
    * @param {string} [reason] Reason for creating this channel
    * @returns {Promise<TextChannel|VoiceChannel>}
    * @example
@@ -11278,13 +11286,14 @@ const snekfetch = __webpack_require__(24);
 
 const Constants = __webpack_require__(0);
 const convertToBuffer = __webpack_require__(4).convertToBuffer;
-const User = __webpack_require__(8);
+const User = __webpack_require__(9);
 const Message = __webpack_require__(15);
 const Guild = __webpack_require__(22);
 const Channel = __webpack_require__(11);
 const GuildMember = __webpack_require__(17);
 const Emoji = __webpack_require__(16);
 const ReactionEmoji = __webpack_require__(28);
+const Role = __webpack_require__(8);
 
 /**
  * The DataResolver identifies different objects and tries to resolve a specific piece of information from them, e.g.
@@ -11373,6 +11382,27 @@ class ClientDataResolver {
     user = this.resolveUser(user);
     if (!guild || !user) return null;
     return guild.members.get(user.id) || null;
+  }
+
+  /**
+   * Data that can be resolved to a Role object. This can be:
+   * * A Role
+   * * A Snowflake
+   * @typedef {Role|Snowflake} RoleResolvable
+   */
+
+  /**
+    * Resolves a RoleResolvable to a Role object.
+    * @param {GuildResolvable} guild The guild that this role is part of
+    * @param {RoleResolvable} role The role resolvable to resolve
+    * @returns {?Role}
+    */
+  resolveRole(guild, role) {
+    if (role instanceof Role) return role;
+    guild = this.resolveGuild(guild);
+    if (!guild) return null;
+    if (typeof role === 'string') return guild.roles.get(role);
+    return null;
   }
 
   /**
@@ -14938,7 +14968,7 @@ module.exports = WebSocketConnection;
 /* 54 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const User = __webpack_require__(8);
+const User = __webpack_require__(9);
 const Collection = __webpack_require__(3);
 const ClientUserSettings = __webpack_require__(55);
 const ClientUserGuildSettings = __webpack_require__(85);
@@ -15481,9 +15511,9 @@ module.exports = {
   ReactionEmoji: __webpack_require__(28),
   ReactionCollector: __webpack_require__(42),
   RichEmbed: __webpack_require__(20),
-  Role: __webpack_require__(9),
+  Role: __webpack_require__(8),
   TextChannel: __webpack_require__(51),
-  User: __webpack_require__(8),
+  User: __webpack_require__(9),
   VoiceChannel: __webpack_require__(52),
   Webhook: __webpack_require__(23),
 };
@@ -16907,10 +16937,10 @@ const Collection = __webpack_require__(3);
 const Snowflake = __webpack_require__(5);
 const Util = __webpack_require__(4);
 
-const User = __webpack_require__(8);
+const User = __webpack_require__(9);
 const GuildMember = __webpack_require__(17);
 const Message = __webpack_require__(15);
-const Role = __webpack_require__(9);
+const Role = __webpack_require__(8);
 const Invite = __webpack_require__(44);
 const Webhook = __webpack_require__(23);
 const UserProfile = __webpack_require__(74);
@@ -17153,7 +17183,30 @@ class RESTMethods {
   }
 
   createChannel(guild, channelName, channelType, overwrites, reason) {
-    if (overwrites instanceof Collection) overwrites = overwrites.array();
+    if (overwrites instanceof Collection || overwrites instanceof Array) {
+      overwrites = overwrites.map(overwrite => {
+        let allow = overwrite.allow || overwrite._allowed;
+        let deny = overwrite.deny || overwrite._denied;
+        if (allow instanceof Array) allow = Permissions.resolve(allow);
+        if (deny instanceof Array) deny = Permissions.resolve(deny);
+
+        const role = this.client.resolver.resolveRole(this, overwrite.id);
+        if (role) {
+          overwrite.id = role.id;
+          overwrite.type = 'role';
+        } else {
+          overwrite.id = this.client.resolver.resolveUserID(overwrite.id);
+          overwrite.type = 'member';
+        }
+
+        return {
+          allow,
+          deny,
+          type: overwrite.type,
+          id: overwrite.id,
+        };
+      });
+    }
     return this.rest.makeRequest('post', Endpoints.Guild(guild).channels, true, {
       name: channelName,
       type: Constants.ChannelTypes[channelType.toUpperCase()],
@@ -18269,7 +18322,7 @@ module.exports = APIRequest;
 const Constants = __webpack_require__(0);
 const Util = __webpack_require__(4);
 const Guild = __webpack_require__(22);
-const User = __webpack_require__(8);
+const User = __webpack_require__(9);
 const CategoryChannel = __webpack_require__(81);
 const DMChannel = __webpack_require__(50);
 const Emoji = __webpack_require__(16);
@@ -20510,7 +20563,7 @@ module.exports = GuildBanRemove;
 
 const Action = __webpack_require__(2);
 const Constants = __webpack_require__(0);
-const Role = __webpack_require__(9);
+const Role = __webpack_require__(8);
 
 class GuildRoleCreate extends Action {
   handle(data) {
