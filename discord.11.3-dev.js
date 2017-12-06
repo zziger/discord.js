@@ -60,7 +60,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 56);
+/******/ 	return __webpack_require__(__webpack_require__.s = 57);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -123,7 +123,7 @@ exports.DefaultOptions = {
    */
   ws: {
     large_threshold: 250,
-    compress: __webpack_require__(68).platform() !== 'browser',
+    compress: __webpack_require__(69).platform() !== 'browser',
     properties: {
       $os: process ? process.platform : 'discord.js',
       $browser: 'discord.js',
@@ -2463,7 +2463,7 @@ function isPrimitive(arg) {
 }
 exports.isPrimitive = isPrimitive;
 
-exports.isBuffer = __webpack_require__(70);
+exports.isBuffer = __webpack_require__(71);
 
 function objectToString(o) {
   return Object.prototype.toString.call(o);
@@ -2507,7 +2507,7 @@ exports.log = function() {
  *     prototype.
  * @param {function} superCtor Constructor function to inherit prototype from.
  */
-exports.inherits = __webpack_require__(71);
+exports.inherits = __webpack_require__(72);
 
 exports._extend = function(origin, add) {
   // Don't do anything if add isn't an object
@@ -3395,9 +3395,9 @@ module.exports = Channel;
 
 
 
-var base64 = __webpack_require__(58)
-var ieee754 = __webpack_require__(59)
-var isArray = __webpack_require__(60)
+var base64 = __webpack_require__(59)
+var ieee754 = __webpack_require__(60)
+var isArray = __webpack_require__(61)
 
 exports.Buffer = Buffer
 exports.SlowBuffer = SlowBuffer
@@ -9796,7 +9796,7 @@ module.exports = Webhook;
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "delete", function() { return delete_; });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__index_js__ = __webpack_require__(61);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__index_js__ = __webpack_require__(62);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__index_js___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0__index_js__);
 
 
@@ -12384,8 +12384,8 @@ module.exports = g;
 "use strict";
 
 
-exports.decode = exports.parse = __webpack_require__(63);
-exports.encode = exports.stringify = __webpack_require__(64);
+exports.decode = exports.parse = __webpack_require__(64);
+exports.encode = exports.stringify = __webpack_require__(65);
 
 
 /***/ }),
@@ -12398,11 +12398,11 @@ module.exports = {"name":"discord.js","version":"11.2.1","description":"A powerf
 /* 36 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const UserAgentManager = __webpack_require__(72);
-const RESTMethods = __webpack_require__(73);
-const SequentialRequestHandler = __webpack_require__(77);
-const BurstRequestHandler = __webpack_require__(78);
-const APIRequest = __webpack_require__(79);
+const UserAgentManager = __webpack_require__(73);
+const RESTMethods = __webpack_require__(74);
+const SequentialRequestHandler = __webpack_require__(78);
+const BurstRequestHandler = __webpack_require__(79);
+const APIRequest = __webpack_require__(80);
 const Constants = __webpack_require__(0);
 
 class RESTManager {
@@ -14462,7 +14462,7 @@ module.exports = VoiceChannel;
 const EventEmitter = __webpack_require__(19);
 const Constants = __webpack_require__(0);
 const zlib = __webpack_require__(40);
-const PacketManager = __webpack_require__(83);
+const PacketManager = __webpack_require__(84);
 const erlpack = (function findErlpack() {
   try {
     const e = __webpack_require__(123);
@@ -14971,7 +14971,7 @@ module.exports = WebSocketConnection;
 const User = __webpack_require__(9);
 const Collection = __webpack_require__(3);
 const ClientUserSettings = __webpack_require__(55);
-const ClientUserGuildSettings = __webpack_require__(85);
+const ClientUserGuildSettings = __webpack_require__(56);
 const Constants = __webpack_require__(0);
 const util = __webpack_require__(7);
 
@@ -15439,10 +15439,76 @@ module.exports = ClientUserSettings;
 /* 56 */
 /***/ (function(module, exports, __webpack_require__) {
 
+const Constants = __webpack_require__(0);
+const Collection = __webpack_require__(3);
+const ClientUserChannelOverride = __webpack_require__(86);
+
+/**
+ * A wrapper around the ClientUser's guild settings.
+ */
+class ClientUserGuildSettings {
+  constructor(data, client) {
+    /**
+     * The client that created the instance of the ClientUserGuildSettings
+     * @name ClientUserGuildSettings#client
+     * @type {Client}
+     * @readonly
+     */
+    Object.defineProperty(this, 'client', { value: client });
+    /**
+     * The ID of the guild this settings are for
+     * @type {Snowflake}
+     */
+    this.guildID = data.guild_id;
+    this.channelOverrides = new Collection();
+    this.patch(data);
+  }
+
+  /**
+   * Patch the data contained in this class with new partial data.
+   * @param {Object} data Data to patch this with
+   * @returns {void}
+   * @private
+   */
+  patch(data) {
+    for (const key of Object.keys(Constants.UserGuildSettingsMap)) {
+      const value = Constants.UserGuildSettingsMap[key];
+      if (!data.hasOwnProperty(key)) continue;
+      if (key === 'channel_overrides') {
+        for (const channel of data[key]) {
+          this.channelOverrides.set(channel.channel_id,
+            new ClientUserChannelOverride(channel));
+        }
+      } else if (typeof value === 'function') {
+        this[value.name] = value(data[key]);
+      } else {
+        this[value] = data[key];
+      }
+    }
+  }
+
+  /**
+   * Update a specific property of the guild settings.
+   * @param {string} name Name of property
+   * @param {value} value Value to patch
+   * @returns {Promise<Object>}
+   */
+  update(name, value) {
+    return this.client.rest.methods.patchClientUserGuildSettings(this.guildID, { [name]: value });
+  }
+}
+
+module.exports = ClientUserGuildSettings;
+
+
+/***/ }),
+/* 57 */
+/***/ (function(module, exports, __webpack_require__) {
+
 const browser = typeof window !== 'undefined';
 const webpack = !!"true";
 
-const Discord = __webpack_require__(57);
+const Discord = __webpack_require__(58);
 
 module.exports = Discord;
 if (browser && webpack) window.Discord = Discord; // eslint-disable-line no-undef
@@ -15451,14 +15517,14 @@ else if (!browser) console.warn('Warning: Attempting to use browser version of D
 
 
 /***/ }),
-/* 57 */
+/* 58 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Util = __webpack_require__(4);
 
 module.exports = {
   // "Root" classes (starting points)
-  Client: __webpack_require__(69),
+  Client: __webpack_require__(70),
   Shard: __webpack_require__(159),
   ShardClientUtil: __webpack_require__(160),
   ShardingManager: __webpack_require__(161),
@@ -15520,7 +15586,7 @@ module.exports = {
 
 
 /***/ }),
-/* 58 */
+/* 59 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15641,7 +15707,7 @@ function fromByteArray (uint8) {
 
 
 /***/ }),
-/* 59 */
+/* 60 */
 /***/ (function(module, exports) {
 
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
@@ -15731,7 +15797,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 
 
 /***/ }),
-/* 60 */
+/* 61 */
 /***/ (function(module, exports) {
 
 var toString = {}.toString;
@@ -15742,20 +15808,20 @@ module.exports = Array.isArray || function (arr) {
 
 
 /***/ }),
-/* 61 */
+/* 62 */
 /***/ (function(module, exports, __webpack_require__) {
 
-module.exports = __webpack_require__(62);
+module.exports = __webpack_require__(63);
 
 
 /***/ }),
-/* 62 */
+/* 63 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const browser = typeof window !== 'undefined';
 const querystring = __webpack_require__(34);
-const Package = __webpack_require__(65);
-const transport = browser ? __webpack_require__(66) : __webpack_require__(67);
+const Package = __webpack_require__(66);
+const transport = browser ? __webpack_require__(67) : __webpack_require__(68);
 
 /**
  * Snekfetch
@@ -16010,7 +16076,7 @@ module.exports = Snekfetch;
 
 
 /***/ }),
-/* 63 */
+/* 64 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -16101,7 +16167,7 @@ var isArray = Array.isArray || function (xs) {
 
 
 /***/ }),
-/* 64 */
+/* 65 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -16193,13 +16259,13 @@ var objectKeys = Object.keys || function (obj) {
 
 
 /***/ }),
-/* 65 */
+/* 66 */
 /***/ (function(module, exports) {
 
 module.exports = {"_args":[[{"raw":"snekfetch@^3.3.0","scope":null,"escapedName":"snekfetch","name":"snekfetch","rawSpec":"^3.3.0","spec":">=3.3.0 <4.0.0","type":"range"},"/home/travis/build/hydrabolt/discord.js"]],"_from":"snekfetch@>=3.3.0 <4.0.0","_id":"snekfetch@3.5.8","_inCache":true,"_location":"/snekfetch","_nodeVersion":"9.0.0-rc.0","_npmOperationalInternal":{"host":"s3://npm-registry-packages","tmp":"tmp/snekfetch-3.5.8.tgz_1509162386511_0.6893350400496274"},"_npmUser":{"name":"snek","email":"me@gus.host"},"_npmVersion":"5.3.0","_phantomChildren":{},"_requested":{"raw":"snekfetch@^3.3.0","scope":null,"escapedName":"snekfetch","name":"snekfetch","rawSpec":"^3.3.0","spec":">=3.3.0 <4.0.0","type":"range"},"_requiredBy":["/"],"_resolved":"https://registry.npmjs.org/snekfetch/-/snekfetch-3.5.8.tgz","_shasum":"4d4e539f8435352105e74c392f62f66740a27d6c","_shrinkwrap":null,"_spec":"snekfetch@^3.3.0","_where":"/home/travis/build/hydrabolt/discord.js","author":{"name":"Gus Caplan","email":"me@gus.host"},"browser":{"./src/node/index.js":false,"./src/meta.js":false},"bugs":{"url":"https://github.com/devsnek/snekfetch/issues"},"dependencies":{},"description":"Just do http requests without all that weird nastiness from other libs","devDependencies":{"coveralls":"^3.0.0","docma":"^1.5.1","eslint":"^4.8.0","jest":"^21.2.1","jsdoc-dynamic":"^1.0.4","json-filter-loader":"^1.0.0","node-fetch":"github:bitinn/node-fetch","uglifyjs-webpack-plugin":"^1.0.0-beta.2","webpack":"^3.8.1"},"directories":{},"dist":{"integrity":"sha512-osq7soqKBObV4u/WE9tGQT/m5JdqTU1PWVPcT0We3sKZ99h9QA7wSj7ZWrwEwgRbELeO5BrVCanYjDYtVYcwrQ==","shasum":"4d4e539f8435352105e74c392f62f66740a27d6c","tarball":"https://registry.npmjs.org/snekfetch/-/snekfetch-3.5.8.tgz"},"gitHead":"437b9d7e2811e8ad4110fc70aef13bff2ccc9f50","homepage":"https://snekfetch.js.org/","jest":{"collectCoverage":true,"collectCoverageFrom":["src/**/*.js","!src/qs_mock.js","!src/node/mimeOfBuffer.js","!src/node/transports/http2.js"],"verbose":true},"license":"MIT","main":"index.js","maintainers":[{"name":"snek","email":"me@gus.host"}],"module":"esm.mjs","name":"snekfetch","optionalDependencies":{},"readme":"ERROR: No README data found!","repository":{"type":"git","url":"git+https://github.com/devsnek/snekfetch.git"},"scripts":{"build:browser":"webpack","docs":"node docs.js","lint":"npx eslint src","prepublish":"npm run build:browser","test":"node ./node_modules/.bin/jest","test:coveralls":"cat ./coverage/lcov.info | coveralls"},"unpkg":"browser.js","version":"3.5.8"}
 
 /***/ }),
-/* 66 */
+/* 67 */
 /***/ (function(module, exports) {
 
 function buildRequest(method, url) {
@@ -16242,13 +16308,13 @@ module.exports = {
 
 
 /***/ }),
-/* 67 */
+/* 68 */
 /***/ (function(module, exports) {
 
 /* (ignored) */
 
 /***/ }),
-/* 68 */
+/* 69 */
 /***/ (function(module, exports) {
 
 exports.endianness = function () { return 'LE' };
@@ -16299,7 +16365,7 @@ exports.EOL = '\n';
 
 
 /***/ }),
-/* 69 */
+/* 70 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(process) {const EventEmitter = __webpack_require__(19);
@@ -16307,8 +16373,8 @@ const Constants = __webpack_require__(0);
 const Permissions = __webpack_require__(6);
 const Util = __webpack_require__(4);
 const RESTManager = __webpack_require__(36);
-const ClientDataManager = __webpack_require__(80);
-const ClientManager = __webpack_require__(82);
+const ClientDataManager = __webpack_require__(81);
+const ClientManager = __webpack_require__(83);
 const ClientDataResolver = __webpack_require__(27);
 const ClientVoiceManager = __webpack_require__(126);
 const WebSocketManager = __webpack_require__(127);
@@ -16853,7 +16919,7 @@ module.exports = Client;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(13)))
 
 /***/ }),
-/* 70 */
+/* 71 */
 /***/ (function(module, exports) {
 
 module.exports = function isBuffer(arg) {
@@ -16864,7 +16930,7 @@ module.exports = function isBuffer(arg) {
 }
 
 /***/ }),
-/* 71 */
+/* 72 */
 /***/ (function(module, exports) {
 
 if (typeof Object.create === 'function') {
@@ -16893,7 +16959,7 @@ if (typeof Object.create === 'function') {
 
 
 /***/ }),
-/* 72 */
+/* 73 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(process) {const Constants = __webpack_require__(0);
@@ -16925,7 +16991,7 @@ module.exports = UserAgentManager;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(13)))
 
 /***/ }),
-/* 73 */
+/* 74 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const querystring = __webpack_require__(34);
@@ -16943,12 +17009,12 @@ const Message = __webpack_require__(15);
 const Role = __webpack_require__(8);
 const Invite = __webpack_require__(44);
 const Webhook = __webpack_require__(23);
-const UserProfile = __webpack_require__(74);
+const UserProfile = __webpack_require__(75);
 const OAuth2Application = __webpack_require__(30);
 const Channel = __webpack_require__(11);
 const GroupDMChannel = __webpack_require__(31);
 const Guild = __webpack_require__(22);
-const VoiceRegion = __webpack_require__(76);
+const VoiceRegion = __webpack_require__(77);
 const GuildAuditLogs = __webpack_require__(47);
 
 class RESTMethods {
@@ -17896,11 +17962,11 @@ module.exports = RESTMethods;
 
 
 /***/ }),
-/* 74 */
+/* 75 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Collection = __webpack_require__(3);
-const UserConnection = __webpack_require__(75);
+const UserConnection = __webpack_require__(76);
 
 /**
  * Represents a user's profile on Discord.
@@ -17964,7 +18030,7 @@ module.exports = UserProfile;
 
 
 /***/ }),
-/* 75 */
+/* 76 */
 /***/ (function(module, exports) {
 
 /**
@@ -18018,7 +18084,7 @@ module.exports = UserConnection;
 
 
 /***/ }),
-/* 76 */
+/* 77 */
 /***/ (function(module, exports) {
 
 /**
@@ -18074,7 +18140,7 @@ module.exports = VoiceRegion;
 
 
 /***/ }),
-/* 77 */
+/* 78 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const RequestHandler = __webpack_require__(48);
@@ -18181,7 +18247,7 @@ module.exports = SequentialRequestHandler;
 
 
 /***/ }),
-/* 78 */
+/* 79 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const RequestHandler = __webpack_require__(48);
@@ -18258,7 +18324,7 @@ module.exports = BurstRequestHandler;
 
 
 /***/ }),
-/* 79 */
+/* 80 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const snekfetch = __webpack_require__(24);
@@ -18316,14 +18382,14 @@ module.exports = APIRequest;
 
 
 /***/ }),
-/* 80 */
+/* 81 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Constants = __webpack_require__(0);
 const Util = __webpack_require__(4);
 const Guild = __webpack_require__(22);
 const User = __webpack_require__(9);
-const CategoryChannel = __webpack_require__(81);
+const CategoryChannel = __webpack_require__(82);
 const DMChannel = __webpack_require__(50);
 const Emoji = __webpack_require__(16);
 const TextChannel = __webpack_require__(51);
@@ -18458,7 +18524,7 @@ module.exports = ClientDataManager;
 
 
 /***/ }),
-/* 81 */
+/* 82 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const GuildChannel = __webpack_require__(18);
@@ -18482,7 +18548,7 @@ module.exports = CategoryChannel;
 
 
 /***/ }),
-/* 82 */
+/* 83 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Constants = __webpack_require__(0);
@@ -18561,7 +18627,7 @@ module.exports = ClientManager;
 
 
 /***/ }),
-/* 83 */
+/* 84 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Constants = __webpack_require__(0);
@@ -18582,7 +18648,7 @@ class WebSocketPacketManager {
     this.handlers = {};
     this.queue = [];
 
-    this.register(Constants.WSEvents.READY, __webpack_require__(84));
+    this.register(Constants.WSEvents.READY, __webpack_require__(85));
     this.register(Constants.WSEvents.RESUMED, __webpack_require__(87));
     this.register(Constants.WSEvents.GUILD_CREATE, __webpack_require__(88));
     this.register(Constants.WSEvents.GUILD_DELETE, __webpack_require__(89));
@@ -18675,7 +18741,7 @@ module.exports = WebSocketPacketManager;
 
 
 /***/ }),
-/* 84 */
+/* 85 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const AbstractHandler = __webpack_require__(1);
@@ -18761,72 +18827,6 @@ class ReadyHandler extends AbstractHandler {
 }
 
 module.exports = ReadyHandler;
-
-
-/***/ }),
-/* 85 */
-/***/ (function(module, exports, __webpack_require__) {
-
-const Constants = __webpack_require__(0);
-const Collection = __webpack_require__(3);
-const ClientUserChannelOverride = __webpack_require__(86);
-
-/**
- * A wrapper around the ClientUser's guild settings.
- */
-class ClientUserGuildSettings {
-  constructor(data, client) {
-    /**
-     * The client that created the instance of the ClientUserGuildSettings
-     * @name ClientUserGuildSettings#client
-     * @type {Client}
-     * @readonly
-     */
-    Object.defineProperty(this, 'client', { value: client });
-    /**
-     * The ID of the guild this settings are for
-     * @type {Snowflake}
-     */
-    this.guildID = data.guild_id;
-    this.channelOverrides = new Collection();
-    this.patch(data);
-  }
-
-  /**
-   * Patch the data contained in this class with new partial data.
-   * @param {Object} data Data to patch this with
-   * @returns {void}
-   * @private
-   */
-  patch(data) {
-    for (const key of Object.keys(Constants.UserGuildSettingsMap)) {
-      const value = Constants.UserGuildSettingsMap[key];
-      if (!data.hasOwnProperty(key)) continue;
-      if (key === 'channel_overrides') {
-        for (const channel of data[key]) {
-          this.channelOverrides.set(channel.channel_id,
-            new ClientUserChannelOverride(channel));
-        }
-      } else if (typeof value === 'function') {
-        this[value.name] = value(data[key]);
-      } else {
-        this[value] = data[key];
-      }
-    }
-  }
-
-  /**
-   * Update a specific property of the guild settings.
-   * @param {string} name Name of property
-   * @param {value} value Value to patch
-   * @returns {Promise<Object>}
-   */
-  update(name, value) {
-    return this.client.rest.methods.patchClientUserGuildSettings(this.guildID, { [name]: value });
-  }
-}
-
-module.exports = ClientUserGuildSettings;
 
 
 /***/ }),
@@ -19447,11 +19447,14 @@ module.exports = UserSettingsUpdateHandler;
 
 const AbstractHandler = __webpack_require__(1);
 const Constants = __webpack_require__(0);
+const ClientUserGuildSettings = __webpack_require__(56);
 
 class UserGuildSettingsUpdateHandler extends AbstractHandler {
   handle(packet) {
     const client = this.packetManager.client;
-    client.user.guildSettings.get(packet.d.guild_id).patch(packet.d);
+    const settings = client.user.guildSettings.get(packet.d.guild_id);
+    if (settings) settings.patch(packet.d);
+    else client.user.guildSettings.set(packet.d.guild_id, new ClientUserGuildSettings(packet.d, client));
     client.emit(Constants.Events.USER_GUILD_SETTINGS_UPDATE, client.user.guildSettings.get(packet.d.guild_id));
   }
 }
