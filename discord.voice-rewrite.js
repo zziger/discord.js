@@ -3666,7 +3666,7 @@ class GuildChannel extends Channel {
         name: (data.name || this.name).trim(),
         topic: data.topic,
         nsfw: data.nsfw,
-        bitrate: data.bitrate || (this.bitrate ? this.bitrate * 1000 : undefined),
+        bitrate: data.bitrate || this.bitrate,
         user_limit: typeof data.userLimit !== 'undefined' ? data.userLimit : this.userLimit,
         parent_id: data.parentID,
         lock_permissions: data.lockPermissions,
@@ -11350,7 +11350,7 @@ class VoiceChannel extends GuildChannel {
      * The bitrate of this voice channel
      * @type {number}
      */
-    this.bitrate = data.bitrate * 0.001;
+    this.bitrate = data.bitrate;
 
     /**
      * The maximum amount of users allowed in this channel - 0 means unlimited.
@@ -11401,18 +11401,17 @@ class VoiceChannel extends GuildChannel {
   }
 
   /**
-   * Sets the bitrate of the channel (in kbps).
+   * Sets the bitrate of the channel.
    * @param {number} bitrate The new bitrate
    * @param {string} [reason] Reason for changing the channel's bitrate
    * @returns {Promise<VoiceChannel>}
    * @example
    * // Set the bitrate of a voice channel
-   * voiceChannel.setBitrate(48)
-   *   .then(vc => console.log(`Set bitrate to ${vc.bitrate}kbps for ${vc.name}`))
+   * voiceChannel.setBitrate(48000)
+   *   .then(vc => console.log(`Set bitrate to ${vc.bitrate}bps for ${vc.name}`))
    *   .catch(console.error);
    */
   setBitrate(bitrate, reason) {
-    bitrate *= 1000;
     return this.edit({ bitrate }, reason);
   }
 
