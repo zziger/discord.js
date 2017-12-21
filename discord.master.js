@@ -3383,7 +3383,7 @@ const { MessageNotificationTypes } = __webpack_require__(0);
 const { Error, TypeError } = __webpack_require__(4);
 
 /**
- * Represents a guild channel (e.g. text channels and voice channels).
+ * Represents a guild channel (i.g. a {@link TextChannel}, {@link VoiceChannel} or {@link CategoryChannel}).
  * @extends {Channel}
  */
 class GuildChannel extends Channel {
@@ -3697,14 +3697,15 @@ class GuildChannel extends Channel {
 
   /**
    * Sets the category parent of this channel.
-   * @param {GuildChannel|Snowflake} channel Parent channel
-   * @param {boolean} [options.lockPermissions] Lock the permissions to what the parent's permissions are
+   * @param {?GuildChannel|Snowflake} channel Parent channel
+   * @param {Object} [options={}] Options to pass
+   * @param {boolean} [options.lockPermissions=true] Lock the permissions to what the parent's permissions are
    * @param {string} [options.reason] Reason for modifying the parent of this channel
    * @returns {Promise<GuildChannel>}
    */
   setParent(channel, { lockPermissions = true, reason } = {}) {
     return this.edit({
-      parentID: channel.id ? channel.id : channel,
+      parentID: channel !== null ? channel.id ? channel.id : channel : null,
       lockPermissions,
     }, reason);
   }
@@ -8030,12 +8031,36 @@ module.exports = Message;
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "delete", function() { return delete_; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "delete", function() { return _delete; });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__index_js__ = __webpack_require__(78);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__index_js___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0__index_js__);
 
 
 /* harmony default export */ __webpack_exports__["default"] = (__WEBPACK_IMPORTED_MODULE_0__index_js___default.a);
+
+const version = __WEBPACK_IMPORTED_MODULE_0__index_js___default.a.version;
+/* harmony export (immutable) */ __webpack_exports__["version"] = version;
+
+const METHODS = __WEBPACK_IMPORTED_MODULE_0__index_js___default.a.METHODS;
+/* harmony export (immutable) */ __webpack_exports__["METHODS"] = METHODS;
+
+
+const acl = __WEBPACK_IMPORTED_MODULE_0__index_js___default.a.acl;
+/* harmony export (immutable) */ __webpack_exports__["acl"] = acl;
+
+const bind = __WEBPACK_IMPORTED_MODULE_0__index_js___default.a.bind;
+/* harmony export (immutable) */ __webpack_exports__["bind"] = bind;
+
+const checkout = __WEBPACK_IMPORTED_MODULE_0__index_js___default.a.checkout;
+/* harmony export (immutable) */ __webpack_exports__["checkout"] = checkout;
+
+const connect = __WEBPACK_IMPORTED_MODULE_0__index_js___default.a.connect;
+/* harmony export (immutable) */ __webpack_exports__["connect"] = connect;
+
+const copy = __WEBPACK_IMPORTED_MODULE_0__index_js___default.a.copy;
+/* harmony export (immutable) */ __webpack_exports__["copy"] = copy;
+
+const _delete = __WEBPACK_IMPORTED_MODULE_0__index_js___default.a.delete;
 
 const get = __WEBPACK_IMPORTED_MODULE_0__index_js___default.a.get;
 /* harmony export (immutable) */ __webpack_exports__["get"] = get;
@@ -8043,22 +8068,80 @@ const get = __WEBPACK_IMPORTED_MODULE_0__index_js___default.a.get;
 const head = __WEBPACK_IMPORTED_MODULE_0__index_js___default.a.head;
 /* harmony export (immutable) */ __webpack_exports__["head"] = head;
 
-const post = __WEBPACK_IMPORTED_MODULE_0__index_js___default.a.post;
-/* harmony export (immutable) */ __webpack_exports__["post"] = post;
+const link = __WEBPACK_IMPORTED_MODULE_0__index_js___default.a.link;
+/* harmony export (immutable) */ __webpack_exports__["link"] = link;
 
-const put = __WEBPACK_IMPORTED_MODULE_0__index_js___default.a.put;
-/* harmony export (immutable) */ __webpack_exports__["put"] = put;
+const lock = __WEBPACK_IMPORTED_MODULE_0__index_js___default.a.lock;
+/* harmony export (immutable) */ __webpack_exports__["lock"] = lock;
 
-const delete_ = __WEBPACK_IMPORTED_MODULE_0__index_js___default.a.delete;
+const merge = __WEBPACK_IMPORTED_MODULE_0__index_js___default.a.merge;
+/* harmony export (immutable) */ __webpack_exports__["merge"] = merge;
 
-const connect = __WEBPACK_IMPORTED_MODULE_0__index_js___default.a.connect;
-/* harmony export (immutable) */ __webpack_exports__["connect"] = connect;
+const mkactivity = __WEBPACK_IMPORTED_MODULE_0__index_js___default.a.mkactivity;
+/* harmony export (immutable) */ __webpack_exports__["mkactivity"] = mkactivity;
+
+const mkcalendar = __WEBPACK_IMPORTED_MODULE_0__index_js___default.a.mkcalendar;
+/* harmony export (immutable) */ __webpack_exports__["mkcalendar"] = mkcalendar;
+
+const mkcol = __WEBPACK_IMPORTED_MODULE_0__index_js___default.a.mkcol;
+/* harmony export (immutable) */ __webpack_exports__["mkcol"] = mkcol;
+
+const move = __WEBPACK_IMPORTED_MODULE_0__index_js___default.a.move;
+/* harmony export (immutable) */ __webpack_exports__["move"] = move;
+
+const notify = __WEBPACK_IMPORTED_MODULE_0__index_js___default.a.notify;
+/* harmony export (immutable) */ __webpack_exports__["notify"] = notify;
 
 const options = __WEBPACK_IMPORTED_MODULE_0__index_js___default.a.options;
 /* harmony export (immutable) */ __webpack_exports__["options"] = options;
 
 const patch = __WEBPACK_IMPORTED_MODULE_0__index_js___default.a.patch;
 /* harmony export (immutable) */ __webpack_exports__["patch"] = patch;
+
+const post = __WEBPACK_IMPORTED_MODULE_0__index_js___default.a.post;
+/* harmony export (immutable) */ __webpack_exports__["post"] = post;
+
+const propfind = __WEBPACK_IMPORTED_MODULE_0__index_js___default.a.propfind;
+/* harmony export (immutable) */ __webpack_exports__["propfind"] = propfind;
+
+const proppatch = __WEBPACK_IMPORTED_MODULE_0__index_js___default.a.proppatch;
+/* harmony export (immutable) */ __webpack_exports__["proppatch"] = proppatch;
+
+const purge = __WEBPACK_IMPORTED_MODULE_0__index_js___default.a.purge;
+/* harmony export (immutable) */ __webpack_exports__["purge"] = purge;
+
+const put = __WEBPACK_IMPORTED_MODULE_0__index_js___default.a.put;
+/* harmony export (immutable) */ __webpack_exports__["put"] = put;
+
+const rebind = __WEBPACK_IMPORTED_MODULE_0__index_js___default.a.rebind;
+/* harmony export (immutable) */ __webpack_exports__["rebind"] = rebind;
+
+const report = __WEBPACK_IMPORTED_MODULE_0__index_js___default.a.report;
+/* harmony export (immutable) */ __webpack_exports__["report"] = report;
+
+const search = __WEBPACK_IMPORTED_MODULE_0__index_js___default.a.search;
+/* harmony export (immutable) */ __webpack_exports__["search"] = search;
+
+const subscribe = __WEBPACK_IMPORTED_MODULE_0__index_js___default.a.subscribe;
+/* harmony export (immutable) */ __webpack_exports__["subscribe"] = subscribe;
+
+const trace = __WEBPACK_IMPORTED_MODULE_0__index_js___default.a.trace;
+/* harmony export (immutable) */ __webpack_exports__["trace"] = trace;
+
+const unbind = __WEBPACK_IMPORTED_MODULE_0__index_js___default.a.unbind;
+/* harmony export (immutable) */ __webpack_exports__["unbind"] = unbind;
+
+const unlink = __WEBPACK_IMPORTED_MODULE_0__index_js___default.a.unlink;
+/* harmony export (immutable) */ __webpack_exports__["unlink"] = unlink;
+
+const unlock = __WEBPACK_IMPORTED_MODULE_0__index_js___default.a.unlock;
+/* harmony export (immutable) */ __webpack_exports__["unlock"] = unlock;
+
+const unsubscribe = __WEBPACK_IMPORTED_MODULE_0__index_js___default.a.unsubscribe;
+/* harmony export (immutable) */ __webpack_exports__["unsubscribe"] = unsubscribe;
+
+const brew = __WEBPACK_IMPORTED_MODULE_0__index_js___default.a.brew;
+/* harmony export (immutable) */ __webpack_exports__["brew"] = brew;
 
 
 
@@ -11493,6 +11576,19 @@ class CategoryChannel extends GuildChannel {
   get children() {
     return this.guild.channels.filter(c => c.parentID === this.id);
   }
+
+  /**
+   * Sets the category parent of this channel.
+   * <warn>It is not currently possible to set the parent of a CategoryChannel.</warn>
+   * @method setParent
+   * @memberof CategoryChannel
+   * @instance
+   * @param {?GuildChannel|Snowflake} channel Parent channel
+   * @param {Object} [options={}] Options to pass
+   * @param {boolean} [options.lockPermissions=true] Lock the permissions to what the parent's permissions are
+   * @param {string} [options.reason] Reason for modifying the parent of this channel
+   * @returns {Promise<GuildChannel>}
+   */
 }
 
 module.exports = CategoryChannel;
@@ -12540,7 +12636,7 @@ const transport = browser ? __webpack_require__(83) : __webpack_require__(84);
 class Snekfetch extends transport.Extension {
   /**
    * Options to pass to the Snekfetch constructor
-   * @typedef {object} snekfetchOptions
+   * @typedef {object} SnekfetchOptions
    * @memberof Snekfetch
    * @property {object} [headers] Headers to initialize the request with
    * @property {object|string|Buffer} [data] Data to initialize the request with
@@ -12558,14 +12654,16 @@ class Snekfetch extends transport.Extension {
    * `new Snekfetch(method, url [, options])`
    * @param {string} method HTTP method
    * @param {string} url URL
-   * @param {Snekfetch.snekfetchOptions} opts Options
+   * @param {SnekfetchOptions} [opts] Options
    */
   constructor(method, url, opts = {}) {
     super();
     this.options = Object.assign({ version: 1, qs: querystring, followRedirects: true }, opts);
     this.request = transport.buildRequest.call(this, method, url, opts);
-    if (opts.query) this.query(opts.query);
-    if (opts.data) this.send(opts.data);
+    if (opts.query)
+      this.query(opts.query);
+    if (opts.data)
+      this.send(opts.data);
   }
 
   /**
@@ -12576,12 +12674,15 @@ class Snekfetch extends transport.Extension {
    */
   query(name, value) {
     this._checkModify();
-    if (!this.request.query) this.request.query = {};
+    if (!this.request.query)
+      this.request.query = {};
     if (name !== null && typeof name === 'object') {
-      for (const [k, v] of Object.entries(name)) this.query(k, v);
+      for (const [k, v] of Object.entries(name))
+        this.query(k, v);
     } else {
       this.request.query[name] = value;
     }
+
     return this;
   }
 
@@ -12594,10 +12695,12 @@ class Snekfetch extends transport.Extension {
   set(name, value) {
     this._checkModify();
     if (name !== null && typeof name === 'object') {
-      for (const key of Object.keys(name)) this.set(key, name[key]);
+      for (const key of Object.keys(name))
+        this.set(key, name[key]);
     } else {
       this.request.setHeader(name, value);
     }
+
     return this;
   }
 
@@ -12612,10 +12715,12 @@ class Snekfetch extends transport.Extension {
     this._checkModify();
     const form = this._getFormData();
     if (typeof args[0] === 'object') {
-      for (const [k, v] of Object.entries(args[0])) this.attach(k, v);
+      for (const [k, v] of Object.entries(args[0]))
+        this.attach(k, v);
     } else {
       form.append(...args);
     }
+
     return this;
   }
 
@@ -12632,8 +12737,10 @@ class Snekfetch extends transport.Extension {
       const header = this.request.getHeader('content-type');
       let serialize;
       if (header) {
-        if (header.includes('json')) serialize = JSON.stringify;
-        else if (header.includes('urlencoded')) serialize = this.options.qs.stringify;
+        if (header.includes('json'))
+          serialize = JSON.stringify;
+        else if (header.includes('urlencoded'))
+          serialize = this.options.qs.stringify;
       } else {
         this.set('Content-Type', 'application/json');
         serialize = JSON.stringify;
@@ -12646,14 +12753,16 @@ class Snekfetch extends transport.Extension {
   }
 
   then(resolver, rejector) {
-    if (this._response) return this._response.then(resolver, rejector);
+    if (this._response)
+      return this._response.then(resolver, rejector);
     // eslint-disable-next-line no-return-assign
     return this._response = transport.finalizeRequest.call(this)
       .then(({ response, raw, redirect, headers }) => {
         if (redirect) {
           let method = this.request.method;
           if ([301, 302].includes(response.statusCode)) {
-            if (method !== 'HEAD') method = 'GET';
+            if (method !== 'HEAD')
+              method = 'GET';
             this.data = null;
           } else if (response.statusCode === 303) {
             method = 'GET';
@@ -12664,6 +12773,7 @@ class Snekfetch extends transport.Extension {
           return new Snekfetch(method, redirect, {
             data: this.data,
             headers: redirectHeaders,
+            version: this.options.version,
           });
         }
 
@@ -12735,21 +12845,23 @@ class Snekfetch extends transport.Extension {
   }
 
   _getFormData() {
-    if (!(this.data instanceof transport.FormData)) {
+    if (!(this.data instanceof transport.FormData))
       this.data = new transport.FormData();
-    }
+
     return this.data;
   }
 
   _finalizeRequest() {
-    if (!this.request) return;
-    if (!this.request.getHeader('user-agent')) {
+    if (!this.request)
+      return;
+    if (!this.request.getHeader('user-agent'))
       this.set('User-Agent', `snekfetch/${Snekfetch.version} (${Package.homepage})`);
-    }
-    if (this.request.method !== 'HEAD') this.set('Accept-Encoding', 'gzip, deflate');
-    if (this.data && this.data.getBoundary) {
+
+    if (this.request.method !== 'HEAD')
+      this.set('Accept-Encoding', 'gzip, deflate');
+    if (this.data && this.data.getBoundary)
       this.set('Content-Type', `multipart/form-data; boundary=${this.data.getBoundary()}`);
-    }
+
     if (this.request.query) {
       const [path, query] = this.request.path.split('?');
       this.request.path = `${path}?${this.options.qs.stringify(this.request.query)}${query ? `&${query}` : ''}`;
@@ -12757,7 +12869,8 @@ class Snekfetch extends transport.Extension {
   }
 
   _checkModify() {
-    if (this.response) throw new Error('Cannot modify request after it has been sent!');
+    if (this.response)
+      throw new Error('Cannot modify request after it has been sent!');
   }
 }
 
@@ -12773,7 +12886,10 @@ Snekfetch.version = Package.version;
  */
 Snekfetch.METHODS = transport.METHODS.concat('BREW').filter((m) => m !== 'M-SEARCH');
 for (const method of Snekfetch.METHODS) {
-  Snekfetch[method.toLowerCase()] = (url, opts) => new Snekfetch(method, url, opts);
+  Snekfetch[method.toLowerCase()] = function runMethod(url, opts) {
+    const Constructor = this.prototype instanceof Snekfetch ? this : Snekfetch;
+    return new Constructor(method, url, opts);
+  };
 }
 
 module.exports = Snekfetch;
@@ -12971,7 +13087,7 @@ var objectKeys = Object.keys || function (obj) {
 /* 82 */
 /***/ (function(module, exports) {
 
-module.exports = ({"version":"3.5.8","homepage":"https://snekfetch.js.org/"})
+module.exports = ({"version":"3.6.1","homepage":"https://snekfetch.js.org/"})
 
 /***/ }),
 /* 83 */
@@ -12989,19 +13105,18 @@ function buildRequest(method, url) {
     getHeader(name) {
       return this.headers[name.toLowerCase()];
     },
-    getHeaders() {
-      return this.headers;
-    },
   };
 }
 
 function finalizeRequest() {
   this._finalizeRequest();
-  if (this.data) this.request.body = this.data;
+  if (this.data)
+    this.request.body = this.data;
   return window.fetch(this.request.path, this.request)
     .then((r) => r.text().then((t) => {
       const headers = {};
-      for (const [k, v] of r.headers.entries()) headers[k.toLowerCase()] = v;
+      for (const [k, v] of r.headers.entries())
+        headers[k.toLowerCase()] = v;
       return { response: r, raw: t, headers };
     }));
 }
