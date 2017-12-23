@@ -3697,14 +3697,15 @@ class GuildChannel extends Channel {
 
   /**
    * Sets the category parent of this channel.
-   * @param {GuildChannel|Snowflake} channel Parent channel
-   * @param {boolean} [options.lockPermissions] Lock the permissions to what the parent's permissions are
+   * @param {?GuildChannel|Snowflake} channel Parent channel
+   * @param {Object} [options={}] Options to pass
+   * @param {boolean} [options.lockPermissions=true] Lock the permissions to what the parent's permissions are
    * @param {string} [options.reason] Reason for modifying the parent of this channel
    * @returns {Promise<GuildChannel>}
    */
   setParent(channel, { lockPermissions = true, reason } = {}) {
     return this.edit({
-      parentID: channel.id ? channel.id : channel,
+      parentID: channel !== null ? channel.id ? channel.id : channel : null,
       lockPermissions,
     }, reason);
   }
@@ -5397,8 +5398,8 @@ class Guild extends Base {
   /**
    * Creates a new channel in the guild.
    * @param {string} name The name of the new channel
-   * @param {string} type The type of the new channel, either `text`, `voice`, or `category`
    * @param {Object} [options] Options
+   * @param {string} [options.type='text'] The type of the new channel, either `text`, `voice`, or `category`
    * @param {boolean} [options.nsfw] Whether the new channel is nsfw
    * @param {number} [options.bitrate] Bitrate of the new channel in bits (only voice)
    * @param {number} [options.userLimit] Maximum amount of users allowed in the new channel (only voice)
@@ -5412,7 +5413,7 @@ class Guild extends Base {
    *   .then(channel => console.log(`Created new channel ${channel}`))
    *   .catch(console.error);
    */
-  createChannel(name, type, { nsfw, bitrate, userLimit, parent, overwrites, reason } = {}) {
+  createChannel(name, { type, nsfw, bitrate, userLimit, parent, overwrites, reason } = {}) {
     if (overwrites instanceof Collection || overwrites instanceof Array) {
       overwrites = overwrites.map(overwrite => {
         let allow = overwrite.allow || (overwrite.allowed ? overwrite.allowed.bitfield : 0);
@@ -5442,7 +5443,7 @@ class Guild extends Base {
     return this.client.api.guilds(this.id).channels.post({
       data: {
         name,
-        type: ChannelTypes[type.toUpperCase()],
+        type: type ? ChannelTypes[type.toUpperCase()] : 'text',
         nsfw,
         bitrate,
         user_limit: userLimit,
@@ -11575,6 +11576,19 @@ class CategoryChannel extends GuildChannel {
   get children() {
     return this.guild.channels.filter(c => c.parentID === this.id);
   }
+
+  /**
+   * Sets the category parent of this channel.
+   * <warn>It is not currently possible to set the parent of a CategoryChannel.</warn>
+   * @method setParent
+   * @memberof CategoryChannel
+   * @instance
+   * @param {?GuildChannel|Snowflake} channel Parent channel
+   * @param {Object} [options={}] Options to pass
+   * @param {boolean} [options.lockPermissions=true] Lock the permissions to what the parent's permissions are
+   * @param {string} [options.reason] Reason for modifying the parent of this channel
+   * @returns {Promise<GuildChannel>}
+   */
 }
 
 module.exports = CategoryChannel;
