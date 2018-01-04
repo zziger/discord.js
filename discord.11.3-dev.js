@@ -271,7 +271,7 @@ const Endpoints = exports.Endpoints = {
   Member: m => exports.Endpoints.Guild(m.guild).Member(m),
   CDN(root) {
     return {
-      Emoji: emojiID => `${root}/emojis/${emojiID}.png`,
+      Emoji: (emojiID, format = 'png') => `${root}/emojis/${emojiID}.${format}`,
       Asset: name => `${root}/assets/${name}`,
       Avatar: (userID, hash) => `${root}/avatars/${userID}/${hash}.${hash.startsWith('a_') ? 'gif' : 'png'}?size=2048`,
       Icon: (guildID, hash) => `${root}/icons/${guildID}/${hash}.jpg`,
@@ -1425,22 +1425,17 @@ class Util {
    * Parses emoji info out of a string. The string must be one of:
    * * A UTF-8 emoji (no ID)
    * * A URL-encoded UTF-8 emoji (no ID)
-   * * A Discord custom emoji (`<:name:id>`)
+   * * A Discord custom emoji (`<:name:id>` or `<a:name:id>`)
    * @param {string} text Emoji string to parse
-   * @returns {Object} Object with `name` and `id` properties
+   * @returns {?Object} Object with `animated`, `name`, and `id` properties
    * @private
    */
   static parseEmoji(text) {
     if (text.includes('%')) text = decodeURIComponent(text);
-    if (text.includes(':')) {
-      const [name, id] = text.split(':');
-      return { name, id };
-    } else {
-      return {
-        name: text,
-        id: null,
-      };
-    }
+    if (!text.includes(':')) return { animated: false, name: text, id: null };
+    const m = text.match(/<?(a)?:(\w{2,32}):(\d{17,19})>?/);
+    if (!m) return null;
+    return { animated: Boolean(m[1]), name: m[2], id: m[3] };
   }
 
   /**
@@ -6565,6 +6560,12 @@ class Emoji {
      */
     this.managed = data.managed;
 
+    /**
+     * Whether this emoji is animated
+     * @type {boolean}
+     */
+    this.animated = data.animated;
+
     this._roles = data.roles;
   }
 
@@ -6605,7 +6606,7 @@ class Emoji {
    * @readonly
    */
   get url() {
-    return Constants.Endpoints.CDN(this.client.options.http.cdn).Emoji(this.id);
+    return Constants.Endpoints.CDN(this.client.options.http.cdn).Emoji(this.id, this.animated ? 'gif' : 'png');
   }
 
   /**
@@ -6703,7 +6704,11 @@ class Emoji {
    * msg.reply(`Hello! ${emoji}`);
    */
   toString() {
-    return this.requiresColons ? `<:${this.name}:${this.id}>` : this.name;
+    if (!this.id || !this.requiresColons) {
+      return this.name;
+    }
+
+    return `<${this.animated ? 'a' : ''}:${this.name}:${this.id}>`;
   }
 
   /**
@@ -7691,10 +7696,10 @@ class GuildChannel extends Channel {
    * When concatenated with a string, this automatically returns the channel's mention instead of the Channel object.
    * @returns {string}
    * @example
-   * // Outputs: Hello from #general
+   * // Logs: Hello from <#123456789012345678>
    * console.log(`Hello from ${channel}`);
    * @example
-   * // Outputs: Hello from #general
+   * // Logs: Hello from <#123456789012345678>
    * console.log('Hello from ' + channel);
    */
   toString() {
