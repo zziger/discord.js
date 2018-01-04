@@ -3369,8 +3369,8 @@ class Channel {
    * @example
    * // Delete the channel
    * channel.delete()
-   *   .then() // Success
-   *   .catch(console.error); // Log error
+   *   .then(console.log)
+   *   .catch(console.error);
    */
   delete() {
     return this.client.rest.methods.deleteChannel(this);
@@ -5544,7 +5544,7 @@ class TextBasedChannel {
    * @returns {Promise<Collection<Snowflake, Message>>}
    * @example
    * // Get messages
-   * channel.fetchMessages({limit: 10})
+   * channel.fetchMessages({ limit: 10 })
    *   .then(messages => console.log(`Received ${messages.size} messages`))
    *   .catch(console.error);
    */
@@ -5676,7 +5676,7 @@ class TextBasedChannel {
    * <info>It can take a few seconds for the client user to stop typing.</info>
    * @param {boolean} [force=false] Whether or not to reset the call count and force the indicator to stop
    * @example
-   * // Stop typing in a channel
+   * // Reduce the typing count by one and stop typing if it reached 0
    * channel.stopTyping();
    * @example
    * // Force typing to fully stop in a channel
@@ -5730,10 +5730,8 @@ class TextBasedChannel {
    * @returns {MessageCollector}
    * @example
    * // Create a message collector
-   * const collector = channel.createMessageCollector(
-   *   m => m.content.includes('discord'),
-   *   { time: 15000 }
-   * );
+   * const filter = m => m.content.includes('discord');
+   * const collector = channel.createMessageCollector(filter, { time: 15000 });
    * collector.on('collect', m => console.log(`Collected ${m.content}`));
    * collector.on('end', collected => console.log(`Collected ${collected.size} items`));
    */
@@ -5780,6 +5778,11 @@ class TextBasedChannel {
    * @param {Collection<Snowflake, Message>|Message[]|number} messages Messages or number of messages to delete
    * @param {boolean} [filterOld=false] Filter messages to remove those which are older than two weeks automatically
    * @returns {Promise<Collection<Snowflake, Message>>} Deleted messages
+   * @example
+   * // Bulk delete messages
+   * channel.bulkDelete(5)
+   *   .then(messages => console.log(`Bulk deleted ${messages.size} messages`))
+   *   .catch(console.error);
    */
   bulkDelete(messages, filterOld = false) {
     if (messages instanceof Array || messages instanceof Collection) {
@@ -6182,10 +6185,8 @@ class Message {
    * @returns {ReactionCollector}
    * @example
    * // Create a reaction collector
-   * const collector = message.createReactionCollector(
-   *   (reaction, user) => reaction.emoji.name === '👌' && user.id === 'someID',
-   *   { time: 15000 }
-   * );
+   * const filter = (reaction, user) => reaction.emoji.name === '👌' && user.id === 'someID'
+   * const collector = message.createReactionCollector(filter, { time: 15000 });
    * collector.on('collect', r => console.log(`Collected ${r.emoji.name}`));
    * collector.on('end', collected => console.log(`Collected ${collected.size} items`));
    */
@@ -6205,6 +6206,12 @@ class Message {
    * @param {CollectorFilter} filter The filter function to use
    * @param {AwaitReactionsOptions} [options={}] Optional options to pass to the internal collector
    * @returns {Promise<Collection<string, MessageReaction>>}
+   * @example
+   * // Create a reaction collector
+   * const filter = (reaction, user) => reaction.emoji.name === '👌' && user.id === 'someID'
+   * message.awaitReactions(filter, { time: 15000 })
+   *   .then(collected => console.log(`Collected ${collected.size} reactions`))
+   *   .catch(console.error);
    */
   awaitReactions(filter, options = {}) {
     return new Promise((resolve, reject) => {
@@ -7116,6 +7123,16 @@ class GuildMember {
    * @param {Collection<Snowflake, Role>|Role[]|Snowflake[]} roles The roles or role IDs to apply
    * @param {string} [reason] Reason for applying the roles
    * @returns {Promise<GuildMember>}
+   * @example
+   * // Set the member's roles to a single role
+   * guildMember.setRoles(['391156570408615936'])
+   *   .then(console.log)
+   *   .catch(console.error);
+   * @example
+   * // Remove all the roles from a member
+   * guildMember.setRoles([])
+   *   .then(member => console.log(`Member roles is now of ${member.roles.size} size`))
+   *   .catch(console.error);
    */
   setRoles(roles, reason) {
     return this.edit({ roles }, reason);
@@ -7227,8 +7244,10 @@ class GuildMember {
    * @param {string} [options.reason] Reason for banning
    * @returns {Promise<GuildMember>}
    * @example
-   * // ban a guild member
-   * guildMember.ban(7);
+   * // Ban a guild member
+   * guildMember.ban(7)
+   *   .then(console.log)
+   *   .catch(console.error);
    */
   ban(options) {
     return this.guild.ban(this, options);
@@ -7491,8 +7510,8 @@ class GuildChannel extends Channel {
    * @returns {Promise<GuildChannel>}
    * @example
    * // Edit a channel
-   * channel.edit({name: 'new-channel'})
-   *   .then(c => console.log(`Edited channel ${c}`))
+   * channel.edit({ name: 'new-channel' })
+   *   .then(console.log)
    *   .catch(console.error);
    */
   edit(data, reason) {
@@ -7566,6 +7585,11 @@ class GuildChannel extends Channel {
    * @param {boolean} [options.unique=false] Create a unique invite, or use an existing one with similar settings
    * @param {string} [reason] Reason for creating the invite
    * @returns {Promise<Invite>}
+   * @example
+   * // Create an invite to a channel
+   * channel.createInvite()
+   *   .then(invite => console.log(`Created an invite with a code of ${invite.code}`))
+   *   .catch(console.error);
    */
   createInvite(options = {}, reason) {
     return this.client.rest.methods.createChannelInvite(this, options, reason);
@@ -8794,6 +8818,11 @@ class Guild {
    * @param {UserResolvable} [options.user] Only show entries involving this user
    * @param {string|number} [options.type] Only show entries involving this action type
    * @returns {Promise<GuildAuditLogs>}
+   * @example
+   * // Output audit log entries
+   * guild.fetchAuditLogs()
+   *   .then(audit => console.log(audit.entries))
+   *   .catch(console.error);
    */
   fetchAuditLogs(options) {
     return this.client.rest.methods.getGuildAuditLogs(this, options);
@@ -8822,6 +8851,11 @@ class Guild {
    * @param {UserResolvable} user The user to fetch the member for
    * @param {boolean} [cache=true] Insert the member into the members cache
    * @returns {Promise<GuildMember>}
+   * @example
+   * // Fetch a guild member
+   * guild.fetchMember(message.author)
+   *   .then(console.log)
+   *   .catch(console.error);
    */
   fetchMember(user, cache = true) {
     user = this.client.resolver.resolveUser(user);
