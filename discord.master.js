@@ -3104,6 +3104,17 @@ class Channel extends Base {
   }
 
   /**
+   * When concatenated with a string, this automatically returns the channel's mention instead of the Channel object.
+   * @returns {string}
+   * @example
+   * // Logs: Hello from <#123456789012345678>!
+   * console.log(`Hello from ${channel}!`);
+   */
+  toString() {
+    return `<#${this.id}>`;
+  }
+
+  /**
    * Deletes this channel.
    * @returns {Promise<Channel>}
    * @example
@@ -3865,17 +3876,6 @@ class GuildChannel extends Channel {
     } catch (err) {
       return MessageNotificationTypes[3];
     }
-  }
-
-  /**
-   * When concatenated with a string, this automatically returns the channel's mention instead of the Channel object.
-   * @returns {string}
-   * @example
-   * // Logs: Hello from <#123456789012345678>!
-   * console.log(`Hello from ${channel}!`);
-   */
-  toString() {
-    return `<#${this.id}>`;
   }
 }
 
