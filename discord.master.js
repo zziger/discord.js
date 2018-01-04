@@ -180,7 +180,7 @@ function makeImageUrl(root, { format = 'webp', size } = {}) {
 exports.Endpoints = {
   CDN(root) {
     return {
-      Emoji: emojiID => `${root}/emojis/${emojiID}.png`,
+      Emoji: (emojiID, format = 'png') => `${root}/emojis/${emojiID}.${format}`,
       Asset: name => `${root}/assets/${name}`,
       DefaultAvatar: number => `${root}/embed/avatars/${number}.png`,
       Avatar: (userID, hash, format = 'default', size) => {
@@ -1348,18 +1348,21 @@ class Util {
    * Parses emoji info out of a string. The string must be one of:
    * * A UTF-8 emoji (no ID)
    * * A URL-encoded UTF-8 emoji (no ID)
-   * * A Discord custom emoji (`<:name:id>`)
+   * * A Discord custom emoji (`<:name:id>` or `<a:name:id>`)
    * @param {string} text Emoji string to parse
-   * @returns {Object} Object with `name` and `id` properties
+   * @returns {Object} Object with `animated`, `name`, and `id` properties
    * @private
    */
   static parseEmoji(text) {
     if (text.includes('%')) text = decodeURIComponent(text);
     if (text.includes(':')) {
-      const [name, id] = text.split(':');
-      return { name, id };
+      const m = text.match(/<?(a)?:(\w{2,32}):(\d{17,19})>?/);
+      if (!m) {
+        return null;
+      }
+      return { animated: Boolean(m[1]), name: m[2], id: m[3] };
     } else {
-      return { name: text, id: null };
+      return { animated: false, name: text, id: null };
     }
   }
 
@@ -5409,7 +5412,7 @@ class Guild extends Base {
    * @returns {Promise<GuildChannel>}
    * @example
    * // Create a new text channel
-   * guild.createChannel('new-general', 'text')
+   * guild.createChannel('new-general', { reason: 'My reason here.' })
    *   .then(channel => console.log(`Created new channel ${channel}`))
    *   .catch(console.error);
    */
@@ -6640,6 +6643,12 @@ class Emoji extends Base {
      */
     this.managed = data.managed;
 
+    /**
+     * Whether this emoji is animated
+     * @type {boolean}
+     */
+    this.animated = data.animated;
+
     this._roles = data.roles;
   }
 
@@ -6680,7 +6689,7 @@ class Emoji extends Base {
    * @readonly
    */
   get url() {
-    return this.client.rest.cdn.Emoji(this.id);
+    return this.client.rest.cdn.Emoji(this.id, this.animated ? 'gif' : 'png');
   }
 
   /**
@@ -6793,7 +6802,11 @@ class Emoji extends Base {
    * msg.reply(`Hello! ${emoji}`);
    */
   toString() {
-    return this.requiresColons ? `<:${this.name}:${this.id}>` : this.name;
+    if (!this.id || !this.requiresColons) {
+      return this.name;
+    }
+
+    return `<${this.animated ? 'a' : ''}:${this.name}:${this.id}>`;
   }
 
   /**
@@ -8354,17 +8367,18 @@ class Collector extends EventEmitter {
    */
   handleCollect(...args) {
     const collect = this.collect(...args);
-    if (!collect || !this.filter(...args, this.collected)) return;
 
-    this.collected.set(collect.key, collect.value);
+    if (collect && this.filter(...args, this.collected)) {
+      this.collected.set(collect.key, collect.value);
 
-    /**
-     * Emitted whenever an element is collected.
-     * @event Collector#collect
-     * @param {*} element The element that got collected
-     * @param {...*} args The arguments emitted by the listener
-     */
-    this.emit('collect', collect.value, ...args);
+      /**
+       * Emitted whenever an element is collected.
+       * @event Collector#collect
+       * @param {*} element The element that got collected
+       * @param {...*} args The arguments emitted by the listener
+       */
+      this.emit('collect', collect.value, ...args);
+    }
     this.checkEnd();
   }
 
