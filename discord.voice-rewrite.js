@@ -1355,15 +1355,10 @@ class Util {
    */
   static parseEmoji(text) {
     if (text.includes('%')) text = decodeURIComponent(text);
-    if (text.includes(':')) {
-      const m = text.match(/<?(a)?:(\w{2,32}):(\d{17,19})>?/);
-      if (!m) {
-        return null;
-      }
-      return { animated: Boolean(m[1]), name: m[2], id: m[3] };
-    } else {
-      return { animated: false, name: text, id: null };
-    }
+    if (!text.includes(':')) return { animated: false, name: text, id: null };
+    const m = text.match(/<?(a)?:?(\w{2,32}):(\d{17,19})>?/);
+    if (!m) return null;
+    return { animated: Boolean(m[1]), name: m[2], id: m[3] };
   }
 
   /**
@@ -1462,11 +1457,11 @@ class Util {
    * @private
    */
   static makePlainError(err) {
-    const obj = {};
-    obj.name = err.name;
-    obj.message = err.message;
-    obj.stack = err.stack;
-    return obj;
+    return {
+      name: err.name,
+      message: err.message,
+      stack: err.stack,
+    };
   }
 
   /**
@@ -1596,8 +1591,8 @@ class Util {
    * @private
    */
   static basename(path, ext) {
-    let f = splitPathRe.exec(path).slice(1)[2];
-    if (ext && f.substr(-1 * ext.length) === ext) f = f.substr(0, f.length - ext.length);
+    let f = splitPathRe.exec(path)[3];
+    if (ext && f.endsWith(ext)) f = f.slice(0, -ext.length);
     return f;
   }
 
@@ -2470,11 +2465,12 @@ class GuildMember extends Base {
   /**
    * Checks if any of the member's roles have a permission.
    * @param {PermissionResolvable|PermissionResolvable[]} permission Permission(s) to check for
-   * @param {boolean} [checkAdmin=true] Whether to allow the administrator permission to override
-   * @param {boolean} [checkOwner=true] Whether to allow being the guild's owner to override
+   * @param {Object} [options] Options
+   * @param {boolean} [options.checkAdmin=true] Whether to allow the administrator permission to override
+   * @param {boolean} [options.checkOwner=true] Whether to allow being the guild's owner to override
    * @returns {boolean}
    */
-  hasPermission(permission, checkAdmin = true, checkOwner = true) {
+  hasPermission(permission, { checkAdmin = true, checkOwner = true } = {}) {
     if (checkOwner && this.user.id === this.guild.ownerID) return true;
     return this.roles.some(r => r.permissions.has(permission, checkAdmin));
   }
@@ -2565,6 +2561,16 @@ class GuildMember extends Base {
    * @param {Collection<Snowflake, Role>|RoleResolvable[]} roles The roles or role IDs to apply
    * @param {string} [reason] Reason for applying the roles
    * @returns {Promise<GuildMember>}
+   * @example
+   * // Set the member's roles to a single role
+   * guildMember.setRoles(['391156570408615936'])
+   *   .then(console.log)
+   *   .catch(console.error);
+   * @example
+   * // Remove all the roles from a member
+   * guildMember.setRoles([])
+   *   .then(member => console.log(`Member roles is now of ${member.roles.size} size`))
+   *   .catch(console.error);
    */
   setRoles(roles, reason) {
     return this.edit({ roles }, reason);
@@ -2697,7 +2703,9 @@ class GuildMember extends Base {
    * @returns {Promise<GuildMember>}
    * @example
    * // ban a guild member
-   * guildMember.ban(7);
+   * guildMember.ban({ days: 7, reason: 'They deserved it' })
+   *   .then(console.log)
+   *   .catch(console.error);
    */
   ban(options) {
     return this.guild.ban(this, options);
@@ -3104,13 +3112,24 @@ class Channel extends Base {
   }
 
   /**
+   * When concatenated with a string, this automatically returns the channel's mention instead of the Channel object.
+   * @returns {string}
+   * @example
+   * // Logs: Hello from <#123456789012345678>!
+   * console.log(`Hello from ${channel}!`);
+   */
+  toString() {
+    return `<#${this.id}>`;
+  }
+
+  /**
    * Deletes this channel.
    * @returns {Promise<Channel>}
    * @example
    * // Delete the channel
    * channel.delete()
-   *   .then() // Success
-   *   .catch(console.error); // Log error
+   *   then(console.log)
+   *   .catch(console.error);
    */
   delete() {
     return this.client.api.channels(this.id).delete().then(() => this);
@@ -3649,8 +3668,8 @@ class GuildChannel extends Channel {
    * @returns {Promise<GuildChannel>}
    * @example
    * // Edit a channel
-   * channel.edit({name: 'new-channel'})
-   *   .then(c => console.log(`Edited channel ${c}`))
+   * channel.edit({ name: 'new-channel' })
+   *   .then(console.log)
    *   .catch(console.error);
    */
   async edit(data, reason) {
@@ -3763,6 +3782,11 @@ class GuildChannel extends Channel {
    * @param {boolean} [options.unique=false] Create a unique invite, or use an existing one with similar settings
    * @param {string} [options.reason] Reason for creating this
    * @returns {Promise<Invite>}
+   * @example
+   * // Create an invite to a channel
+   * channel.createInvite()
+   *   .then(invite => console.log(`Created an invite with a code of ${invite.code}`))
+   *   .catch(console.error);
    */
   createInvite({ temporary = false, maxAge = 86400, maxUses = 0, unique, reason } = {}) {
     return this.client.api.channels(this.id).invites.post({ data: {
@@ -3865,17 +3889,6 @@ class GuildChannel extends Channel {
     } catch (err) {
       return MessageNotificationTypes[3];
     }
-  }
-
-  /**
-   * When concatenated with a string, this automatically returns the channel's mention instead of the Channel object.
-   * @returns {string}
-   * @example
-   * // Logs: Hello from <#123456789012345678>!
-   * console.log(`Hello from ${channel}!`);
-   */
-  toString() {
-    return `<#${this.id}>`;
   }
 }
 
@@ -4357,10 +4370,8 @@ class TextBasedChannel {
    * @returns {MessageCollector}
    * @example
    * // Create a message collector
-   * const collector = channel.createMessageCollector(
-   *   m => m.content.includes('discord'),
-   *   { time: 15000 }
-   * );
+   * const filter = m => m.content.includes('discord');
+   * const collector = channel.createMessageCollector(filter, { time: 15000 });
    * collector.on('collect', m => console.log(`Collected ${m.content}`));
    * collector.on('end', collected => console.log(`Collected ${collected.size} items`));
    */
@@ -4408,6 +4419,11 @@ class TextBasedChannel {
    * Messages or number of messages to delete
    * @param {boolean} [filterOld=false] Filter messages to remove those which are older than two weeks automatically
    * @returns {Promise<Collection<Snowflake, Message>>} Deleted messages
+   * @example
+   * // Bulk delete messages
+   * channel.bulkDelete(5)
+   *   .then(messages => console.log(`Bulk deleted ${messages.size} messages`))
+   *   .catch(console.error);
    */
   async bulkDelete(messages, filterOld = false) {
     if (messages instanceof Array || messages instanceof Collection) {
@@ -5005,6 +5021,11 @@ class Guild extends Base {
    * @param {UserResolvable} [options.user] Only show entries involving this user
    * @param {AuditLogAction|number} [options.type] Only show entries involving this action type
    * @returns {Promise<GuildAuditLogs>}
+   * @example
+   * // Output audit log entries
+   * guild.fetchAuditLogs()
+   *   .then(audit => console.log(audit.entries))
+   *   .catch(console.error);
    */
   fetchAuditLogs(options = {}) {
     if (options.before && options.before instanceof GuildAuditLogs.Entry) options.before = options.before.id;
@@ -5412,8 +5433,8 @@ class Guild extends Base {
    * @returns {Promise<GuildChannel>}
    * @example
    * // Create a new text channel
-   * guild.createChannel('new-general', 'text')
-   *   .then(channel => console.log(`Created new channel ${channel}`))
+   * guild.createChannel('new-general', { reason: 'Cool new channel' })
+   *   .then(console.log)
    *   .catch(console.error);
    */
   createChannel(name, { type, nsfw, bitrate, userLimit, parent, overwrites, reason } = {}) {
@@ -7758,10 +7779,8 @@ class Message extends Base {
    * @returns {ReactionCollector}
    * @example
    * // Create a reaction collector
-   * const collector = message.createReactionCollector(
-   *   (reaction, user) => reaction.emoji.name === '👌' && user.id === 'someID',
-   *   { time: 15000 }
-   * );
+   * const filter = (reaction, user) => reaction.emoji.name === '👌' && user.id === 'someID';
+   * const collector = message.createReactionCollector(filter, { time: 15000 });
    * collector.on('collect', r => console.log(`Collected ${r.emoji.name}`));
    * collector.on('end', collected => console.log(`Collected ${collected.size} items`));
    */
@@ -7781,6 +7800,12 @@ class Message extends Base {
    * @param {CollectorFilter} filter The filter function to use
    * @param {AwaitReactionsOptions} [options={}] Optional options to pass to the internal collector
    * @returns {Promise<Collection<string, MessageReaction>>}
+   * @example
+   * // Create a reaction collector
+   * const filter = (reaction, user) => reaction.emoji.name === '👌' && user.id === 'someID'
+   * message.awaitReactions(filter, { time: 15000 })
+   *   .then(collected => console.log(`Collected ${collected.size} reactions`))
+   *   .catch(console.error);
    */
   awaitReactions(filter, options = {}) {
     return new Promise((resolve, reject) => {
@@ -10272,21 +10297,22 @@ class GuildMemberStore extends DataStore {
    * @returns {Promise<GuildMember>|Promise<Collection<Snowflake, GuildMember>>}
    * @example
    * // Fetch all members from a guild
-   * guild.members.fetch();
+   * guild.members.fetch()
+   *   .then(console.log)
+   *   .catch(console.error);
    * @example
    * // Fetch a single member
-   * guild.members.fetch('66564597481480192');
-   * guild.members.fetch(user);
-   * guild.members.fetch({ user, cache: false }); // Fetch and don't cache
+   * guild.members.fetch('66564597481480192')
+   *   .then(console.log)
+   *   .catch(console.error);
+   * guild.members.fetch({ user, cache: false }) // Fetch and don't cache
+   *   .then(console.log)
+   *   .catch(console.error);
    * @example
    * // Fetch by query
-   * guild.members.fetch({
-   *   query: 'hydra',
-   * });
-   * guild.members.fetch({
-   *   query: 'hydra',
-   *   limit: 10,
-   * });
+   * guild.members.fetch({ query: 'hydra' })
+   *   .then(console.log)
+   *   .catch(console.error);
    */
   fetch(options) {
     if (!options) return this._fetchMany();
@@ -13509,19 +13535,16 @@ class APIRequest {
     this.rest = rest;
     this.client = rest.client;
     this.method = method;
-    this.path = path.toString();
     this.route = options.route;
     this.options = options;
+
+    const queryString = (querystring.stringify(options.query).match(/[^=&?]+=[^=&?]+/g) || []).join('&');
+    this.path = `${path}${queryString ? `?${queryString}` : ''}`;
   }
 
   gen() {
     const API = this.options.versioned === false ? this.client.options.http.api :
       `${this.client.options.http.api}/v${this.client.options.http.version}`;
-
-    if (this.options.query) {
-      const queryString = (querystring.stringify(this.options.query).match(/[^=&?]+=[^=&?]+/g) || []).join('&');
-      this.path += `?${queryString}`;
-    }
 
     const request = snekfetch[this.method](`${API}${this.path}`, { agent });
 
