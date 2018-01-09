@@ -1356,7 +1356,7 @@ class Util {
   static parseEmoji(text) {
     if (text.includes('%')) text = decodeURIComponent(text);
     if (!text.includes(':')) return { animated: false, name: text, id: null };
-    const m = text.match(/<?(a)?:(\w{2,32}):(\d{17,19})>?/);
+    const m = text.match(/<?(a)?:?(\w{2,32}):(\d{17,19})>?/);
     if (!m) return null;
     return { animated: Boolean(m[1]), name: m[2], id: m[3] };
   }
@@ -13688,11 +13688,10 @@ class Client extends BaseClient {
     this.voice = !browser ? new ClientVoiceManager(this) : null;
 
     /**
-     * The shard helpers for the client
-     * (only if the process was spawned as a child, such as from a {@link ShardingManager})
+     * Shard helpers for the client (only if the process was spawned from a {@link ShardingManager})
      * @type {?ShardClientUtil}
      */
-    this.shard = !browser && process.send ? ShardClientUtil.singleton(this) : null;
+    this.shard = !browser && process.env.SHARDING_MANAGER ? ShardClientUtil.singleton(this) : null;
 
     /**
      * All of the {@link User} objects that have been cached at any point, mapped by their IDs
