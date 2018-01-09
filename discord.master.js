@@ -3128,7 +3128,7 @@ class Channel extends Base {
    * @example
    * // Delete the channel
    * channel.delete()
-   *   then(console.log)
+   *   .then(console.log)
    *   .catch(console.error);
    */
   delete() {
