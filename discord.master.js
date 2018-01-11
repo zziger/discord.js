@@ -3366,7 +3366,7 @@ class GuildMember extends Base {
    *   .catch(console.error);
    */
   ban(options) {
-    return this.guild.ban(this, options);
+    return this.guild.members.ban(this, options);
   }
 
   /**
@@ -3807,8 +3807,8 @@ class GuildChannel extends Channel {
    * @returns {Promise<GuildChannel>}
    */
   clone({ name = this.name, withPermissions = true, withTopic = true, reason } = {}) {
-    const options = { overwrites: withPermissions ? this.permissionOverwrites : [], reason };
-    return this.guild.createChannel(name, this.type, options)
+    const options = { overwrites: withPermissions ? this.permissionOverwrites : [], reason, type: this.type };
+    return this.guild.channels.create(name, options)
       .then(channel => withTopic ? channel.setTopic(this.topic) : channel);
   }
 
