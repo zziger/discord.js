@@ -727,7 +727,7 @@ exports.Colors = {
  * * CANNOT_PIN_MESSAGE_IN_OTHER_CHANNEL
  * * CANNOT_EXECUTE_ON_SYSTEM_MESSAGE
  * * BULK_DELETE_MESSAGE_TOO_OLD
- * * INVITE_ACCEPTED_TO_GUILD_NOT_CONTANING_BOT
+ * * INVITE_ACCEPTED_TO_GUILD_NOT_CONTAINING_BOT
  * * REACTION_BLOCKED
  * @typedef {string} APIError
  */
@@ -773,7 +773,7 @@ exports.APIErrors = {
   CANNOT_PIN_MESSAGE_IN_OTHER_CHANNEL: 50019,
   CANNOT_EXECUTE_ON_SYSTEM_MESSAGE: 50021,
   BULK_DELETE_MESSAGE_TOO_OLD: 50034,
-  INVITE_ACCEPTED_TO_GUILD_NOT_CONTANING_BOT: 50036,
+  INVITE_ACCEPTED_TO_GUILD_NOT_CONTAINING_BOT: 50036,
   REACTION_BLOCKED: 90001,
 };
 
@@ -10204,7 +10204,7 @@ module.exports = GuildMemberStore;
 const DataStore = __webpack_require__(6);
 const Role = __webpack_require__(20);
 const { resolveColor } = __webpack_require__(5);
-const { resolve } = __webpack_require__(10);
+const Permissions = __webpack_require__(10);
 
 /**
  * Stores roles.
@@ -10245,7 +10245,7 @@ class RoleStore extends DataStore {
    */
   create(data = {}, reason) {
     if (data.color) data.color = resolveColor(data.color);
-    if (data.permissions) data.permissions = resolve(data.permissions);
+    if (data.permissions) data.permissions = Permissions.resolve(data.permissions);
 
     return this.guild.client.api.guilds(this.guild.id).roles.post({ data, reason }).then(r => {
       const { role } = this.client.actions.GuildRoleCreate.handle({
@@ -10295,7 +10295,7 @@ const Channel = __webpack_require__(13);
 const { ChannelTypes } = __webpack_require__(0);
 const DataStore = __webpack_require__(6);
 const GuildChannel = __webpack_require__(16);
-const { resolve } = __webpack_require__(10);
+const Permissions = __webpack_require__(10);
 
 /**
  * Stores guild channels.
@@ -10346,8 +10346,8 @@ class GuildChannelStore extends DataStore {
       overwrites = overwrites.map(overwrite => {
         let allow = overwrite.allow || (overwrite.allowed ? overwrite.allowed.bitfield : 0);
         let deny = overwrite.deny || (overwrite.denied ? overwrite.denied.bitfield : 0);
-        if (allow instanceof Array) allow = resolve(allow);
-        if (deny instanceof Array) deny = resolve(deny);
+        if (allow instanceof Array) allow = Permissions.resolve(allow);
+        if (deny instanceof Array) deny = Permissions.resolve(deny);
 
         const role = this.guild.roles.resolve(overwrite.id);
         if (role) {
