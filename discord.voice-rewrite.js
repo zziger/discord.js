@@ -999,12 +999,12 @@ class Collection extends Map {
       for (const item of this.values()) {
         if (item[propOrFn] === value) return item;
       }
-      return null;
+      return undefined;
     } else if (typeof propOrFn === 'function') {
       for (const [key, val] of this) {
         if (propOrFn(val, key, this)) return val;
       }
-      return null;
+      return undefined;
     } else {
       throw new Error('First argument must be a property string or a function.');
     }
@@ -1030,12 +1030,12 @@ class Collection extends Map {
       for (const [key, val] of this) {
         if (val[propOrFn] === value) return key;
       }
-      return null;
+      return undefined;
     } else if (typeof propOrFn === 'function') {
       for (const [key, val] of this) {
         if (propOrFn(val, key, this)) return key;
       }
-      return null;
+      return undefined;
     } else {
       throw new Error('First argument must be a property string or a function.');
     }
@@ -3083,16 +3083,23 @@ class GuildMember extends Base {
   }
 
   /**
+   * Whether the member is manageable in terms of role hierarchy by the client user
+   * @type {boolean}
+   * @readonly
+   */
+  get manageable() {
+    if (this.user.id === this.guild.ownerID) return false;
+    if (this.user.id === this.client.user.id) return false;
+    return this.guild.me.highestRole.comparePositionTo(this.highestRole) > 0;
+  }
+
+  /**
    * Whether the member is kickable by the client user
    * @type {boolean}
    * @readonly
    */
   get kickable() {
-    if (this.user.id === this.guild.ownerID) return false;
-    if (this.user.id === this.client.user.id) return false;
-    const clientMember = this.guild.member(this.client.user);
-    if (!clientMember.permissions.has(Permissions.FLAGS.KICK_MEMBERS)) return false;
-    return clientMember.highestRole.comparePositionTo(this.highestRole) > 0;
+    return this.manageable && this.guild.me.permissions.has(Permissions.FLAGS.KICK_MEMBERS);
   }
 
   /**
@@ -3101,11 +3108,7 @@ class GuildMember extends Base {
    * @readonly
    */
   get bannable() {
-    if (this.user.id === this.guild.ownerID) return false;
-    if (this.user.id === this.client.user.id) return false;
-    const clientMember = this.guild.member(this.client.user);
-    if (!clientMember.permissions.has(Permissions.FLAGS.BAN_MEMBERS)) return false;
-    return clientMember.highestRole.comparePositionTo(this.highestRole) > 0;
+    return this.manageable && this.guild.me.permissions.has(Permissions.FLAGS.BAN_MEMBERS);
   }
 
   /**
@@ -3803,11 +3806,23 @@ class GuildChannel extends Channel {
    * @param {boolean} [options.withPermissions=true] Whether to clone the channel with this channel's
    * permission overwrites
    * @param {boolean} [options.withTopic=true] Whether to clone the channel with this channel's topic
+   * @param {boolean} [options.nsfw=this.nsfw] Whether the new channel is nsfw (only text)
+   * @param {number} [options.bitrate=this.bitrate] Bitrate of the new channel in bits (only voice)
+   * @param {number} [options.userLimit=this.userLimit] Maximum amount of users allowed in the new channel (only voice)
+   * @param {ChannelResolvable} [options.parent=this.parent] The parent of the new channel
    * @param {string} [options.reason] Reason for cloning this channel
    * @returns {Promise<GuildChannel>}
    */
-  clone({ name = this.name, withPermissions = true, withTopic = true, reason } = {}) {
-    const options = { overwrites: withPermissions ? this.permissionOverwrites : [], reason, type: this.type };
+  clone({ name = this.name, withPermissions = true, withTopic = true, nsfw, parent, bitrate, userLimit, reason } = {}) {
+    const options = {
+      overwrites: withPermissions ? this.permissionOverwrites : [],
+      nsfw: typeof nsfw === 'undefined' ? this.nsfw : nsfw,
+      parent: parent || this.parent,
+      bitrate: bitrate || this.bitrate,
+      userLimit: userLimit || this.userLimit,
+      reason,
+      type: this.type,
+    };
     return this.guild.channels.create(name, options)
       .then(channel => withTopic ? channel.setTopic(this.topic) : channel);
   }
@@ -8164,15 +8179,14 @@ class Collector extends EventEmitter {
     const collect = this.collect(...args);
 
     if (collect && this.filter(...args, this.collected)) {
-      this.collected.set(collect.key, collect.value);
+      this.collected.set(collect, args[0]);
 
       /**
        * Emitted whenever an element is collected.
        * @event Collector#collect
-       * @param {*} element The element that got collected
        * @param {...*} args The arguments emitted by the listener
        */
-      this.emit('collect', collect.value, ...args);
+      this.emit('collect', ...args);
     }
     this.checkEnd();
   }
@@ -8187,17 +8201,14 @@ class Collector extends EventEmitter {
 
     const dispose = this.dispose(...args);
     if (!dispose || !this.filter(...args) || !this.collected.has(dispose)) return;
-
-    const value = this.collected.get(dispose);
     this.collected.delete(dispose);
 
     /**
-     * Emitted whenever an element has been disposed.
+     * Emitted whenever an element is disposed of.
      * @event Collector#dispose
-     * @param {*} element The element that was disposed
      * @param {...*} args The arguments emitted by the listener
      */
-    this.emit('dispose', value, ...args);
+    this.emit('dispose', ...args);
     this.checkEnd();
   }
 
@@ -9315,7 +9326,9 @@ class ClientUser extends Structures.get('User') {
    * @typedef {Object} PresenceData
    * @property {PresenceStatus} [status] Status of the user
    * @property {boolean} [afk] Whether the user is AFK
-   * @property {Object} [activity] activity the user is playing
+   * @property {Object} [activity] Activity the user is playing
+   * @property {Object|string} [activity.application] An application object or application id
+   * @property {string} [activity.application.id] The id of the application
    * @property {string} [activity.name] Name of the activity
    * @property {ActivityType|number} [activity.type] Type of the activity
    * @property {string} [activity.url] Stream url
@@ -9543,24 +9556,31 @@ class MessageCollector extends Collector {
   /**
    * Handles a message for possible collection.
    * @param {Message} message The message that could be collected
-   * @returns {?{key: Snowflake, value: Message}}
+   * @returns {?Snowflake}
    * @private
    */
   collect(message) {
+    /**
+     * Emitted whenever a message is collected.
+     * @event MessageCollector#collect
+     * @param {Message} message The message that was collected
+     */
     if (message.channel.id !== this.channel.id) return null;
     this.received++;
-    return {
-      key: message.id,
-      value: message,
-    };
+    return message.id;
   }
 
   /**
    * Handles a message for possible disposal.
-   * @param {Message} message The message that could be disposed
-   * @returns {?string}
+   * @param {Message} message The message that could be disposed of
+   * @returns {?Snowflake}
    */
   dispose(message) {
+    /**
+     * Emitted whenever a message is disposed of.
+     * @event MessageCollector#dispose
+     * @param {Message} message The message that was disposed of
+     */
     return message.channel.id === this.channel.id ? message.id : null;
   }
 
@@ -10929,12 +10949,12 @@ class ReactionCollector extends Collector {
       this.client.removeListener(Events.MESSAGE_REACTION_REMOVE_ALL, this.empty);
     });
 
-    this.on('collect', (collected, reaction, user) => {
+    this.on('collect', (reaction, user) => {
       this.total++;
       this.users.set(user.id, user);
     });
 
-    this.on('dispose', (disposed, reaction, user) => {
+    this.on('remove', (reaction, user) => {
       this.total--;
       if (!this.collected.some(r => r.users.has(user.id))) this.users.delete(user.id);
     });
@@ -10943,23 +10963,33 @@ class ReactionCollector extends Collector {
   /**
    * Handles an incoming reaction for possible collection.
    * @param {MessageReaction} reaction The reaction to possibly collect
-   * @returns {?{key: Snowflake, value: MessageReaction}}
+   * @returns {?Snowflake|string}
    * @private
    */
   collect(reaction) {
+    /**
+     * Emitted whenever a reaction is collected.
+     * @event ReactionCollector#collect
+     * @param {MessageReaction} reaction The reaction that was collected
+     * @param {User} user The user that added the reaction
+     */
     if (reaction.message.id !== this.message.id) return null;
-    return {
-      key: ReactionCollector.key(reaction),
-      value: reaction,
-    };
+    return ReactionCollector.key(reaction);
   }
 
   /**
    * Handles a reaction deletion for possible disposal.
-   * @param {MessageReaction} reaction The reaction to possibly dispose
+   * @param {MessageReaction} reaction The reaction to possibly dispose of
+   * @param {User} user The user that removed the reaction
    * @returns {?Snowflake|string}
    */
-  dispose(reaction) {
+  dispose(reaction, user) {
+    /**
+     * Emitted whenever a reaction is disposed of.
+     * @event ReactionCollector#dispose
+     * @param {MessageReaction} reaction The reaction that was disposed of
+     * @param {User} user The user that removed the reaction
+     */
     if (reaction.message.id !== this.message.id) return null;
 
     /**
@@ -10968,8 +10998,11 @@ class ReactionCollector extends Collector {
      * is removed.
      * @event ReactionCollector#remove
      * @param {MessageReaction} reaction The reaction that was removed
+     * @param {User} user The user that removed the reaction
      */
-    if (this.collected.has(reaction)) this.emit('remove', reaction);
+    if (this.collected.has(ReactionCollector.key(reaction))) {
+      this.emit('remove', reaction, user);
+    }
     return reaction.count ? null : ReactionCollector.key(reaction);
   }
 
@@ -23318,18 +23351,12 @@ module.exports = GuildEmojiUpdateAction;
 
 const Action = __webpack_require__(3);
 
-function mappify(iterable) {
-  const map = new Map();
-  for (const x of iterable) map.set(...x);
-  return map;
-}
-
 class GuildEmojisUpdateAction extends Action {
   handle(data) {
     const guild = this.client.guilds.get(data.guild_id);
     if (!guild || !guild.emojis) return;
 
-    const deletions = mappify(guild.emojis.entries());
+    const deletions = new Map(guild.emojis);
 
     for (const emoji of data.emojis) {
       // Determine type of emoji event
