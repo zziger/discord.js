@@ -9327,7 +9327,9 @@ class ClientUser extends Structures.get('User') {
    * @typedef {Object} PresenceData
    * @property {PresenceStatus} [status] Status of the user
    * @property {boolean} [afk] Whether the user is AFK
-   * @property {Object} [activity] activity the user is playing
+   * @property {Object} [activity] Activity the user is playing
+   * @property {Object|string} [activity.application] An application object or application id
+   * @property {string} [activity.application.id] The id of the application
    * @property {string} [activity.name] Name of the activity
    * @property {ActivityType|number} [activity.type] Type of the activity
    * @property {string} [activity.url] Stream url
@@ -23331,18 +23333,12 @@ module.exports = GuildEmojiUpdateAction;
 
 const Action = __webpack_require__(3);
 
-function mappify(iterable) {
-  const map = new Map();
-  for (const x of iterable) map.set(...x);
-  return map;
-}
-
 class GuildEmojisUpdateAction extends Action {
   handle(data) {
     const guild = this.client.guilds.get(data.guild_id);
     if (!guild || !guild.emojis) return;
 
-    const deletions = mappify(guild.emojis.entries());
+    const deletions = new Map(guild.emojis);
 
     for (const emoji of data.emojis) {
       // Determine type of emoji event
