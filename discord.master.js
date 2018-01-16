@@ -8179,15 +8179,14 @@ class Collector extends EventEmitter {
     const collect = this.collect(...args);
 
     if (collect && this.filter(...args, this.collected)) {
-      this.collected.set(collect.key, collect.value);
+      this.collected.set(collect, args[0]);
 
       /**
        * Emitted whenever an element is collected.
        * @event Collector#collect
-       * @param {*} element The element that got collected
        * @param {...*} args The arguments emitted by the listener
        */
-      this.emit('collect', collect.value, ...args);
+      this.emit('collect', ...args);
     }
     this.checkEnd();
   }
@@ -8202,17 +8201,14 @@ class Collector extends EventEmitter {
 
     const dispose = this.dispose(...args);
     if (!dispose || !this.filter(...args) || !this.collected.has(dispose)) return;
-
-    const value = this.collected.get(dispose);
     this.collected.delete(dispose);
 
     /**
-     * Emitted whenever an element has been disposed.
+     * Emitted whenever an element is disposed of.
      * @event Collector#dispose
-     * @param {*} element The element that was disposed
      * @param {...*} args The arguments emitted by the listener
      */
-    this.emit('dispose', value, ...args);
+    this.emit('dispose', ...args);
     this.checkEnd();
   }
 
@@ -9560,24 +9556,31 @@ class MessageCollector extends Collector {
   /**
    * Handles a message for possible collection.
    * @param {Message} message The message that could be collected
-   * @returns {?{key: Snowflake, value: Message}}
+   * @returns {?Snowflake}
    * @private
    */
   collect(message) {
+    /**
+     * Emitted whenever a message is collected.
+     * @event MessageCollector#collect
+     * @param {Message} message The message that was collected
+     */
     if (message.channel.id !== this.channel.id) return null;
     this.received++;
-    return {
-      key: message.id,
-      value: message,
-    };
+    return message.id;
   }
 
   /**
    * Handles a message for possible disposal.
-   * @param {Message} message The message that could be disposed
-   * @returns {?string}
+   * @param {Message} message The message that could be disposed of
+   * @returns {?Snowflake}
    */
   dispose(message) {
+    /**
+     * Emitted whenever a message is disposed of.
+     * @event MessageCollector#dispose
+     * @param {Message} message The message that was disposed of
+     */
     return message.channel.id === this.channel.id ? message.id : null;
   }
 
@@ -10946,12 +10949,12 @@ class ReactionCollector extends Collector {
       this.client.removeListener(Events.MESSAGE_REACTION_REMOVE_ALL, this.empty);
     });
 
-    this.on('collect', (collected, reaction, user) => {
+    this.on('collect', (reaction, user) => {
       this.total++;
       this.users.set(user.id, user);
     });
 
-    this.on('dispose', (disposed, reaction, user) => {
+    this.on('remove', (reaction, user) => {
       this.total--;
       if (!this.collected.some(r => r.users.has(user.id))) this.users.delete(user.id);
     });
@@ -10960,23 +10963,33 @@ class ReactionCollector extends Collector {
   /**
    * Handles an incoming reaction for possible collection.
    * @param {MessageReaction} reaction The reaction to possibly collect
-   * @returns {?{key: Snowflake, value: MessageReaction}}
+   * @returns {?Snowflake|string}
    * @private
    */
   collect(reaction) {
+    /**
+     * Emitted whenever a reaction is collected.
+     * @event ReactionCollector#collect
+     * @param {MessageReaction} reaction The reaction that was collected
+     * @param {User} user The user that added the reaction
+     */
     if (reaction.message.id !== this.message.id) return null;
-    return {
-      key: ReactionCollector.key(reaction),
-      value: reaction,
-    };
+    return ReactionCollector.key(reaction);
   }
 
   /**
    * Handles a reaction deletion for possible disposal.
-   * @param {MessageReaction} reaction The reaction to possibly dispose
+   * @param {MessageReaction} reaction The reaction to possibly dispose of
+   * @param {User} user The user that removed the reaction
    * @returns {?Snowflake|string}
    */
-  dispose(reaction) {
+  dispose(reaction, user) {
+    /**
+     * Emitted whenever a reaction is disposed of.
+     * @event ReactionCollector#dispose
+     * @param {MessageReaction} reaction The reaction that was disposed of
+     * @param {User} user The user that removed the reaction
+     */
     if (reaction.message.id !== this.message.id) return null;
 
     /**
@@ -10985,8 +10998,11 @@ class ReactionCollector extends Collector {
      * is removed.
      * @event ReactionCollector#remove
      * @param {MessageReaction} reaction The reaction that was removed
+     * @param {User} user The user that removed the reaction
      */
-    if (this.collected.has(reaction)) this.emit('remove', reaction);
+    if (this.collected.has(ReactionCollector.key(reaction))) {
+      this.emit('remove', reaction, user);
+    }
     return reaction.count ? null : ReactionCollector.key(reaction);
   }
 
