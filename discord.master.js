@@ -13934,6 +13934,11 @@ class Client extends BaseClient {
    * Obtains an invite from Discord.
    * @param {InviteResolvable} invite Invite code or URL
    * @returns {Promise<Invite>}
+   * @example
+   * client.fetchInvite('https://discord.gg/bRCvFy9')
+   *  .then(invite => {
+   *    console.log(`Obtained invite with code: ${invite.code}`);
+   *  }).catch(console.error);
    */
   fetchInvite(invite) {
     const code = DataResolver.resolveInviteCode(invite);
@@ -13946,6 +13951,11 @@ class Client extends BaseClient {
    * @param {Snowflake} id ID of the webhook
    * @param {string} [token] Token for the webhook
    * @returns {Promise<Webhook>}
+   * @example
+   * client.fetchWebhook('id', 'token')
+   *  .then(webhook => {
+   *    console.log(`Obtained webhook with name: ${webhook.name}`);
+   *  }).catch(console.error);
    */
   fetchWebhook(id, token) {
     return this.api.webhooks(id, token).get().then(data => new Webhook(this, data));
@@ -13954,6 +13964,11 @@ class Client extends BaseClient {
   /**
    * Obtains the available voice regions from Discord.
    * @returns {Collection<string, VoiceRegion>}
+   * @example
+   * client.fetchVoiceRegions()
+   *  .then(regions => {
+   *    console.log(`Available regions are: ${regions.map(region => region.name).join(', ')}`);
+   *  }).catch(console.error);
    */
   fetchVoiceRegions() {
     return this.api.voice.regions.get().then(res => {
@@ -13970,6 +13985,10 @@ class Client extends BaseClient {
    * will be removed from the caches. The default is based on {@link ClientOptions#messageCacheLifetime}
    * @returns {number} Amount of messages that were removed from the caches,
    * or -1 if the message cache lifetime is unlimited
+   * @example
+   * // Remove all messages older than 1800 seconds from the messages cache
+   * const amount = client.sweepMessages(1800);
+   * console.log(`Successfully removed ${amount} messages from the cache.`);
    */
   sweepMessages(lifetime = this.options.messageCacheLifetime) {
     if (typeof lifetime !== 'number' || isNaN(lifetime)) {
@@ -14006,6 +14025,11 @@ class Client extends BaseClient {
    * Obtains the OAuth Application of the bot from Discord.
    * @param {Snowflake} [id='@me'] ID of application to fetch
    * @returns {Promise<ClientApplication>}
+   * @example
+   * client.fetchApplication('id')
+   *  .then(application => {
+   *    console.log(`Obtained application with name: ${application.name}`);
+   *  }).catch(console.error);
    */
   fetchApplication(id = '@me') {
     return this.api.oauth2.applications(id).get()
@@ -14021,7 +14045,7 @@ class Client extends BaseClient {
    * client.generateInvite(['SEND_MESSAGES', 'MANAGE_GUILD', 'MENTION_EVERYONE'])
    *   .then(link => {
    *     console.log(`Generated bot invite link: ${link}`);
-   *   });
+   *   }).catch(console.error);
    */
   generateInvite(permissions) {
     if (permissions) {
