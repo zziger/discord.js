@@ -9056,7 +9056,7 @@ module.exports = {
 /* 43 */
 /***/ (function(module, exports) {
 
-module.exports = ({"version":"12.0.0-dev","homepage":"https://github.com/hydrabolt/discord.js#readme"})
+module.exports = ({"version":"12.0.0-dev","homepage":"https://github.com/discordjs/discord.js#readme"})
 
 /***/ }),
 /* 44 */
