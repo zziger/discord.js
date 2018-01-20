@@ -304,6 +304,8 @@ exports.Events = {
   USER_GUILD_SETTINGS_UPDATE: 'clientUserGuildSettingsUpdate',
   PRESENCE_UPDATE: 'presenceUpdate',
   VOICE_STATE_UPDATE: 'voiceStateUpdate',
+  VOICE_BROADCAST_SUBSCRIBE: 'subscribe',
+  VOICE_BROADCAST_UNSUBSCRIBE: 'unsubscribe',
   TYPING_START: 'typingStart',
   TYPING_STOP: 'typingStop',
   DISCONNECT: 'disconnect',
@@ -3739,7 +3741,7 @@ class GuildChannel extends Channel {
         name: (data.name || this.name).trim(),
         topic: data.topic,
         nsfw: data.nsfw,
-        bitrate: data.bitrate || (this.bitrate ? this.bitrate * 1000 : undefined),
+        bitrate: data.bitrate || this.bitrate,
         user_limit: typeof data.userLimit !== 'undefined' ? data.userLimit : this.userLimit,
         parent_id: data.parentID,
         lock_permissions: data.lockPermissions,
@@ -11522,7 +11524,7 @@ class VoiceChannel extends GuildChannel {
      * The bitrate of this voice channel
      * @type {number}
      */
-    this.bitrate = data.bitrate * 0.001;
+    this.bitrate = data.bitrate;
 
     /**
      * The maximum amount of users allowed in this channel - 0 means unlimited.
@@ -11573,18 +11575,17 @@ class VoiceChannel extends GuildChannel {
   }
 
   /**
-   * Sets the bitrate of the channel (in kbps).
+   * Sets the bitrate of the channel.
    * @param {number} bitrate The new bitrate
    * @param {string} [reason] Reason for changing the channel's bitrate
    * @returns {Promise<VoiceChannel>}
    * @example
    * // Set the bitrate of a voice channel
-   * voiceChannel.setBitrate(48)
-   *   .then(vc => console.log(`Set bitrate to ${vc.bitrate}kbps for ${vc.name}`))
+   * voiceChannel.setBitrate(48000)
+   *   .then(vc => console.log(`Set bitrate to ${vc.bitrate}bps for ${vc.name}`))
    *   .catch(console.error);
    */
   setBitrate(bitrate, reason) {
-    bitrate *= 1000;
     return this.edit({ bitrate }, reason);
   }
 
@@ -13311,6 +13312,9 @@ const Messages = {
   VOICE_NO_BROWSER: 'Voice connections are not available in browsers.',
   VOICE_CONNECTION_ATTEMPTS_EXCEEDED: attempts => `Too many connection attempts (${attempts}).`,
   VOICE_JOIN_SOCKET_CLOSED: 'Tried to send join packet, but the WebSocket is not open.',
+  VOICE_PLAY_INTERFACE_NO_BROADCAST: 'A broadcast cannot be played in this context.',
+  VOICE_PLAY_INTERFACE_BAD_TYPE: 'Unknown stream type',
+  VOICE_PRISM_DEMUXERS_NEED_STREAM: 'To play a webm/ogg stream, you need to pass a ReadableStream.',
 
   OPUS_ENGINE_MISSING: 'Couldn\'t find an Opus engine.',
 
