@@ -3198,7 +3198,8 @@ class GuildMember extends Base {
       const clone = this._clone();
       data.user = this.user;
       clone._patch(data);
-      clone._frozenVoiceState = this.voiceState;
+      clone._frozenVoiceState = {};
+      Object.assign(clone._frozenVoiceState, this.voiceState);
       if (typeof data.mute !== 'undefined') clone._frozenVoiceState.mute = data.mute;
       if (typeof data.deaf !== 'undefined') clone._frozenVoiceState.mute = data.deaf;
       if (typeof data.channel_id !== 'undefined') clone._frozenVoiceState.channel_id = data.channel_id;
@@ -8456,7 +8457,6 @@ const DataResolver = __webpack_require__(8);
 
 /**
  * Stores guild emojis.
- * @private
  * @extends {DataStore}
  */
 class GuildEmojiStore extends DataStore {
@@ -8599,7 +8599,6 @@ const { Presence } = __webpack_require__(11);
 
 /**
  * Stores presences.
- * @private
  * @extends {DataStore}
  */
 class PresenceStore extends DataStore {
@@ -10280,7 +10279,6 @@ const Permissions = __webpack_require__(10);
 
 /**
  * Stores roles.
- * @private
  * @extends {DataStore}
  */
 class RoleStore extends DataStore {
@@ -10371,7 +10369,6 @@ const Permissions = __webpack_require__(10);
 
 /**
  * Stores guild channels.
- * @private
  * @extends {DataStore}
  */
 class GuildChannelStore extends DataStore {
@@ -12383,7 +12380,6 @@ const lruable = ['group', 'dm'];
 
 /**
  * Stores channels.
- * @private
  * @extends {DataStore}
  */
 class ChannelStore extends DataStore {
@@ -12489,7 +12485,6 @@ const Guild = __webpack_require__(19);
 
 /**
  * Stores guilds.
- * @private
  * @extends {DataStore}
  */
 class GuildStore extends DataStore {
@@ -12577,7 +12572,6 @@ const { TypeError } = __webpack_require__(4);
 /**
  * Stores the client presence and other presences.
  * @extends {PresenceStore}
- * @private
  */
 class ClientPresenceStore extends PresenceStore {
   constructor(...args) {
@@ -14650,13 +14644,15 @@ class WebSocketConnection extends EventEmitter {
 
     this.inflate.push(data, flush && zlib.Z_SYNC_FLUSH);
     if (!flush) return;
+    let packet;
     try {
-      const packet = WebSocket.unpack(this.inflate.result);
-      this.onPacket(packet);
-      if (this.client.listenerCount('raw')) this.client.emit('raw', packet);
+      packet = WebSocket.unpack(this.inflate.result);
     } catch (err) {
       this.client.emit('debug', err);
+      return;
     }
+    this.onPacket(packet);
+    if (this.client.listenerCount('raw')) this.client.emit('raw', packet);
   }
 
   /**
@@ -15288,7 +15284,6 @@ const MessageReaction = __webpack_require__(40);
 
 /**
  * Stores reactions.
- * @private
  * @extends {DataStore}
  */
 class ReactionStore extends DataStore {
