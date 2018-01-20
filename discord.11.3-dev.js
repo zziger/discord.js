@@ -3325,6 +3325,7 @@ class Channel {
      * * `group` - a Group DM channel
      * * `text` - a guild text channel
      * * `voice` - a guild voice channel
+     * * `category` - a guild category channel
      * @type {string}
      */
     this.type = null;
@@ -18696,6 +18697,10 @@ const GuildChannel = __webpack_require__(18);
  * @extends {GuildChannel}
  */
 class CategoryChannel extends GuildChannel {
+  constructor(guild, data) {
+    super(guild, data);
+    this.type = 'category';
+  }
   /**
    * The channels that are part of this category
    * @type {?Collection<Snowflake, GuildChannel>}
