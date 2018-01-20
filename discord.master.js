@@ -8454,7 +8454,6 @@ const DataResolver = __webpack_require__(8);
 
 /**
  * Stores guild emojis.
- * @private
  * @extends {DataStore}
  */
 class GuildEmojiStore extends DataStore {
@@ -8597,7 +8596,6 @@ const { Presence } = __webpack_require__(11);
 
 /**
  * Stores presences.
- * @private
  * @extends {DataStore}
  */
 class PresenceStore extends DataStore {
@@ -10278,7 +10276,6 @@ const Permissions = __webpack_require__(10);
 
 /**
  * Stores roles.
- * @private
  * @extends {DataStore}
  */
 class RoleStore extends DataStore {
@@ -10369,7 +10366,6 @@ const Permissions = __webpack_require__(10);
 
 /**
  * Stores guild channels.
- * @private
  * @extends {DataStore}
  */
 class GuildChannelStore extends DataStore {
@@ -12382,7 +12378,6 @@ const lruable = ['group', 'dm'];
 
 /**
  * Stores channels.
- * @private
  * @extends {DataStore}
  */
 class ChannelStore extends DataStore {
@@ -12488,7 +12483,6 @@ const Guild = __webpack_require__(19);
 
 /**
  * Stores guilds.
- * @private
  * @extends {DataStore}
  */
 class GuildStore extends DataStore {
@@ -12576,7 +12570,6 @@ const { TypeError } = __webpack_require__(4);
 /**
  * Stores the client presence and other presences.
  * @extends {PresenceStore}
- * @private
  */
 class ClientPresenceStore extends PresenceStore {
   constructor(...args) {
@@ -15284,7 +15277,6 @@ const MessageReaction = __webpack_require__(40);
 
 /**
  * Stores reactions.
- * @private
  * @extends {DataStore}
  */
 class ReactionStore extends DataStore {
