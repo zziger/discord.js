@@ -3367,12 +3367,7 @@ class GuildMember extends Base {
    */
   kick(reason) {
     return this.client.api.guilds(this.guild.id).members(this.user.id).delete({ reason })
-      .then(() =>
-        this.client.actions.GuildMemberRemove.handle({
-          guild_id: this.guild.id,
-          user: this.user,
-        }).member
-      );
+      .then(() => this);
   }
 
   /**
@@ -23096,8 +23091,8 @@ class GuildMemberRemoveAction extends Action {
     let member = null;
     if (guild) {
       member = guild.members.get(data.user.id);
+      guild.memberCount--;
       if (member) {
-        guild.memberCount--;
         guild.members.remove(member.id);
         if (client.status === Status.READY) client.emit(Events.GUILD_MEMBER_REMOVE, member);
       }
