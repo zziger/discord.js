@@ -1760,7 +1760,7 @@ const path = __webpack_require__(50);
 const fs = __webpack_require__(50);
 const snekfetch = __webpack_require__(30);
 const Util = __webpack_require__(5);
-const { Error, TypeError } = __webpack_require__(4);
+const { Error: DiscordError, TypeError } = __webpack_require__(4);
 const { browser } = __webpack_require__(0);
 
 /**
@@ -1857,7 +1857,7 @@ class DataResolver {
           const file = browser ? resource : path.resolve(resource);
           fs.stat(file, (err, stats) => {
             if (err) return reject(err);
-            if (!stats || !stats.isFile()) return reject(new Error('FILE_NOT_FOUND', file));
+            if (!stats || !stats.isFile()) return reject(new DiscordError('FILE_NOT_FOUND', file));
             fs.readFile(file, (err2, data) => {
               if (err2) reject(err2); else resolve(data);
             });
@@ -5579,7 +5579,7 @@ const Snowflake = __webpack_require__(9);
 const Permissions = __webpack_require__(10);
 const Util = __webpack_require__(5);
 const Base = __webpack_require__(7);
-const { TypeError } = __webpack_require__(4);
+const { Error, TypeError } = __webpack_require__(4);
 
 /**
  * Represents a role on Discord.
@@ -8452,6 +8452,7 @@ const DataStore = __webpack_require__(6);
 const GuildEmoji = __webpack_require__(24);
 const ReactionEmoji = __webpack_require__(37);
 const DataResolver = __webpack_require__(8);
+const { TypeError } = __webpack_require__(4);
 
 /**
  * Stores guild emojis.
@@ -10048,7 +10049,7 @@ const DataStore = __webpack_require__(6);
 const GuildMember = __webpack_require__(15);
 const { Events, OPCodes } = __webpack_require__(0);
 const Collection = __webpack_require__(2);
-const { Error } = __webpack_require__(4);
+const { Error, TypeError } = __webpack_require__(4);
 
 /**
  * Stores guild members.
@@ -10558,6 +10559,7 @@ const MessageEmbed = __webpack_require__(27);
 const MessageAttachment = __webpack_require__(28);
 const { browser } = __webpack_require__(0);
 const Util = __webpack_require__(5);
+const { RangeError } = __webpack_require__(4);
 
 // eslint-disable-next-line complexity
 module.exports = async function createMessage(channel, options) {
@@ -11088,6 +11090,8 @@ module.exports = ReactionCollector;
 /***/ (function(module, exports, __webpack_require__) {
 
 const DataStore = __webpack_require__(6);
+const { Error } = __webpack_require__(4);
+
 /**
  * A data store to store User models who reacted to a MessageReaction.
  * @extends {DataStore}
