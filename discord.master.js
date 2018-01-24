@@ -3063,7 +3063,7 @@ class GuildMember extends Base {
   get manageable() {
     if (this.user.id === this.guild.ownerID) return false;
     if (this.user.id === this.client.user.id) return false;
-    return this.guild.me.highestRole.comparePositionTo(this.highestRole) > 0;
+    return this.guild.me.roles.highest.comparePositionTo(this.roles.highest) > 0;
   }
 
   /**
@@ -3388,7 +3388,7 @@ class Role extends Base {
     if (this.managed) return false;
     const clientMember = this.guild.member(this.client.user);
     if (!clientMember.permissions.has(Permissions.FLAGS.MANAGE_ROLES)) return false;
-    return clientMember.highestRole.comparePositionTo(this) > 0;
+    return clientMember.roles.highest.comparePositionTo(this) > 0;
   }
 
   /**
