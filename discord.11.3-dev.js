@@ -9672,7 +9672,7 @@ class Webhook {
    * @param {StringResolvable} content The content to send
    * @param {WebhookMessageOptions|Attachment|RichEmbed} [options] The options to provide
    * can also be just a RichEmbed or Attachment
-   * @returns {Promise<Message|Message[]>}
+   * @returns {Promise<Message|Message[]|Object|Object[]>}
    * @example
    * // Send a message
    * webhook.send('hello!')
@@ -17964,7 +17964,10 @@ class RESTMethods {
           content,
           tts,
           embeds,
-        }, files).then(resolve, reject);
+        }, files).then(data => {
+          if (!this.client.channels) resolve(data);
+          else resolve(this.client.actions.MessageCreate.handle(data).message);
+        }, reject);
       }
     });
   }
