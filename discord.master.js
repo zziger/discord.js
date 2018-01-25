@@ -1298,21 +1298,20 @@ class Util {
    * @param {SplitOptions} [options] Options controlling the behaviour of the split
    * @returns {string|string[]}
    */
-  static splitMessage(text, { maxLength = 1950, char = '\n', prepend = '', append = '' } = {}) {
+  static splitMessage(text, { maxLength = 2000, char = '\n', prepend = '', append = '' } = {}) {
     if (text.length <= maxLength) return text;
     const splitText = text.split(char);
     if (splitText.length === 1) throw new RangeError('SPLIT_MAX_LEN');
-    const messages = [''];
-    let msg = 0;
-    for (let i = 0; i < splitText.length; i++) {
-      if (messages[msg].length + splitText[i].length + 1 > maxLength) {
-        messages[msg] += append;
-        messages.push(prepend);
-        msg++;
+    const messages = [];
+    let msg = '';
+    for (const chunk of splitText) {
+      if (msg && (msg + char + chunk + append).length > maxLength) {
+        messages.push(msg + append);
+        msg = prepend;
       }
-      messages[msg] += (messages[msg].length > 0 && messages[msg] !== prepend ? char : '') + splitText[i];
+      msg += (msg && msg !== prepend ? char : '') + chunk;
     }
-    return messages.filter(m => m);
+    return messages.concat(msg).filter(m => m);
   }
 
   /**
@@ -1405,7 +1404,7 @@ class Util {
       if (!has(given, key) || given[key] === undefined) {
         given[key] = def[key];
       } else if (given[key] === Object(given[key])) {
-        given[key] = this.mergeDefault(def[key], given[key]);
+        given[key] = Util.mergeDefault(def[key], given[key]);
       }
     }
 
@@ -1419,7 +1418,7 @@ class Util {
    * @private
    */
   static convertToBuffer(ab) {
-    if (typeof ab === 'string') ab = this.str2ab(ab);
+    if (typeof ab === 'string') ab = Util.str2ab(ab);
     return Buffer.from(ab);
   }
 
@@ -12674,7 +12673,7 @@ class ClientPresenceStore extends PresenceStore {
       since: since != null ? since : null, // eslint-disable-line eqeqeq
       status: status || this.clientPresence.status,
       game: activity ? {
-        type: typeof activity.type === 'number' ? activity.type : ActivityTypes.indexOf(activity.type),
+        type: activity.type,
         name: activity.name,
         url: activity.url,
         details: activity.details || undefined,
@@ -12692,6 +12691,15 @@ class ClientPresenceStore extends PresenceStore {
         instance: activity.instance || undefined,
       } : null,
     };
+
+    if ((status || afk || since) && !activity) {
+      packet.game = this.clientPresence.activity;
+    }
+
+    if (packet.game) {
+      packet.game.type = typeof packet.game.type === 'number' ?
+        packet.game.type : ActivityTypes.indexOf(packet.game.type);
+    }
 
     this.clientPresence.patch(packet);
     this.client.ws.send({ op: OPCodes.STATUS_UPDATE, d: packet });
