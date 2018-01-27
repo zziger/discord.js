@@ -7156,13 +7156,6 @@ class Message extends Base {
     this.author = this.client.users.add(data.author, !data.webhook_id);
 
     /**
-     * Represents the author of the message as a guild member.
-     * Only available if the message comes from a guild where the author is still a member
-     * @type {?GuildMember}
-     */
-    this.member = this.guild ? this.guild.member(this.author) || null : null;
-
-    /**
      * Whether or not this message is pinned
      * @type {boolean}
      */
@@ -7300,6 +7293,15 @@ class Message extends Base {
       'mentions_roles' in data ? data.mentions_roles : this.mentions.roles,
       'mention_everyone' in data ? data.mention_everyone : this.mentions.everyone
     );
+  }
+
+  /**
+   * Represents the author of the message as a guild member.
+   * Only available if the message comes from a guild where the author is still a member
+   * @type {?GuildMember}
+   */
+  get member() {
+    return this.guild ? this.guild.member(this.author) || null : null;
   }
 
   /**
