@@ -2862,7 +2862,7 @@ class GuildMember extends Base {
     this.guild = guild;
 
     /**
-     * The user that this guild member instance Represents
+     * The user that this guild member instance represents
      * @type {User}
      */
     this.user = {};
@@ -3162,7 +3162,7 @@ class GuildMember extends Base {
   }
 
   /**
-   * Mute/unmutes a user.
+   * Mutes/unmutes a user.
    * @param {boolean} mute Whether or not the member should be muted
    * @param {string} [reason] Reason for muting or unmuting
    * @returns {Promise<GuildMember>}
@@ -3172,7 +3172,7 @@ class GuildMember extends Base {
   }
 
   /**
-   * Deafen/undeafens a user.
+   * Deafens/undeafens a user.
    * @param {boolean} deaf Whether or not the member should be deafened
    * @param {string} [reason] Reason for deafening or undeafening
    * @returns {Promise<GuildMember>}
@@ -7299,6 +7299,7 @@ class Message extends Base {
    * Represents the author of the message as a guild member.
    * Only available if the message comes from a guild where the author is still a member
    * @type {?GuildMember}
+   * @readonly
    */
   get member() {
     return this.guild ? this.guild.member(this.author) || null : null;
@@ -11716,7 +11717,7 @@ const GuildChannel = __webpack_require__(17);
  */
 class CategoryChannel extends GuildChannel {
   /**
-   * Channels that are part of this category
+   * Channels that are a part of this category
    * @type {?Collection<Snowflake, GuildChannel>}
    * @readonly
    */
