@@ -6815,9 +6815,9 @@ class MessageEmbed {
   addField(name, value, inline = false) {
     if (this.fields.length >= 25) throw new RangeError('EMBED_FIELD_COUNT');
     name = Util.resolveString(name);
-    if (!String(name) || name.length > 256) throw new RangeError('EMBED_FIELD_NAME');
+    if (!String(name)) throw new RangeError('EMBED_FIELD_NAME');
     value = Util.resolveString(value);
-    if (!String(value) || value.length > 1024) throw new RangeError('EMBED_FIELD_VALUE');
+    if (!String(value)) throw new RangeError('EMBED_FIELD_VALUE');
     this.fields.push({ name, value, inline });
     return this;
   }
@@ -6875,7 +6875,6 @@ class MessageEmbed {
    */
   setDescription(description) {
     description = Util.resolveString(description);
-    if (description.length > 2048) throw new RangeError('EMBED_DESCRIPTION');
     this.description = description;
     return this;
   }
@@ -6888,7 +6887,6 @@ class MessageEmbed {
    */
   setFooter(text, iconURL) {
     text = Util.resolveString(text);
-    if (text.length > 2048) throw new RangeError('EMBED_FOOTER_TEXT');
     this.footer = { text, iconURL };
     return this;
   }
@@ -6930,7 +6928,6 @@ class MessageEmbed {
    */
   setTitle(title) {
     title = Util.resolveString(title);
-    if (title.length > 256) throw new RangeError('EMBED_TITLE');
     this.title = title;
     return this;
   }
@@ -13373,11 +13370,8 @@ const Messages = {
   COLOR_CONVERT: 'Unable to convert color to a number.',
 
   EMBED_FIELD_COUNT: 'MessageEmbeds may not exceed 25 fields.',
-  EMBED_FIELD_NAME: 'MessageEmbed field names may not exceed 256 characters or be empty.',
-  EMBED_FIELD_VALUE: 'MessageEmbed field values may not exceed 1024 characters or be empty.',
-  EMBED_DESCRIPTION: 'MessageEmbed descriptions may not exceed 2048 characters.',
-  EMBED_FOOTER_TEXT: 'MessageEmbed footer text may not exceed 2048 characters.',
-  EMBED_TITLE: 'MessageEmbed titles may not exceed 256 characters.',
+  EMBED_FIELD_NAME: 'MessageEmbed field names may not be empty.',
+  EMBED_FIELD_VALUE: 'MessageEmbed field values may not be empty.',
 
   FILE_NOT_FOUND: file => `File could not be found: ${file}`,
 
