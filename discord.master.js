@@ -2916,6 +2916,12 @@ class GuildMember extends Base {
     if (data.roles) this.roles._patch(data.roles);
   }
 
+  _clone() {
+    const clone = super._clone();
+    clone.roles = this.roles.clone();
+    return clone;
+  }
+
   get voiceState() {
     return this._frozenVoiceState || this.guild.voiceStates.get(this.id) || {};
   }
@@ -10308,6 +10314,12 @@ class GuildMemberRoleStore extends DataStore {
         if (role) super.set(role.id, role);
       }
     }
+  }
+
+  clone() {
+    const clone = new this.constructor(this.member);
+    clone._patch(this.keyArray());
+    return clone;
   }
 
   /**
