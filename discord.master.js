@@ -432,6 +432,15 @@ exports.ActivityTypes = [
   'WATCHING',
 ];
 
+exports.ActivityFlags = {
+  INSTANCE: 1 << 0,
+  JOIN: 1 << 1,
+  SPECTATE: 1 << 2,
+  JOIN_REQUEST: 1 << 3,
+  SYNC: 1 << 4,
+  PLAY: 1 << 5,
+};
+
 exports.ExplicitContentFilterTypes = [
   'DISABLED',
   'NON_FRIENDS',
@@ -2181,7 +2190,7 @@ module.exports = Permissions;
 /* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const { ActivityTypes } = __webpack_require__(0);
+const { ActivityTypes, ActivityFlags } = __webpack_require__(0);
 
 /**
  * Represents a user's presence.
@@ -2301,6 +2310,17 @@ class Activity {
      * @type {?RichPresenceAssets}
      */
     this.assets = data.assets ? new RichPresenceAssets(this, data.assets) : null;
+
+    this.syncID = data.sync_id;
+    this._flags = data.flags;
+  }
+
+  get flags() {
+    const flags = [];
+    for (const [name, flag] of Object.entries(ActivityFlags)) {
+      if ((this._flags & flag) === flag) flags.push(name);
+    }
+    return flags;
   }
 
   /**
@@ -2384,6 +2404,9 @@ class RichPresenceAssets {
    */
   largeImageURL({ format, size } = {}) {
     if (!this.largeImage) return null;
+    if (/^spotify:/.test(this.largeImage)) {
+      return `https://i.scdn.co/image/${this.largeImage.slice(8)}`;
+    }
     return this.activity.presence.client.rest.cdn
       .AppAsset(this.activity.applicationID, this.largeImage, { format, size });
   }
