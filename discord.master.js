@@ -96,6 +96,7 @@ const browser = exports.browser = typeof window !== 'undefined';
  * corresponding websocket events
  * @property {number} [restTimeOffset=500] Extra time in millseconds to wait before continuing to make REST
  * requests (higher values will reduce rate-limiting errors on bad connections)
+ * @property {PresenceData} [presence] Presence data to use upon login
  * @property {WSEventType[]} [disabledEvents] An array of disabled websocket events. Events in this array will not be
  * processed, potentially resulting in performance improvements for larger bots. Only disable events you are
  * 100% certain you don't need, as many are important, but not obviously so. The safest one to disable with the
@@ -117,6 +118,7 @@ exports.DefaultOptions = {
   restWsBridgeTimeout: 5000,
   disabledEvents: [],
   restTimeOffset: 500,
+  presence: {},
 
   /**
    * WebSocket options (these are left as snake_case to match the API)
@@ -12712,7 +12714,14 @@ class ClientPresenceStore extends PresenceStore {
     });
   }
 
-  async setClientPresence({ status, since, afk, activity }) { // eslint-disable-line complexity
+  async setClientPresence(presence) {
+    const packet = await this._parse(presence);
+    this.clientPresence.patch(packet);
+    this.client.ws.send({ op: OPCodes.STATUS_UPDATE, d: packet });
+    return this.clientPresence;
+  }
+
+  async _parse({ status, since, afk, activity }) { // eslint-disable-line complexity
     const applicationID = activity && (activity.application ? activity.application.id || activity.application : null);
     let assets = new Collection();
     if (activity) {
@@ -12759,9 +12768,7 @@ class ClientPresenceStore extends PresenceStore {
         packet.game.type : ActivityTypes.indexOf(packet.game.type);
     }
 
-    this.clientPresence.patch(packet);
-    this.client.ws.send({ op: OPCodes.STATUS_UPDATE, d: packet });
-    return this.clientPresence;
+    return packet;
   }
 }
 
@@ -14369,7 +14376,10 @@ class ClientManager {
     this.client.emit(Events.DEBUG, `Authenticated using token ${token}`);
     this.client.token = token;
     const timeout = this.client.setTimeout(() => reject(new Error('WS_CONNECTION_TIMEOUT')), 1000 * 300);
-    this.client.api.gateway.get().then(res => {
+    this.client.api.gateway.get().then(async res => {
+      if (this.client.options.presence != null) { // eslint-disable-line eqeqeq
+        this.client.options.ws.presence = await this.client.presences._parse(this.client.options.presence);
+      }
       const gateway = `${res.url}/`;
       this.client.emit(Events.DEBUG, `Using gateway ${gateway}`);
       this.client.ws.connect(gateway);
