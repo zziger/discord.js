@@ -964,22 +964,24 @@ class Collection extends Map {
   /**
    * Creates an ordered array of the values of this collection, and caches it internally. The array will only be
    * reconstructed if an item is added to or removed from the collection, or if you change the length of the array
-   * itself. If you don't want this caching behaviour, use `Array.from(collection.values())` instead.
+   * itself. If you don't want this caching behaviour, use `[...collection.values()]` or
+   * `Array.from(collection.values())` instead.
    * @returns {Array}
    */
   array() {
-    if (!this._array || this._array.length !== this.size) this._array = Array.from(this.values());
+    if (!this._array || this._array.length !== this.size) this._array = [...this.values()];
     return this._array;
   }
 
   /**
    * Creates an ordered array of the keys of this collection, and caches it internally. The array will only be
    * reconstructed if an item is added to or removed from the collection, or if you change the length of the array
-   * itself. If you don't want this caching behaviour, use `Array.from(collection.keys())` instead.
+   * itself. If you don't want this caching behaviour, use `[...collection.keys()]` or
+   * `Array.from(collection.keys())` instead.
    * @returns {Array}
    */
   keyArray() {
-    if (!this._keyArray || this._keyArray.length !== this.size) this._keyArray = Array.from(this.keys());
+    if (!this._keyArray || this._keyArray.length !== this.size) this._keyArray = [...this.keys()];
     return this._keyArray;
   }
 
@@ -1344,7 +1346,7 @@ class Collection extends Map {
    * @returns {Collection}
    */
   sort(compareFunction = (x, y) => +(x > y) || +(x === y) - 1) {
-    return new Collection(Array.from(this.entries()).sort((a, b) => compareFunction(a[1], b[1], a[0], b[0])));
+    return new Collection([...this.entries()].sort((a, b) => compareFunction(a[1], b[1], a[0], b[0])));
   }
 }
 
@@ -19024,7 +19026,7 @@ class ReadyHandler extends AbstractHandler {
     client.readyAt = new Date();
     client.users.set(clientUser.id, clientUser);
 
-    for (const guild of data.guilds) client.dataManager.newGuild(guild);
+    for (const guild of data.guilds) if (!client.guilds.has(guild.id)) client.dataManager.newGuild(guild);
     for (const privateDM of data.private_channels) client.dataManager.newChannel(privateDM);
 
     for (const relation of data.relationships) {
