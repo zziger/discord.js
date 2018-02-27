@@ -5449,7 +5449,7 @@ class TextBasedChannel {
    * @example
    * // Send a remote file
    * channel.send({
-   *   files: ['https://cdn.discordapp.com/icons/222078108977594368/6e1019b3179d71046e463a75915e7244.png?size=2048'],
+   *   files: ['https://cdn.discordapp.com/icons/222078108977594368/6e1019b3179d71046e463a75915e7244.png?size=2048']
    * })
    *   .then(console.log)
    *   .catch(console.error);
@@ -5458,8 +5458,8 @@ class TextBasedChannel {
    * channel.send({
    *   files: [{
    *     attachment: 'entire/path/to/file.jpg',
-   *     name: 'file.jpg',
-   *   }],
+   *     name: 'file.jpg'
+   *   }]
    * })
    *   .then(console.log)
    *   .catch(console.error);
@@ -5468,13 +5468,13 @@ class TextBasedChannel {
    * channel.send('This is an embed', {
    *   embed: {
    *     thumbnail: {
-   *          url: 'attachment://file.jpg',
-   *       },
+   *          url: 'attachment://file.jpg'
+   *       }
    *    },
    *    files: [{
    *       attachment: 'entire/path/to/file.jpg',
-   *       name: 'file.jpg',
-   *    }],
+   *       name: 'file.jpg'
+   *    }]
    * })
    *   .then(console.log)
    *   .catch(console.error);
@@ -7129,7 +7129,7 @@ class GuildMember {
    * // Set a member's nickname and clear their roles
    * message.member.edit({
    *   nick: 'Cool Name',
-   *   roles: [],
+   *   roles: []
    * })
    *   .then(console.log)
    *   .catch(console.error);
@@ -8943,7 +8943,7 @@ class Guild {
    * @param {string|number} [options.type] Only show entries involving this action type
    * @returns {Promise<GuildAuditLogs>}
    * @example
-   * // Output an audit log entry
+   * // Output audit log entries
    * guild.fetchAuditLogs()
    *   .then(audit => console.log(audit.entries.first()))
    *   .catch(console.error);
@@ -9039,7 +9039,7 @@ class Guild {
    * @example
    * guild.search({
    *   content: 'discord.js',
-   *   before: '2016-11-17',
+   *   before: '2016-11-17'
    * })
    *   .then(res => {
    *     const hit = res.messages[0].find(m => m.hit).content;
@@ -9831,7 +9831,7 @@ class Webhook {
    * @example
    * // Send a remote file
    * webhook.send({
-   *   files: ['https://cdn.discordapp.com/icons/222078108977594368/6e1019b3179d71046e463a75915e7244.png?size=2048'],
+   *   files: ['https://cdn.discordapp.com/icons/222078108977594368/6e1019b3179d71046e463a75915e7244.png?size=2048']
    * })
    *   .then(console.log)
    *   .catch(console.error);
@@ -9840,8 +9840,8 @@ class Webhook {
    * webhook.send({
    *   files: [{
    *     attachment: 'entire/path/to/file.jpg',
-   *     name: 'file.jpg',
-   *   }],
+   *     name: 'file.jpg'
+   *   }]
    * })
    *   .then(console.log)
    *   .catch(console.error);
@@ -9851,12 +9851,12 @@ class Webhook {
    *   embeds: [{
    *     thumbnail: {
    *          url: 'attachment://file.jpg'
-   *       },
+   *       }
    *    }],
    *    files: [{
    *       attachment: 'entire/path/to/file.jpg',
-   *       name: 'file.jpg',
-   *    }],
+   *       name: 'file.jpg'
+   *    }]
    * })
    *   .then(console.log)
    *   .catch(console.error);
@@ -15777,7 +15777,7 @@ class ClientUser extends User {
    * // Create a Group DM with a token provided from OAuth
    * client.user.createGroupDM([{
    *   user: '66564597481480192',
-   *   accessToken: token,
+   *   accessToken: token
    * }])
    *   .then(console.log)
    *   .catch(console.error);
