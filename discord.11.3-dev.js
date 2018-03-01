@@ -12848,8 +12848,8 @@ class RESTManager {
   }
 
   destroy() {
-    for (const handlerID in this.handlers) {
-      this.handlers[handlerID].destroy();
+    for (const handler of Object.values(this.handlers)) {
+      if (handler.destroy) handler.destroy();
     }
   }
 
@@ -14975,7 +14975,9 @@ class WebSocketConnection extends EventEmitter {
     this.ratelimit = {
       queue: [],
       remaining: 120,
-      resetTime: -1,
+      total: 120,
+      time: 60e3,
+      resetTimer: null,
     };
     this.connect(gateway);
 
@@ -15083,10 +15085,10 @@ class WebSocketConnection extends EventEmitter {
     if (this.ratelimit.remaining === 0) return;
     if (this.ratelimit.queue.length === 0) return;
     if (this.ratelimit.remaining === 120) {
-      this.ratelimit.resetTimer = setTimeout(() => {
-        this.ratelimit.remaining = 120;
+      this.ratelimit.resetTimer = this.client.setTimeout(() => {
+        this.ratelimit.remaining = 60;
         this.processQueue();
-      }, 120e3); // eslint-disable-line
+      }, this.ratelimit.time);
     }
     while (this.ratelimit.remaining > 0) {
       const item = this.ratelimit.queue.shift();
@@ -17022,7 +17024,7 @@ class Client extends EventEmitter {
   }
 
   /**
-   * How long it has been since the client last entered the `READY` state
+   * How long it has been since the client last entered the `READY` state in milliseconds
    * @type {?number}
    * @readonly
    */
