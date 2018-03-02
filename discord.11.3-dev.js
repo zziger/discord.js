@@ -5806,16 +5806,16 @@ class TextBasedChannel {
    *   .catch(console.error);
    */
   bulkDelete(messages, filterOld = false) {
-    if (messages instanceof Array || messages instanceof Collection) {
-      let messageIDs = messages instanceof Collection ? messages.keyArray() : messages.map(m => m.id);
+    if (messages instanceof Collection) messages = [...messages.values()];
+    if (messages instanceof Array) {
       if (filterOld) {
-        messageIDs = messageIDs.filter(id => Date.now() - Snowflake.deconstruct(id).date.getTime() < 1209600000);
+        messages = messages.filter(m => Date.now() - Snowflake.deconstruct(m.id).date.getTime() < 1209600000);
       }
-      if (messageIDs.length === 0) return new Collection();
-      if (messageIDs.length === 1) {
-        return this.fetchMessage(messageIDs[0]).then(msg => msg.delete().then(() => new Collection([[msg.id, msg]])));
+      if (messages.length === 0) return new Collection();
+      if (messages.length === 1) {
+        return messages[0].delete().then(() => new Collection([[messages[0].id, messages[0]]]));
       }
-      return this.client.rest.methods.bulkDeleteMessages(this, messageIDs, filterOld);
+      return this.client.rest.methods.bulkDeleteMessages(this, messages);
     }
     if (!isNaN(messages)) return this.fetchMessages({ limit: messages }).then(msgs => this.bulkDelete(msgs, filterOld));
     throw new TypeError('The messages must be an Array, Collection, or number.');
@@ -17507,7 +17507,6 @@ const Permissions = __webpack_require__(6);
 const Constants = __webpack_require__(0);
 const Endpoints = Constants.Endpoints;
 const Collection = __webpack_require__(3);
-const Snowflake = __webpack_require__(5);
 const Util = __webpack_require__(4);
 
 const User = __webpack_require__(9);
@@ -17675,18 +17674,13 @@ class RESTMethods {
     return this.rest.makeRequest('post', Endpoints.Guild(guild).ack, true).then(() => guild);
   }
 
-  bulkDeleteMessages(channel, messages, filterOld) {
-    if (filterOld) {
-      messages = messages.filter(id =>
-        Date.now() - Snowflake.deconstruct(id).date.getTime() < 1209600000
-      );
-    }
+  bulkDeleteMessages(channel, messages) {
     return this.rest.makeRequest('post', Endpoints.Channel(channel).messages.bulkDelete, true, {
-      messages,
+      messages: messages.map(m => m.id),
     }).then(() =>
       this.client.actions.MessageDeleteBulk.handle({
         channel_id: channel.id,
-        ids: messages,
+        messages,
       }).messages
     );
   }
@@ -20598,17 +20592,21 @@ const Constants = __webpack_require__(0);
 
 class MessageDeleteBulkAction extends Action {
   handle(data) {
-    const client = this.client;
-    const channel = client.channels.get(data.channel_id);
-
-    const ids = data.ids;
     const messages = new Collection();
-    for (const id of ids) {
-      const message = channel.messages.get(id);
-      if (message) messages.set(message.id, message);
+
+    if (!data.messages) {
+      const channel = this.client.channels.get(data.channel_id);
+      for (const id of data.ids) {
+        const message = channel.messages.get(id);
+        if (message) messages.set(message.id, message);
+      }
+    } else {
+      for (const msg of data.messages) {
+        messages.set(msg.id, msg);
+      }
     }
 
-    if (messages.size > 0) client.emit(Constants.Events.MESSAGE_BULK_DELETE, messages);
+    if (messages.size > 0) this.client.emit(Constants.Events.MESSAGE_BULK_DELETE, messages);
     return { messages };
   }
 }
