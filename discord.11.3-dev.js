@@ -8913,7 +8913,7 @@ class Guild {
 
   /**
    * Fetch all webhooks for the guild.
-   * @returns {Collection<Snowflake, Webhook>}
+   * @returns {Promise<Collection<Snowflake, Webhook>>}
    * @example
    * // Fetch webhooks
    * guild.fetchWebhooks()
@@ -8926,7 +8926,7 @@ class Guild {
 
   /**
    * Fetch available voice regions.
-   * @returns {Collection<string, VoiceRegion>}
+   * @returns {Promise<Collection<string, VoiceRegion>>}
    * @example
    * // Fetch voice regions
    * guild.fetchVoiceRegions()
@@ -9168,7 +9168,7 @@ class Guild {
    * @example
    * // Edit the guild AFK channel
    * guild.setAFKChannel(channel)
-   *  .then(g => console.log(`Updated guild AFK channel to ${g.afkChannel}`))
+   *  .then(g => console.log(`Updated guild AFK channel to ${g.afkChannel.name}`))
    *  .catch(console.error);
    */
   setAFKChannel(afkChannel, reason) {
