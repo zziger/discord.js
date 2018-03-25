@@ -6780,7 +6780,7 @@ const TextBasedChannel = __webpack_require__(14);
 const Role = __webpack_require__(8);
 const Permissions = __webpack_require__(6);
 const Collection = __webpack_require__(3);
-const { Presence } = __webpack_require__(10);
+const Presence = __webpack_require__(10).Presence;
 const util = __webpack_require__(7);
 
 /**
