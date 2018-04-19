@@ -6112,7 +6112,7 @@ class Message {
     const clone = Util.cloneObject(this);
     this._edits.unshift(clone);
 
-    this.editedTimestamp = new Date(data.edited_timestamp).getTime();
+    if ('editedTimestamp' in data) this.editedTimestamp = new Date(data.edited_timestamp).getTime();
     if ('content' in data) this.content = data.content;
     if ('pinned' in data) this.pinned = data.pinned;
     if ('tts' in data) this.tts = data.tts;
@@ -13404,10 +13404,11 @@ class MessageEmbed {
 
   /**
    * The hexadecimal version of the embed color, with a leading hash
-   * @type {string}
+   * @type {?string}
    * @readonly
    */
   get hexColor() {
+    if (!this.color) return null;
     let col = this.color.toString(16);
     while (col.length < 6) col = `0${col}`;
     return `#${col}`;
@@ -17671,12 +17672,13 @@ class RESTMethods {
   }
 
   bulkDeleteMessages(channel, messages) {
+    const ids = messages.map(m => m.id);
     return this.rest.makeRequest('post', Endpoints.Channel(channel).messages.bulkDelete, true, {
-      messages: messages.map(m => m.id),
+      messages: ids,
     }).then(() =>
       this.client.actions.MessageDeleteBulk.handle({
         channel_id: channel.id,
-        messages,
+        ids,
       }).messages
     );
   }
@@ -18020,15 +18022,17 @@ class RESTMethods {
       if (member._roles.includes(role.id)) return resolve(member);
 
       const listener = (oldMember, newMember) => {
-        if (!oldMember._roles.includes(role.id) && newMember._roles.includes(role.id)) {
+        if (newMember.id === member.id && !oldMember._roles.includes(role.id) && newMember._roles.includes(role.id)) {
           this.client.removeListener(Constants.Events.GUILD_MEMBER_UPDATE, listener);
           resolve(newMember);
         }
       };
 
       this.client.on(Constants.Events.GUILD_MEMBER_UPDATE, listener);
-      const timeout = this.client.setTimeout(() =>
-        this.client.removeListener(Constants.Events.GUILD_MEMBER_UPDATE, listener), 10e3);
+      const timeout = this.client.setTimeout(() => {
+        this.client.removeListener(Constants.Events.GUILD_MEMBER_UPDATE, listener);
+        reject(new Error('Adding the role timeout out.'));
+      }, 10e3);
 
       return this.rest.makeRequest('put', Endpoints.Member(member).Role(role.id), true, undefined, undefined, reason)
         .catch(err => {
@@ -18044,15 +18048,17 @@ class RESTMethods {
       if (!member._roles.includes(role.id)) return resolve(member);
 
       const listener = (oldMember, newMember) => {
-        if (oldMember._roles.includes(role.id) && !newMember._roles.includes(role.id)) {
+        if (newMember.id === member.id && oldMember._roles.includes(role.id) && !newMember._roles.includes(role.id)) {
           this.client.removeListener(Constants.Events.GUILD_MEMBER_UPDATE, listener);
           resolve(newMember);
         }
       };
 
       this.client.on(Constants.Events.GUILD_MEMBER_UPDATE, listener);
-      const timeout = this.client.setTimeout(() =>
-        this.client.removeListener(Constants.Events.GUILD_MEMBER_UPDATE, listener), 10e3);
+      const timeout = this.client.setTimeout(() => {
+        this.client.removeListener(Constants.Events.GUILD_MEMBER_UPDATE, listener);
+        reject(new Error('Removing the role timeout out.'));
+      }, 10e3);
 
       return this.rest.makeRequest('delete', Endpoints.Member(member).Role(role.id), true, undefined, undefined, reason)
         .catch(err => {
@@ -20589,16 +20595,15 @@ const Constants = __webpack_require__(0);
 class MessageDeleteBulkAction extends Action {
   handle(data) {
     const messages = new Collection();
+    const channel = this.client.channels.get(data.channel_id);
 
-    if (!data.messages) {
-      const channel = this.client.channels.get(data.channel_id);
+    if (channel) {
       for (const id of data.ids) {
         const message = channel.messages.get(id);
-        if (message) messages.set(message.id, message);
-      }
-    } else {
-      for (const msg of data.messages) {
-        messages.set(msg.id, msg);
+        if (message) {
+          messages.set(message.id, message);
+          channel.messages.delete(id);
+        }
       }
     }
 
