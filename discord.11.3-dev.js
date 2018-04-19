@@ -8727,7 +8727,7 @@ class Guild {
 
   /**
    * The owner of the guild
-   * @type {GuildMember}
+   * @type {?GuildMember}
    * @readonly
    */
   get owner() {
