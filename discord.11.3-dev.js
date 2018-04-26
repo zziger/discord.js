@@ -2814,6 +2814,11 @@ class Role {
    * role.setPermissions(['KICK_MEMBERS', 'BAN_MEMBERS'])
    *   .then(updated => console.log(`Updated permissions to ${updated.permissions.bitfield}`))
    *   .catch(console.error);
+   * @example
+   * // Remove all permissions from a role
+   * role.setPermissions(0)
+   *   .then(updated => console.log(`Updated permissions to ${updated.permissions.bitfield}`))
+   *   .catch(console.error);
    */
   setPermissions(permissions, reason) {
     return this.edit({ permissions }, reason);
@@ -7762,6 +7767,18 @@ class GuildChannel extends Channel {
   }
 
   /**
+   * Whether the channel is manageable by the client user
+   * @type {boolean}
+   * @readonly
+   */
+  get manageable() {
+    if (this.client.user.id === this.guild.ownerID) return true;
+    const permissions = this.permissionsFor(this.client.user);
+    if (!permissions) return false;
+    return permissions.has([Permissions.FLAGS.MANAGE_CHANNELS, Permissions.FLAGS.VIEW_CHANNEL]);
+  }
+
+  /**
    * Whether the channel is muted
    * <warn>This is only available when using a user account.</warn>
    * @type {?boolean}
@@ -8593,6 +8610,12 @@ class Guild {
      * @type {number}
      */
     this.explicitContentFilter = data.explicit_content_filter;
+
+    /**
+     * The required MFA level for the guild
+     * @type {number}
+     */
+    this.mfaLevel = data.mfa_level;
 
     /**
      * The timestamp the client user joined the guild at
@@ -12254,7 +12277,7 @@ class Collector extends EventEmitter {
 
   /**
    * Return a promise that resolves with the next collected element;
-   * rejects with collected elements if the collector finishes without receving a next element
+   * rejects with collected elements if the collector finishes without receiving a next element
    * @type {Promise}
    * @readonly
    */
@@ -12426,7 +12449,7 @@ class Invite {
     if (data.inviter) {
       /**
        * The user who created this invite
-       * @type {User}
+       * @type {?User}
        */
       this.inviter = this.client.dataManager.newUser(data.inviter);
     }
@@ -14728,6 +14751,11 @@ class TextChannel extends GuildChannel {
   /**
    * Fetch all webhooks for the channel.
    * @returns {Promise<Collection<Snowflake, Webhook>>}
+   * @example
+   * // Fetch webhooks
+   * channel.fetchWebhooks()
+   *   .then(hooks => console.log(`This channel has ${hooks.size} hooks`))
+   *   .catch(console.error);
    */
   fetchWebhooks() {
     return this.client.rest.methods.getChannelWebhooks(this);
@@ -15760,9 +15788,7 @@ class ClientUser extends User {
    *   .catch(console.error);
    * @example
    * // Fetch mentions from a guild
-   * client.user.fetchMentions({
-   *   guild: '222078108977594368'
-   * })
+   * client.user.fetchMentions({ guild: '222078108977594368' })
    *   .then(console.log)
    *   .catch(console.error);
    */
@@ -17199,6 +17225,10 @@ class Client extends EventEmitter {
    * Obtains an invite from Discord.
    * @param {InviteResolvable} invite Invite code or URL
    * @returns {Promise<Invite>}
+   * @example
+   * client.fetchInvite('https://discord.gg/bRCvFy9')
+   *   .then(invite => console.log(`Obtained invite with code: ${invite.code}`)
+   *   .catch(console.error);
    */
   fetchInvite(invite) {
     const code = this.resolver.resolveInviteCode(invite);
@@ -17210,6 +17240,10 @@ class Client extends EventEmitter {
    * @param {Snowflake} id ID of the webhook
    * @param {string} [token] Token for the webhook
    * @returns {Promise<Webhook>}
+   * @example
+   * client.fetchWebhook('id', 'token')
+   *   .then(webhook => console.log(`Obtained webhook with name: ${webhook.name}`))
+   *   .catch(console.error);
    */
   fetchWebhook(id, token) {
     return this.rest.methods.getWebhook(id, token);
@@ -17218,6 +17252,10 @@ class Client extends EventEmitter {
   /**
    * Obtains the available voice regions from Discord.
    * @returns {Collection<string, VoiceRegion>}
+   * @example
+   * client.fetchVoiceRegions()
+   *   .then(regions => console.log(`Available regions are: ${regions.map(region => region.name).join(', ')}`))
+   *   .catch(console.error);
    */
   fetchVoiceRegions() {
     return this.rest.methods.fetchVoiceRegions();
@@ -17263,6 +17301,9 @@ class Client extends EventEmitter {
    * Obtains the OAuth Application of the bot from Discord.
    * @param {Snowflake} [id='@me'] ID of application to fetch
    * @returns {Promise<OAuth2Application>}
+   * client.fetchApplication('id')
+   *   .then(application => console.log(`Obtained application with name: ${application.name}`)
+   *   .catch(console.error);
    */
   fetchApplication(id = '@me') {
     return this.rest.methods.getApplication(id);
