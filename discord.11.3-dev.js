@@ -1600,11 +1600,18 @@ class SnowflakeUtil {
   /**
    * Generates a Discord snowflake.
    * <info>This hardcodes the worker ID as 1 and the process ID as 0.</info>
+   * @param {number|Date} [timestamp=Date.now()] Timestamp or date of the snowflake to generate
    * @returns {Snowflake} The generated snowflake
    */
-  static generate() {
+  static generate(timestamp = Date.now()) {
+    if (timestamp instanceof Date) timestamp = timestamp.getTime();
+    if (typeof timestamp !== 'number' || isNaN(timestamp)) {
+      throw new TypeError(
+        `"timestamp" argument must be a number (received ${isNaN(timestamp) ? 'NaN' : typeof timestamp})`
+      );
+    }
     if (INCREMENT >= 4095) INCREMENT = 0;
-    const BINARY = `${pad((Date.now() - EPOCH).toString(2), 42)}0000100000${pad((INCREMENT++).toString(2), 12)}`;
+    const BINARY = `${pad((timestamp - EPOCH).toString(2), 42)}0000100000${pad((INCREMENT++).toString(2), 12)}`;
     return Long.fromString(BINARY, 2).toString();
   }
 
@@ -5509,7 +5516,7 @@ class TextBasedChannel {
     if (options.files) {
       for (let i = 0; i < options.files.length; i++) {
         let file = options.files[i];
-        if (typeof file === 'string' || Buffer.isBuffer(file)) file = { attachment: file };
+        if (!file || typeof file === 'string' || Buffer.isBuffer(file)) file = { attachment: file };
         if (!file.name) {
           if (typeof file.attachment === 'string') {
             file.name = path.basename(file.attachment);
@@ -12011,7 +12018,7 @@ class ClientDataResolver {
           });
         }
       });
-    } else if (resource.pipe && typeof resource.pipe === 'function') {
+    } else if (resource && resource.pipe && typeof resource.pipe === 'function') {
       return new Promise((resolve, reject) => {
         const buffers = [];
         resource.once('error', reject);
