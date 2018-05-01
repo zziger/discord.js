@@ -15768,7 +15768,7 @@ class ClientUser extends User {
     if (!name) return this.setPresence({ game: null });
     return this.setPresence({
       game: { name, type, url },
-    });
+    }).then(clientUser => clientUser.presence);
   }
 
   /**
