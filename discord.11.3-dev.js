@@ -12934,7 +12934,7 @@ module.exports = GroupDMChannel;
  * @extends Error
  */
 class DiscordAPIError extends Error {
-  constructor(path, error) {
+  constructor(path, error, method) {
     super();
     const flattened = this.constructor.flattenErrors(error.errors || error).join('\n');
     this.name = 'DiscordAPIError';
@@ -12951,6 +12951,12 @@ class DiscordAPIError extends Error {
      * @type {number}
      */
     this.code = error.code;
+
+    /**
+     * The HTTP method used for the request
+     * @type {string}
+     */
+    this.method = method;
   }
 
   /**
@@ -18770,7 +18776,8 @@ class SequentialRequestHandler extends RequestHandler {
             this.queue.unshift(item);
             this.restManager.client.setTimeout(resolve, 1e3 + this.restManager.client.options.restTimeOffset);
           } else {
-            item.reject(err.status >= 400 && err.status < 500 ? new DiscordAPIError(res.request.path, res.body) : err);
+            item.reject(err.status >= 400 && err.status < 500 ?
+              new DiscordAPIError(res.request.path, res.body, res.request.method) : err);
             resolve(err);
           }
         } else {
@@ -18856,7 +18863,8 @@ class BurstRequestHandler extends RequestHandler {
             this.resetTimeout = null;
           }, 1e3 + this.client.options.restTimeOffset);
         } else {
-          item.reject(err.status >= 400 && err.status < 500 ? new DiscordAPIError(res.request.path, res.body) : err);
+          item.reject(err.status >= 400 && err.status < 500 ?
+            new DiscordAPIError(res.request.path, res.body, res.request.method) : err);
           this.handle();
         }
       } else {
