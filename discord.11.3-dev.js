@@ -756,6 +756,7 @@ exports.Colors = {
   GREEN: 0x2ECC71,
   BLUE: 0x3498DB,
   PURPLE: 0x9B59B6,
+  LUMINOUS_VIVID_PINK: 0xE91E63,
   GOLD: 0xF1C40F,
   ORANGE: 0xE67E22,
   RED: 0xE74C3C,
@@ -765,6 +766,7 @@ exports.Colors = {
   DARK_GREEN: 0x1F8B4C,
   DARK_BLUE: 0x206694,
   DARK_PURPLE: 0x71368A,
+  DARK_VIVID_PINK: 0xAD1457,
   DARK_GOLD: 0xC27C0E,
   DARK_ORANGE: 0xA84300,
   DARK_RED: 0x992D22,
@@ -1811,6 +1813,10 @@ class Permissions {
     return this.missing(permissions, !explicit);
   }
 
+  valueOf() {
+    return this.bitfield;
+  }
+
   /**
    * Data that can be resolved to give a permission number. This can be:
    * * A string (see {@link Permissions.FLAGS})
@@ -2718,8 +2724,8 @@ class Role {
   /**
    * Compares this role's position to another role's.
    * @param {Role} role Role to compare to this one
-   * @returns {number} Negative number if the this role's position is lower (other role's is higher),
-   * positive number if the this one is higher (other's is lower), 0 if equal
+   * @returns {number} Negative number if this role's position is lower (other role's is higher),
+   * positive number if this one is higher (other's is lower), 0 if equal
    */
   comparePositionTo(role) {
     return this.constructor.comparePositions(this, role);
@@ -12008,25 +12014,20 @@ class ClientDataResolver {
     if (this.client.browser && resource instanceof ArrayBuffer) return Promise.resolve(convertToBuffer(resource));
 
     if (typeof resource === 'string') {
+      if (/^https?:\/\//.test(resource)) {
+        return snekfetch.get(resource).then(res => res.body instanceof Buffer ? res.body : Buffer.from(res.text));
+      }
       return new Promise((resolve, reject) => {
-        if (/^https?:\/\//.test(resource)) {
-          snekfetch.get(resource)
-            .end((err, res) => {
-              if (err) return reject(err);
-              if (!(res.body instanceof Buffer)) return reject(new TypeError('The response body isn\'t a Buffer.'));
-              return resolve(res.body);
-            });
-        } else {
-          const file = path.resolve(resource);
-          fs.stat(file, (err, stats) => {
-            if (err) return reject(err);
-            if (!stats || !stats.isFile()) return reject(new Error(`The file could not be found: ${file}`));
-            fs.readFile(file, (err2, data) => {
-              if (err2) reject(err2); else resolve(data);
-            });
-            return null;
+        const file = path.resolve(resource);
+        fs.stat(file, (err, stats) => {
+          if (err) return reject(err);
+          if (!stats || !stats.isFile()) return reject(new Error(`The file could not be found: ${file}`));
+          fs.readFile(file, (err2, data) => {
+            if (err2) reject(err2);
+            else resolve(data);
           });
-        }
+          return null;
+        });
       });
     } else if (resource && resource.pipe && typeof resource.pipe === 'function') {
       return new Promise((resolve, reject) => {
@@ -12073,6 +12074,7 @@ class ClientDataResolver {
    *   'GREEN',
    *   'BLUE',
    *   'PURPLE',
+   *   'LUMINOUS_VIVID_PINK',
    *   'GOLD',
    *   'ORANGE',
    *   'RED',
@@ -12083,6 +12085,7 @@ class ClientDataResolver {
    *   'DARK_GREEN',
    *   'DARK_BLUE',
    *   'DARK_PURPLE',
+   *   'DARK_VIVID_PINK',
    *   'DARK_GOLD',
    *   'DARK_ORANGE',
    *   'DARK_RED',
@@ -15847,7 +15850,7 @@ class ClientUser extends User {
 
   /**
    * Creates a guild.
-   * <warn>This is only available when using a user account.</warn>
+   * <warn>This is only available to bots in less than 10 guilds and user accounts.</warn>
    * @param {string} name The name of the guild
    * @param {string} [region] The region for the server
    * @param {BufferResolvable|Base64Resolvable} [icon=null] The icon for the guild
@@ -18202,7 +18205,7 @@ class RESTMethods {
     const data = {};
     data.name = _data.name || role.name;
     data.position = typeof _data.position !== 'undefined' ? _data.position : role.position;
-    data.color = this.client.resolver.resolveColor(_data.color || role.color);
+    data.color = _data.color === null ? null : this.client.resolver.resolveColor(_data.color || role.color);
     data.hoist = typeof _data.hoist !== 'undefined' ? _data.hoist : role.hoist;
     data.mentionable = typeof _data.mentionable !== 'undefined' ? _data.mentionable : role.mentionable;
 
