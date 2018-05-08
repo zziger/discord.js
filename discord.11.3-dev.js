@@ -6559,6 +6559,7 @@ module.exports = Message;
 
 const Constants = __webpack_require__(0);
 const Collection = __webpack_require__(3);
+const Permissions = __webpack_require__(6);
 const Snowflake = __webpack_require__(5);
 
 /**
@@ -6633,6 +6634,15 @@ class Emoji {
    */
   get createdAt() {
     return new Date(this.createdTimestamp);
+  }
+
+  /**
+   * Whether the moej is deletable by the client user
+   * @type {boolean}
+   * @readonly
+   */
+  get deletable() {
+    return !this.managed && this.guild.me.hasPermission(Permissions.FLAGS.MANAGE_EMOJIS);
   }
 
   /**
