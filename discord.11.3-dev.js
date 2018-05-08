@@ -13875,6 +13875,7 @@ class ReactionCollector extends Collector {
      */
     this.total = 0;
 
+    this.client.setMaxListeners(this.client.getMaxListeners() + 1);
     this.client.on('messageReactionAdd', this.listener);
   }
 
@@ -13913,6 +13914,7 @@ class ReactionCollector extends Collector {
    */
   cleanup() {
     this.client.removeListener('messageReactionAdd', this.listener);
+    this.client.setMaxListeners(this.client.getMaxListeners() - 1);
   }
 }
 
@@ -13958,6 +13960,7 @@ class MessageCollector extends Collector {
      */
     this.received = 0;
 
+    this.client.setMaxListeners(this.client.getMaxListeners() + 1);
     this.client.on('message', this.listener);
 
     // For backwards compatibility (remove in v12)
@@ -14017,6 +14020,7 @@ class MessageCollector extends Collector {
   cleanup() {
     this.removeListener('collect', this._reEmitter);
     this.client.removeListener('message', this.listener);
+    this.client.setMaxListeners(this.client.getMaxListeners() - 1);
   }
 }
 
