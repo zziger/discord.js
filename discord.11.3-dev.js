@@ -1183,6 +1183,21 @@ class Collection extends Map {
   }
 
   /**
+   * Removes entries that satisfy the provided filter function.
+   * @param {Function} fn Function used to test (should return a boolean)
+   * @param {Object} [thisArg] Value to use as `this` when executing function
+   * @returns {number} The number of removed entries
+   */
+  sweep(fn, thisArg) {
+    if (thisArg) fn = fn.bind(thisArg);
+    const previousSize = this.size;
+    for (const [key, val] of this) {
+      if (fn(val, key, this)) this.delete(key);
+    }
+    return previousSize - this.size;
+  }
+
+  /**
    * Identical to
    * [Array.filter()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/filter),
    * but returns a Collection instead of an Array.
@@ -1288,6 +1303,24 @@ class Collection extends Map {
   }
 
   /**
+   * Identical to
+   * [Map.forEach()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map/forEach),
+   * but returns the collection instead of undefined.
+   * @param {Function} fn Function to execute for each element
+   * @param {*} [thisArg] Value to use as `this` when executing function
+   * @returns {Collection}
+   * @example
+   * collection
+   *  .tap(user => console.log(user.username))
+   *  .filter(user => user.bot)
+   *  .tap(user => console.log(user.username));
+   */
+  tap(fn, thisArg) {
+    this.forEach(fn, thisArg);
+    return this;
+  }
+
+  /**
    * Creates an identical shallow copy of this collection.
    * @returns {Collection}
    * @example const newColl = someColl.clone();
@@ -1359,7 +1392,7 @@ module.exports = Collection;
 /* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(Buffer) {const snekfetch = __webpack_require__(24);
+/* WEBPACK VAR INJECTION */(function(Buffer) {const snekfetch = __webpack_require__(25);
 const Constants = __webpack_require__(0);
 const ConstantsHttp = Constants.DefaultOptions.http;
 
@@ -1573,7 +1606,7 @@ module.exports = Util;
 /* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Long = __webpack_require__(25);
+const Long = __webpack_require__(26);
 
 // Discord epoch (2015-01-01T00:00:00.000Z)
 const EPOCH = 1420070400000;
@@ -3299,6 +3332,14 @@ class Game {
    */
   get streaming() {
     return this.type === 1;
+  }
+
+  /**
+   * When concatenated with a string, this automatically returns the game's name instead of the Game object.
+   * @returns {string}
+   */
+  toString() {
+    return this.name;
   }
 
   /**
@@ -5387,7 +5428,7 @@ process.umask = function() { return 0; };
 /* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(Buffer) {const path = __webpack_require__(26);
+/* WEBPACK VAR INJECTION */(function(Buffer) {const path = __webpack_require__(27);
 const Message = __webpack_require__(15);
 const MessageCollector = __webpack_require__(44);
 const Collection = __webpack_require__(3);
@@ -6716,6 +6757,15 @@ class Emoji {
   }
 
   /**
+   * Fetches the author for this emoji
+   * @returns {Promise<User>}
+   */
+  fetchAuthor() {
+    return this.client.rest.makeRequest('get', Constants.Endpoints.Guild(this.guild).Emoji(this.id), true)
+      .then(emoji => this.client.dataManager.newUser(emoji.user));
+  }
+
+  /**
    * Add a role to the list of roles that can use this emoji.
    * @param {Role} role The role to add
    * @returns {Promise<Emoji>}
@@ -7061,16 +7111,23 @@ class GuildMember {
   }
 
   /**
+   * Whether the member is manageable in terms of role hierarchy by the client user
+   * @type {boolean}
+   * @readonly
+   */
+  get manageable() {
+    if (this.user.id === this.guild.ownerID) return false;
+    if (this.user.id === this.client.user.id) return false;
+    return this.guild.me.highestRole.comparePositionTo(this.highestRole) > 0;
+  }
+
+  /**
    * Whether the member is kickable by the client user
    * @type {boolean}
    * @readonly
    */
   get kickable() {
-    if (this.user.id === this.guild.ownerID) return false;
-    if (this.user.id === this.client.user.id) return false;
-    const clientMember = this.guild.member(this.client.user);
-    if (!clientMember.permissions.has(Permissions.FLAGS.KICK_MEMBERS)) return false;
-    return clientMember.highestRole.comparePositionTo(this.highestRole) > 0;
+    return this.manageable && this.guild.me.permissions.has(Permissions.FLAGS.KICK_MEMBERS);
   }
 
   /**
@@ -7079,11 +7136,7 @@ class GuildMember {
    * @readonly
    */
   get bannable() {
-    if (this.user.id === this.guild.ownerID) return false;
-    if (this.user.id === this.client.user.id) return false;
-    const clientMember = this.guild.member(this.client.user);
-    if (!clientMember.permissions.has(Permissions.FLAGS.BAN_MEMBERS)) return false;
-    return clientMember.highestRole.comparePositionTo(this.highestRole) > 0;
+    return this.manageable && this.guild.me.permissions.has(Permissions.FLAGS.BAN_MEMBERS);
   }
 
   /**
@@ -7413,6 +7466,7 @@ const PermissionOverwrites = __webpack_require__(50);
 const Permissions = __webpack_require__(6);
 const Collection = __webpack_require__(3);
 const Constants = __webpack_require__(0);
+const Invite = __webpack_require__(23);
 
 /**
  * Represents a guild channel (i.e. text channels and voice channels).
@@ -7621,6 +7675,7 @@ class GuildChannel extends Channel {
    * @property {string} [name] The name of the channel
    * @property {number} [position] The position of the channel
    * @property {string} [topic] The topic of the text channel
+   * @property {boolean} [nsfw] Whether the channel is NSFW
    * @property {number} [bitrate] The bitrate of the voice channel
    * @property {number} [userLimit] The user limit of the channel
    */
@@ -7738,6 +7793,24 @@ class GuildChannel extends Channel {
   clone(name = this.name, withPermissions = true, withTopic = true, reason) {
     return this.guild.createChannel(name, this.type, withPermissions ? this.permissionOverwrites : [], reason)
       .then(channel => withTopic ? channel.setTopic(this.topic) : channel);
+  }
+
+  /**
+   * Fetches a collection of invites to this guild channel.
+   * Resolves with a collection mapping invites by their codes.
+   * @returns {Promise<Collection<string, Invite>>}
+   */
+  fetchInvites() {
+    return this.client.rest.makeRequest('get', Constants.Endpoints.Channel(this.id).invites, true)
+      .then(data => {
+        const invites = new Collection();
+        for (let invite of data) {
+          invite = new Invite(this.client, invite);
+          invites.set(invite.code, invite);
+        }
+
+        return invites;
+      });
   }
 
   /**
@@ -8277,7 +8350,7 @@ class RichEmbed {
    * @returns {RichEmbed} This embed
    */
   setColor(color) {
-    if (!ClientDataResolver) ClientDataResolver = __webpack_require__(27);
+    if (!ClientDataResolver) ClientDataResolver = __webpack_require__(28);
     this.color = ClientDataResolver.resolveColor(color);
     return this;
   }
@@ -8475,7 +8548,7 @@ module.exports = Attachment;
 /***/ (function(module, exports, __webpack_require__) {
 
 const util = __webpack_require__(7);
-const Long = __webpack_require__(25);
+const Long = __webpack_require__(26);
 const User = __webpack_require__(9);
 const Role = __webpack_require__(8);
 const Emoji = __webpack_require__(16);
@@ -8740,6 +8813,15 @@ class Guild {
    */
   get joinedAt() {
     return new Date(this.joinedTimestamp);
+  }
+
+  /**
+   * If this guild is verified
+   * @type {boolean}
+   * @readonly
+   */
+  get verified() {
+    return this.features.includes('VERIFIED');
   }
 
   /**
@@ -9775,7 +9857,176 @@ module.exports = Guild;
 /* 23 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(Buffer) {const path = __webpack_require__(26);
+const PartialGuild = __webpack_require__(45);
+const PartialGuildChannel = __webpack_require__(46);
+const Constants = __webpack_require__(0);
+
+/**
+ * Represents an invitation to a guild channel.
+ * <warn>The only guaranteed properties are `code`, `guild` and `channel`. Other properties can be missing.</warn>
+ */
+class Invite {
+  constructor(client, data) {
+    /**
+     * The client that instantiated the invite
+     * @name Invite#client
+     * @type {Client}
+     * @readonly
+     */
+    Object.defineProperty(this, 'client', { value: client });
+
+    this.setup(data);
+  }
+
+  setup(data) {
+    /**
+     * The guild the invite is for. If this guild is already known, this will be a guild object. If the guild is
+     * unknown, this will be a PartialGuild object
+     * @type {Guild|PartialGuild}
+     */
+    this.guild = this.client.guilds.get(data.guild.id) || new PartialGuild(this.client, data.guild);
+
+    /**
+     * The code for this invite
+     * @type {string}
+     */
+    this.code = data.code;
+
+    /**
+     * The approximate number of online members of the guild this invite is for
+     * @type {number}
+     */
+    this.presenceCount = data.approximate_presence_count;
+
+    /**
+     * The approximate total number of members of the guild this invite is for
+     * @type {number}
+     */
+    this.memberCount = data.approximate_member_count;
+
+    /**
+     * The number of text channels the guild this invite goes to has
+     * @type {number}
+     */
+    this.textChannelCount = data.guild.text_channel_count;
+
+    /**
+     * The number of voice channels the guild this invite goes to has
+     * @type {number}
+     */
+    this.voiceChannelCount = data.guild.voice_channel_count;
+
+    /**
+     * Whether or not this invite is temporary
+     * @type {boolean}
+     */
+    this.temporary = data.temporary;
+
+    /**
+     * The maximum age of the invite, in seconds
+     * @type {?number}
+     */
+    this.maxAge = data.max_age;
+
+    /**
+     * How many times this invite has been used
+     * @type {number}
+     */
+    this.uses = data.uses;
+
+    /**
+     * The maximum uses of this invite
+     * @type {number}
+     */
+    this.maxUses = data.max_uses;
+
+    if (data.inviter) {
+      /**
+       * The user who created this invite
+       * @type {?User}
+       */
+      this.inviter = this.client.dataManager.newUser(data.inviter);
+    }
+
+    /**
+     * The channel the invite is for. If this channel is already known, this will be a GuildChannel object.
+     * If the channel is unknown, this will be a PartialGuildChannel object.
+     * @type {GuildChannel|PartialGuildChannel}
+     */
+    this.channel = this.client.channels.get(data.channel.id) || new PartialGuildChannel(this.client, data.channel);
+
+    /**
+     * The timestamp the invite was created at
+     * @type {number}
+     */
+    this.createdTimestamp = new Date(data.created_at).getTime();
+  }
+
+  /**
+   * The time the invite was created
+   * @type {Date}
+   * @readonly
+   */
+  get createdAt() {
+    return new Date(this.createdTimestamp);
+  }
+
+  /**
+   * The timestamp the invite will expire at
+   * @type {number}
+   * @readonly
+   */
+  get expiresTimestamp() {
+    return this.createdTimestamp + (this.maxAge * 1000);
+  }
+
+  /**
+   * The time the invite will expire
+   * @type {Date}
+   * @readonly
+   */
+  get expiresAt() {
+    return new Date(this.expiresTimestamp);
+  }
+
+  /**
+   * The URL to the invite
+   * @type {string}
+   * @readonly
+   */
+  get url() {
+    return Constants.Endpoints.inviteLink(this.code);
+  }
+
+  /**
+   * Deletes this invite.
+   * @param {string} [reason] Reason for deleting this invite
+   * @returns {Promise<Invite>}
+   */
+  delete(reason) {
+    return this.client.rest.methods.deleteInvite(this, reason);
+  }
+
+  /**
+   * When concatenated with a string, this automatically concatenates the invite's URL instead of the object.
+   * @returns {string}
+   * @example
+   * // Logs: Invite: https://discord.gg/A1b2C3
+   * console.log(`Invite: ${invite}`);
+   */
+  toString() {
+    return this.url;
+  }
+}
+
+module.exports = Invite;
+
+
+/***/ }),
+/* 24 */
+/***/ (function(module, exports, __webpack_require__) {
+
+/* WEBPACK VAR INJECTION */(function(Buffer) {const path = __webpack_require__(27);
 const Util = __webpack_require__(4);
 const Attachment = __webpack_require__(21);
 const RichEmbed = __webpack_require__(20);
@@ -10078,7 +10329,7 @@ module.exports = Webhook;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(12).Buffer))
 
 /***/ }),
-/* 24 */
+/* 25 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -10198,7 +10449,7 @@ const brew = __WEBPACK_IMPORTED_MODULE_0__index_js___default.a.brew;
 
 
 /***/ }),
-/* 25 */
+/* 26 */
 /***/ (function(module, exports) {
 
 module.exports = Long;
@@ -11527,7 +11778,7 @@ Long.fromBytesBE = function fromBytesBE(bytes, unsigned) {
 
 
 /***/ }),
-/* 26 */
+/* 27 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(process) {// Copyright Joyent, Inc. and other Node contributors.
@@ -11758,12 +12009,12 @@ var substr = 'ab'.substr(-1) === 'b'
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(13)))
 
 /***/ }),
-/* 27 */
+/* 28 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(Buffer) {const path = __webpack_require__(26);
+/* WEBPACK VAR INJECTION */(function(Buffer) {const path = __webpack_require__(27);
 const fs = __webpack_require__(41);
-const snekfetch = __webpack_require__(24);
+const snekfetch = __webpack_require__(25);
 
 const Constants = __webpack_require__(0);
 const convertToBuffer = __webpack_require__(4).convertToBuffer;
@@ -11773,7 +12024,7 @@ const Guild = __webpack_require__(22);
 const Channel = __webpack_require__(11);
 const GuildMember = __webpack_require__(17);
 const Emoji = __webpack_require__(16);
-const ReactionEmoji = __webpack_require__(28);
+const ReactionEmoji = __webpack_require__(29);
 const Role = __webpack_require__(8);
 
 /**
@@ -12140,7 +12391,7 @@ module.exports = ClientDataResolver;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(12).Buffer))
 
 /***/ }),
-/* 28 */
+/* 29 */
 /***/ (function(module, exports) {
 
 /**
@@ -12195,7 +12446,7 @@ module.exports = ReactionEmoji;
 
 
 /***/ }),
-/* 29 */
+/* 30 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Collection = __webpack_require__(3);
@@ -12377,175 +12628,6 @@ class Collector extends EventEmitter {
 }
 
 module.exports = Collector;
-
-
-/***/ }),
-/* 30 */
-/***/ (function(module, exports, __webpack_require__) {
-
-const PartialGuild = __webpack_require__(45);
-const PartialGuildChannel = __webpack_require__(46);
-const Constants = __webpack_require__(0);
-
-/**
- * Represents an invitation to a guild channel.
- * <warn>The only guaranteed properties are `code`, `guild` and `channel`. Other properties can be missing.</warn>
- */
-class Invite {
-  constructor(client, data) {
-    /**
-     * The client that instantiated the invite
-     * @name Invite#client
-     * @type {Client}
-     * @readonly
-     */
-    Object.defineProperty(this, 'client', { value: client });
-
-    this.setup(data);
-  }
-
-  setup(data) {
-    /**
-     * The guild the invite is for. If this guild is already known, this will be a guild object. If the guild is
-     * unknown, this will be a PartialGuild object
-     * @type {Guild|PartialGuild}
-     */
-    this.guild = this.client.guilds.get(data.guild.id) || new PartialGuild(this.client, data.guild);
-
-    /**
-     * The code for this invite
-     * @type {string}
-     */
-    this.code = data.code;
-
-    /**
-     * The approximate number of online members of the guild this invite is for
-     * @type {number}
-     */
-    this.presenceCount = data.approximate_presence_count;
-
-    /**
-     * The approximate total number of members of the guild this invite is for
-     * @type {number}
-     */
-    this.memberCount = data.approximate_member_count;
-
-    /**
-     * The number of text channels the guild this invite goes to has
-     * @type {number}
-     */
-    this.textChannelCount = data.guild.text_channel_count;
-
-    /**
-     * The number of voice channels the guild this invite goes to has
-     * @type {number}
-     */
-    this.voiceChannelCount = data.guild.voice_channel_count;
-
-    /**
-     * Whether or not this invite is temporary
-     * @type {boolean}
-     */
-    this.temporary = data.temporary;
-
-    /**
-     * The maximum age of the invite, in seconds
-     * @type {?number}
-     */
-    this.maxAge = data.max_age;
-
-    /**
-     * How many times this invite has been used
-     * @type {number}
-     */
-    this.uses = data.uses;
-
-    /**
-     * The maximum uses of this invite
-     * @type {number}
-     */
-    this.maxUses = data.max_uses;
-
-    if (data.inviter) {
-      /**
-       * The user who created this invite
-       * @type {?User}
-       */
-      this.inviter = this.client.dataManager.newUser(data.inviter);
-    }
-
-    /**
-     * The channel the invite is for. If this channel is already known, this will be a GuildChannel object.
-     * If the channel is unknown, this will be a PartialGuildChannel object.
-     * @type {GuildChannel|PartialGuildChannel}
-     */
-    this.channel = this.client.channels.get(data.channel.id) || new PartialGuildChannel(this.client, data.channel);
-
-    /**
-     * The timestamp the invite was created at
-     * @type {number}
-     */
-    this.createdTimestamp = new Date(data.created_at).getTime();
-  }
-
-  /**
-   * The time the invite was created
-   * @type {Date}
-   * @readonly
-   */
-  get createdAt() {
-    return new Date(this.createdTimestamp);
-  }
-
-  /**
-   * The timestamp the invite will expire at
-   * @type {number}
-   * @readonly
-   */
-  get expiresTimestamp() {
-    return this.createdTimestamp + (this.maxAge * 1000);
-  }
-
-  /**
-   * The time the invite will expire
-   * @type {Date}
-   * @readonly
-   */
-  get expiresAt() {
-    return new Date(this.expiresTimestamp);
-  }
-
-  /**
-   * The URL to the invite
-   * @type {string}
-   * @readonly
-   */
-  get url() {
-    return Constants.Endpoints.inviteLink(this.code);
-  }
-
-  /**
-   * Deletes this invite.
-   * @param {string} [reason] Reason for deleting this invite
-   * @returns {Promise<Invite>}
-   */
-  delete(reason) {
-    return this.client.rest.methods.deleteInvite(this, reason);
-  }
-
-  /**
-   * When concatenated with a string, this automatically concatenates the invite's URL instead of the object.
-   * @returns {string}
-   * @example
-   * // Logs: Invite: https://discord.gg/A1b2C3
-   * console.log(`Invite: ${invite}`);
-   */
-  toString() {
-    return this.url;
-  }
-}
-
-module.exports = Invite;
 
 
 /***/ }),
@@ -13739,7 +13821,7 @@ module.exports = MessageEmbed;
 
 const Collection = __webpack_require__(3);
 const Emoji = __webpack_require__(16);
-const ReactionEmoji = __webpack_require__(28);
+const ReactionEmoji = __webpack_require__(29);
 
 /**
  * Represents a reaction to a message.
@@ -13837,7 +13919,7 @@ module.exports = MessageReaction;
 /* 43 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Collector = __webpack_require__(29);
+const Collector = __webpack_require__(30);
 const Collection = __webpack_require__(3);
 
 /**
@@ -13928,7 +14010,7 @@ module.exports = ReactionCollector;
 /* 44 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Collector = __webpack_require__(29);
+const Collector = __webpack_require__(30);
 const util = __webpack_require__(7);
 
 /**
@@ -14143,8 +14225,8 @@ module.exports = PartialGuildChannel;
 
 const Collection = __webpack_require__(3);
 const Snowflake = __webpack_require__(5);
-const Webhook = __webpack_require__(23);
-const Invite = __webpack_require__(30);
+const Webhook = __webpack_require__(24);
+const Invite = __webpack_require__(23);
 
 /**
  * The target type of an entry, e.g. `GUILD`. Here are the available types:
@@ -14792,6 +14874,16 @@ class TextChannel extends GuildChannel {
   }
 
   /**
+   * Sets whether this channel is flagged as NSFW.
+   * @param {boolean} nsfw Whether the channel should be considered NSFW
+   * @param {string} [reason] Reason for changing the channel's NSFW flag
+   * @returns {Promise<TextChannel>}
+   */
+  setNSFW(nsfw, reason) {
+    return this.edit({ nsfw }, reason);
+  }
+
+  /**
    * Create a webhook for the channel.
    * @param {string} name The name of the webhook
    * @param {BufferResolvable|Base64Resolvable} [avatar] The avatar for the webhook
@@ -14814,26 +14906,26 @@ class TextChannel extends GuildChannel {
 
   // These are here only for documentation purposes - they are implemented by TextBasedChannel
   /* eslint-disable no-empty-function */
-  send() {}
-  sendMessage() {}
-  sendEmbed() {}
-  sendFile() {}
-  sendFiles() {}
-  sendCode() {}
-  fetchMessage() {}
-  fetchMessages() {}
-  fetchPinnedMessages() {}
-  search() {}
-  startTyping() {}
-  stopTyping() {}
-  get typing() {}
-  get typingCount() {}
-  createCollector() {}
-  createMessageCollector() {}
-  awaitMessages() {}
-  bulkDelete() {}
-  acknowledge() {}
-  _cacheMessage() {}
+  send() { }
+  sendMessage() { }
+  sendEmbed() { }
+  sendFile() { }
+  sendFiles() { }
+  sendCode() { }
+  fetchMessage() { }
+  fetchMessages() { }
+  fetchPinnedMessages() { }
+  search() { }
+  startTyping() { }
+  stopTyping() { }
+  get typing() { }
+  get typingCount() { }
+  createCollector() { }
+  createMessageCollector() { }
+  awaitMessages() { }
+  bulkDelete() { }
+  acknowledge() { }
+  _cacheMessage() { }
 }
 
 TextBasedChannel.applyToClass(TextChannel, true);
@@ -16118,7 +16210,7 @@ module.exports = {
   Channel: __webpack_require__(11),
   ClientUser: __webpack_require__(55),
   ClientUserSettings: __webpack_require__(56),
-  Collector: __webpack_require__(29),
+  Collector: __webpack_require__(30),
   DMChannel: __webpack_require__(51),
   Emoji: __webpack_require__(16),
   Game: __webpack_require__(10).Game,
@@ -16127,7 +16219,7 @@ module.exports = {
   GuildAuditLogs: __webpack_require__(47),
   GuildChannel: __webpack_require__(18),
   GuildMember: __webpack_require__(17),
-  Invite: __webpack_require__(30),
+  Invite: __webpack_require__(23),
   Message: __webpack_require__(15),
   MessageAttachment: __webpack_require__(39),
   MessageCollector: __webpack_require__(44),
@@ -16140,14 +16232,14 @@ module.exports = {
   PartialGuildChannel: __webpack_require__(46),
   PermissionOverwrites: __webpack_require__(50),
   Presence: __webpack_require__(10).Presence,
-  ReactionEmoji: __webpack_require__(28),
+  ReactionEmoji: __webpack_require__(29),
   ReactionCollector: __webpack_require__(43),
   RichEmbed: __webpack_require__(20),
   Role: __webpack_require__(8),
   TextChannel: __webpack_require__(52),
   User: __webpack_require__(9),
   VoiceChannel: __webpack_require__(53),
-  Webhook: __webpack_require__(23),
+  Webhook: __webpack_require__(24),
 };
 
 
@@ -16941,7 +17033,7 @@ const Util = __webpack_require__(4);
 const RESTManager = __webpack_require__(37);
 const ClientDataManager = __webpack_require__(81);
 const ClientManager = __webpack_require__(82);
-const ClientDataResolver = __webpack_require__(27);
+const ClientDataResolver = __webpack_require__(28);
 const ClientVoiceManager = __webpack_require__(125);
 const WebSocketManager = __webpack_require__(126);
 const ActionsManager = __webpack_require__(127);
@@ -17315,12 +17407,9 @@ class Client extends EventEmitter {
       if (!channel.messages) continue;
       channels++;
 
-      for (const message of channel.messages.values()) {
-        if (now - (message.editedTimestamp || message.createdTimestamp) > lifetimeMs) {
-          channel.messages.delete(message.id);
-          messages++;
-        }
-      }
+      messages += channel.messages.sweep(
+        message => now - (message.editedTimestamp || message.createdTimestamp) > lifetimeMs
+      );
     }
 
     this.emit('debug', `Swept ${messages} messages older than ${lifetime} seconds in ${channels} text-based channels`);
@@ -17571,7 +17660,7 @@ module.exports = UserAgentManager;
 /***/ (function(module, exports, __webpack_require__) {
 
 const querystring = __webpack_require__(35);
-const long = __webpack_require__(25);
+const long = __webpack_require__(26);
 const Permissions = __webpack_require__(6);
 const Constants = __webpack_require__(0);
 const Endpoints = Constants.Endpoints;
@@ -17582,8 +17671,8 @@ const User = __webpack_require__(9);
 const GuildMember = __webpack_require__(17);
 const Message = __webpack_require__(15);
 const Role = __webpack_require__(8);
-const Invite = __webpack_require__(30);
-const Webhook = __webpack_require__(23);
+const Invite = __webpack_require__(23);
+const Webhook = __webpack_require__(24);
 const UserProfile = __webpack_require__(75);
 const OAuth2Application = __webpack_require__(31);
 const Channel = __webpack_require__(11);
@@ -17907,6 +17996,7 @@ class RESTMethods {
     const data = {};
     data.name = (_data.name || channel.name).trim();
     data.topic = typeof _data.topic === 'undefined' ? channel.topic : _data.topic;
+    data.nsfw = typeof _data.nsfw === 'undefined' ? channel.nsfw : _data.nsfw;
     data.position = _data.position || channel.position;
     data.bitrate = _data.bitrate || (channel.bitrate ? channel.bitrate * 1000 : undefined);
     data.user_limit = typeof _data.userLimit !== 'undefined' ? _data.userLimit : channel.userLimit;
@@ -17987,12 +18077,7 @@ class RESTMethods {
     return this.rest.makeRequest(
       'delete', Endpoints.Guild(guild).Member(member), true,
       undefined, undefined, reason)
-      .then(() =>
-        this.client.actions.GuildMemberRemove.handle({
-          guild_id: guild.id,
-          user: member.user,
-        }).member
-      );
+      .then(() => member);
   }
 
   createGuildRole(guild, data, reason) {
@@ -18909,7 +18994,7 @@ module.exports = BurstRequestHandler;
 /* 80 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const snekfetch = __webpack_require__(24);
+const snekfetch = __webpack_require__(25);
 const Constants = __webpack_require__(0);
 
 class APIRequest {
@@ -21081,8 +21166,8 @@ class GuildMemberRemoveAction extends Action {
     let member = null;
     if (guild) {
       member = guild.members.get(data.user.id);
+      guild.memberCount--;
       if (member) {
-        guild.memberCount--;
         guild._removeMember(member);
         this.deleted.set(guild.id + data.user.id, member);
         if (client.status === Constants.Status.READY) client.emit(Constants.Events.GUILD_MEMBER_REMOVE, member);
@@ -21577,9 +21662,9 @@ module.exports = GuildChannelsPositionUpdate;
 /* 161 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Webhook = __webpack_require__(23);
+const Webhook = __webpack_require__(24);
 const RESTManager = __webpack_require__(37);
-const ClientDataResolver = __webpack_require__(27);
+const ClientDataResolver = __webpack_require__(28);
 const Constants = __webpack_require__(0);
 const Util = __webpack_require__(4);
 
