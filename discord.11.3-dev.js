@@ -372,6 +372,7 @@ exports.VoiceOPCodes = {
 };
 
 exports.Events = {
+  RATE_LIMIT: 'rateLimit',
   READY: 'ready',
   RESUME: 'resume',
   GUILD_CREATE: 'guildCreate',
@@ -873,7 +874,7 @@ exports.APIErrors = {
   REACTION_BLOCKED: 90001,
 };
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(13)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ }),
 /* 1 */
@@ -923,7 +924,9 @@ module.exports = GenericAction;
 
 /***/ }),
 /* 3 */
-/***/ (function(module, exports) {
+/***/ (function(module, exports, __webpack_require__) {
+
+/* WEBPACK VAR INJECTION */(function(process) {const util = __webpack_require__(7);
 
 /**
  * A Map with additional utility methods. This is used throughout discord.js rather than Arrays for anything that has
@@ -1089,6 +1092,7 @@ class Collection extends Map {
    * @param {string} prop The property to test against
    * @param {*} value The expected value
    * @returns {Array}
+   * @deprecated
    * @example
    * collection.findAll('username', 'Bob');
    */
@@ -1173,6 +1177,7 @@ class Collection extends Map {
    * @param {string} prop The property to test against
    * @param {*} value The expected value
    * @returns {boolean}
+   * @deprecated
    * @example
    * if (collection.exists('username', 'Bob')) {
    *  console.log('user here!');
@@ -1220,12 +1225,34 @@ class Collection extends Map {
    * @param {Function} fn Function used to test (should return a boolean)
    * @param {Object} [thisArg] Value to use as `this` when executing function
    * @returns {Array}
+   * @deprecated
    */
   filterArray(fn, thisArg) {
     if (thisArg) fn = fn.bind(thisArg);
     const results = [];
     for (const [key, val] of this) {
       if (fn(val, key, this)) results.push(val);
+    }
+    return results;
+  }
+
+  /**
+   * Partitions the collection into two collections where the first collection
+   * contains the items that passed and the second contains the items that failed.
+   * @param {Function} fn Function used to test (should return a boolean)
+   * @param {*} [thisArg] Value to use as `this` when executing function
+   * @returns {Collection[]}
+   * @example const [big, small] = collection.partition(guild => guild.memberCount > 250);
+   */
+  partition(fn, thisArg) {
+    if (typeof thisArg !== 'undefined') fn = fn.bind(thisArg);
+    const results = [new Collection(), new Collection()];
+    for (const [key, val] of this) {
+      if (fn(val, key, this)) {
+        results[0].set(key, val);
+      } else {
+        results[1].set(key, val);
+      }
     }
     return results;
   }
@@ -1385,8 +1412,54 @@ class Collection extends Map {
   }
 }
 
+Collection.prototype.findAll =
+  util.deprecate(Collection.prototype.findAll, 'Collection#findAll: use Collection#filter instead');
+
+Collection.prototype.filterArray =
+  util.deprecate(Collection.prototype.filterArray, 'Collection#filterArray: use Collection#filter instead');
+
+Collection.prototype.exists =
+  util.deprecate(Collection.prototype.exists, 'Collection#exists: use Collection#some instead');
+
+Collection.prototype.find = function find(propOrFn, value) {
+  if (typeof propOrFn === 'string') {
+    process.emitWarning('Collection#find: pass a function instead', 'DeprecationWarning');
+    if (typeof value === 'undefined') throw new Error('Value must be specified.');
+    for (const item of this.values()) {
+      if (item[propOrFn] === value) return item;
+    }
+    return null;
+  } else if (typeof propOrFn === 'function') {
+    for (const [key, val] of this) {
+      if (propOrFn(val, key, this)) return val;
+    }
+    return null;
+  } else {
+    throw new Error('First argument must be a property string or a function.');
+  }
+};
+
+Collection.prototype.findKey = function findKey(propOrFn, value) {
+  if (typeof propOrFn === 'string') {
+    process.emitWarning('Collection#findKey: pass a function instead', 'DeprecationWarning');
+    if (typeof value === 'undefined') throw new Error('Value must be specified.');
+    for (const [key, val] of this) {
+      if (val[propOrFn] === value) return key;
+    }
+    return null;
+  } else if (typeof propOrFn === 'function') {
+    for (const [key, val] of this) {
+      if (propOrFn(val, key, this)) return key;
+    }
+    return null;
+  } else {
+    throw new Error('First argument must be a property string or a function.');
+  }
+};
+
 module.exports = Collection;
 
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ }),
 /* 4 */
@@ -1600,7 +1673,7 @@ class Util {
 
 module.exports = Util;
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(12).Buffer))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(13).Buffer))
 
 /***/ }),
 /* 5 */
@@ -2568,7 +2641,7 @@ function hasOwnProperty(obj, prop) {
   return Object.prototype.hasOwnProperty.call(obj, prop);
 }
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(34), __webpack_require__(13)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(34), __webpack_require__(9)))
 
 /***/ }),
 /* 8 */
@@ -2948,11 +3021,201 @@ module.exports = Role;
 
 /***/ }),
 /* 9 */
+/***/ (function(module, exports) {
+
+// shim for using process in browser
+var process = module.exports = {};
+
+// cached from whatever global is present so that test runners that stub it
+// don't break things.  But we need to wrap it in a try catch in case it is
+// wrapped in strict mode code which doesn't define any globals.  It's inside a
+// function because try/catches deoptimize in certain engines.
+
+var cachedSetTimeout;
+var cachedClearTimeout;
+
+function defaultSetTimout() {
+    throw new Error('setTimeout has not been defined');
+}
+function defaultClearTimeout () {
+    throw new Error('clearTimeout has not been defined');
+}
+(function () {
+    try {
+        if (typeof setTimeout === 'function') {
+            cachedSetTimeout = setTimeout;
+        } else {
+            cachedSetTimeout = defaultSetTimout;
+        }
+    } catch (e) {
+        cachedSetTimeout = defaultSetTimout;
+    }
+    try {
+        if (typeof clearTimeout === 'function') {
+            cachedClearTimeout = clearTimeout;
+        } else {
+            cachedClearTimeout = defaultClearTimeout;
+        }
+    } catch (e) {
+        cachedClearTimeout = defaultClearTimeout;
+    }
+} ())
+function runTimeout(fun) {
+    if (cachedSetTimeout === setTimeout) {
+        //normal enviroments in sane situations
+        return setTimeout(fun, 0);
+    }
+    // if setTimeout wasn't available but was latter defined
+    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
+        cachedSetTimeout = setTimeout;
+        return setTimeout(fun, 0);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedSetTimeout(fun, 0);
+    } catch(e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
+            return cachedSetTimeout.call(null, fun, 0);
+        } catch(e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
+            return cachedSetTimeout.call(this, fun, 0);
+        }
+    }
+
+
+}
+function runClearTimeout(marker) {
+    if (cachedClearTimeout === clearTimeout) {
+        //normal enviroments in sane situations
+        return clearTimeout(marker);
+    }
+    // if clearTimeout wasn't available but was latter defined
+    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
+        cachedClearTimeout = clearTimeout;
+        return clearTimeout(marker);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedClearTimeout(marker);
+    } catch (e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
+            return cachedClearTimeout.call(null, marker);
+        } catch (e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
+            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
+            return cachedClearTimeout.call(this, marker);
+        }
+    }
+
+
+
+}
+var queue = [];
+var draining = false;
+var currentQueue;
+var queueIndex = -1;
+
+function cleanUpNextTick() {
+    if (!draining || !currentQueue) {
+        return;
+    }
+    draining = false;
+    if (currentQueue.length) {
+        queue = currentQueue.concat(queue);
+    } else {
+        queueIndex = -1;
+    }
+    if (queue.length) {
+        drainQueue();
+    }
+}
+
+function drainQueue() {
+    if (draining) {
+        return;
+    }
+    var timeout = runTimeout(cleanUpNextTick);
+    draining = true;
+
+    var len = queue.length;
+    while(len) {
+        currentQueue = queue;
+        queue = [];
+        while (++queueIndex < len) {
+            if (currentQueue) {
+                currentQueue[queueIndex].run();
+            }
+        }
+        queueIndex = -1;
+        len = queue.length;
+    }
+    currentQueue = null;
+    draining = false;
+    runClearTimeout(timeout);
+}
+
+process.nextTick = function (fun) {
+    var args = new Array(arguments.length - 1);
+    if (arguments.length > 1) {
+        for (var i = 1; i < arguments.length; i++) {
+            args[i - 1] = arguments[i];
+        }
+    }
+    queue.push(new Item(fun, args));
+    if (queue.length === 1 && !draining) {
+        runTimeout(drainQueue);
+    }
+};
+
+// v8 likes predictible objects
+function Item(fun, array) {
+    this.fun = fun;
+    this.array = array;
+}
+Item.prototype.run = function () {
+    this.fun.apply(null, this.array);
+};
+process.title = 'browser';
+process.browser = true;
+process.env = {};
+process.argv = [];
+process.version = ''; // empty string to avoid regexp issues
+process.versions = {};
+
+function noop() {}
+
+process.on = noop;
+process.addListener = noop;
+process.once = noop;
+process.off = noop;
+process.removeListener = noop;
+process.removeAllListeners = noop;
+process.emit = noop;
+process.prependListener = noop;
+process.prependOnceListener = noop;
+
+process.listeners = function (name) { return [] }
+
+process.binding = function (name) {
+    throw new Error('process.binding is not supported');
+};
+
+process.cwd = function () { return '/' };
+process.chdir = function (dir) {
+    throw new Error('process.chdir is not supported');
+};
+process.umask = function() { return 0; };
+
+
+/***/ }),
+/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const TextBasedChannel = __webpack_require__(14);
 const Constants = __webpack_require__(0);
-const Presence = __webpack_require__(10).Presence;
+const Presence = __webpack_require__(11).Presence;
 const Snowflake = __webpack_require__(5);
 
 /**
@@ -3256,7 +3519,7 @@ module.exports = User;
 
 
 /***/ }),
-/* 10 */
+/* 11 */
 /***/ (function(module, exports) {
 
 /**
@@ -3362,7 +3625,7 @@ exports.Game = Game;
 
 
 /***/ }),
-/* 11 */
+/* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Snowflake = __webpack_require__(5);
@@ -3438,7 +3701,7 @@ module.exports = Channel;
 
 
 /***/ }),
-/* 12 */
+/* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -5235,196 +5498,6 @@ function isnan (val) {
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(34)))
 
 /***/ }),
-/* 13 */
-/***/ (function(module, exports) {
-
-// shim for using process in browser
-var process = module.exports = {};
-
-// cached from whatever global is present so that test runners that stub it
-// don't break things.  But we need to wrap it in a try catch in case it is
-// wrapped in strict mode code which doesn't define any globals.  It's inside a
-// function because try/catches deoptimize in certain engines.
-
-var cachedSetTimeout;
-var cachedClearTimeout;
-
-function defaultSetTimout() {
-    throw new Error('setTimeout has not been defined');
-}
-function defaultClearTimeout () {
-    throw new Error('clearTimeout has not been defined');
-}
-(function () {
-    try {
-        if (typeof setTimeout === 'function') {
-            cachedSetTimeout = setTimeout;
-        } else {
-            cachedSetTimeout = defaultSetTimout;
-        }
-    } catch (e) {
-        cachedSetTimeout = defaultSetTimout;
-    }
-    try {
-        if (typeof clearTimeout === 'function') {
-            cachedClearTimeout = clearTimeout;
-        } else {
-            cachedClearTimeout = defaultClearTimeout;
-        }
-    } catch (e) {
-        cachedClearTimeout = defaultClearTimeout;
-    }
-} ())
-function runTimeout(fun) {
-    if (cachedSetTimeout === setTimeout) {
-        //normal enviroments in sane situations
-        return setTimeout(fun, 0);
-    }
-    // if setTimeout wasn't available but was latter defined
-    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
-        cachedSetTimeout = setTimeout;
-        return setTimeout(fun, 0);
-    }
-    try {
-        // when when somebody has screwed with setTimeout but no I.E. maddness
-        return cachedSetTimeout(fun, 0);
-    } catch(e){
-        try {
-            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
-            return cachedSetTimeout.call(null, fun, 0);
-        } catch(e){
-            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
-            return cachedSetTimeout.call(this, fun, 0);
-        }
-    }
-
-
-}
-function runClearTimeout(marker) {
-    if (cachedClearTimeout === clearTimeout) {
-        //normal enviroments in sane situations
-        return clearTimeout(marker);
-    }
-    // if clearTimeout wasn't available but was latter defined
-    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
-        cachedClearTimeout = clearTimeout;
-        return clearTimeout(marker);
-    }
-    try {
-        // when when somebody has screwed with setTimeout but no I.E. maddness
-        return cachedClearTimeout(marker);
-    } catch (e){
-        try {
-            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
-            return cachedClearTimeout.call(null, marker);
-        } catch (e){
-            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
-            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
-            return cachedClearTimeout.call(this, marker);
-        }
-    }
-
-
-
-}
-var queue = [];
-var draining = false;
-var currentQueue;
-var queueIndex = -1;
-
-function cleanUpNextTick() {
-    if (!draining || !currentQueue) {
-        return;
-    }
-    draining = false;
-    if (currentQueue.length) {
-        queue = currentQueue.concat(queue);
-    } else {
-        queueIndex = -1;
-    }
-    if (queue.length) {
-        drainQueue();
-    }
-}
-
-function drainQueue() {
-    if (draining) {
-        return;
-    }
-    var timeout = runTimeout(cleanUpNextTick);
-    draining = true;
-
-    var len = queue.length;
-    while(len) {
-        currentQueue = queue;
-        queue = [];
-        while (++queueIndex < len) {
-            if (currentQueue) {
-                currentQueue[queueIndex].run();
-            }
-        }
-        queueIndex = -1;
-        len = queue.length;
-    }
-    currentQueue = null;
-    draining = false;
-    runClearTimeout(timeout);
-}
-
-process.nextTick = function (fun) {
-    var args = new Array(arguments.length - 1);
-    if (arguments.length > 1) {
-        for (var i = 1; i < arguments.length; i++) {
-            args[i - 1] = arguments[i];
-        }
-    }
-    queue.push(new Item(fun, args));
-    if (queue.length === 1 && !draining) {
-        runTimeout(drainQueue);
-    }
-};
-
-// v8 likes predictible objects
-function Item(fun, array) {
-    this.fun = fun;
-    this.array = array;
-}
-Item.prototype.run = function () {
-    this.fun.apply(null, this.array);
-};
-process.title = 'browser';
-process.browser = true;
-process.env = {};
-process.argv = [];
-process.version = ''; // empty string to avoid regexp issues
-process.versions = {};
-
-function noop() {}
-
-process.on = noop;
-process.addListener = noop;
-process.once = noop;
-process.off = noop;
-process.removeListener = noop;
-process.removeAllListeners = noop;
-process.emit = noop;
-process.prependListener = noop;
-process.prependOnceListener = noop;
-
-process.listeners = function (name) { return [] }
-
-process.binding = function (name) {
-    throw new Error('process.binding is not supported');
-};
-
-process.cwd = function () { return '/' };
-process.chdir = function (dir) {
-    throw new Error('process.chdir is not supported');
-};
-process.umask = function() { return 0; };
-
-
-/***/ }),
 /* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -6003,7 +6076,7 @@ exports.applyToClass = (structure, full = false, ignore = []) => {
   }
 };
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(12).Buffer))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(13).Buffer))
 
 /***/ }),
 /* 15 */
@@ -6858,7 +6931,7 @@ const TextBasedChannel = __webpack_require__(14);
 const Role = __webpack_require__(8);
 const Permissions = __webpack_require__(6);
 const Collection = __webpack_require__(3);
-const Presence = __webpack_require__(10).Presence;
+const Presence = __webpack_require__(11).Presence;
 const util = __webpack_require__(7);
 
 /**
@@ -7460,7 +7533,7 @@ module.exports = GuildMember;
 /* 18 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Channel = __webpack_require__(11);
+const Channel = __webpack_require__(12);
 const Role = __webpack_require__(8);
 const PermissionOverwrites = __webpack_require__(50);
 const Permissions = __webpack_require__(6);
@@ -7603,7 +7676,7 @@ class GuildChannel extends Channel {
   }
 
   /**
-   * An object mapping permission flags to `true` (enabled) or `false` (disabled).
+   * An object mapping permission flags to `true` (enabled), `false` (disabled), or `null` (not set).
    * ```js
    * {
    *  'SEND_MESSAGES': true,
@@ -7623,6 +7696,14 @@ class GuildChannel extends Channel {
    * // Overwrite permissions for a message author
    * message.channel.overwritePermissions(message.author, {
    *   SEND_MESSAGES: false
+   * })
+   *   .then(updated => console.log(updated.permissionOverwrites.get(message.author.id)))
+   *   .catch(console.error);
+   * @example
+   * // Overwite permissions for a message author and reset some
+   * message.channel.overwritePermissions(message.author, {
+   *   VIEW_CHANNEL: false,
+   *   SEND_MESSAGES: null
    * })
    *   .then(updated => console.log(updated.permissionOverwrites.get(message.author.id)))
    *   .catch(console.error);
@@ -8549,10 +8630,10 @@ module.exports = Attachment;
 
 const util = __webpack_require__(7);
 const Long = __webpack_require__(26);
-const User = __webpack_require__(9);
+const User = __webpack_require__(10);
 const Role = __webpack_require__(8);
 const Emoji = __webpack_require__(16);
-const Presence = __webpack_require__(10).Presence;
+const Presence = __webpack_require__(11).Presence;
 const GuildMember = __webpack_require__(17);
 const Constants = __webpack_require__(0);
 const Collection = __webpack_require__(3);
@@ -10326,7 +10407,7 @@ class Webhook {
 
 module.exports = Webhook;
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(12).Buffer))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(13).Buffer))
 
 /***/ }),
 /* 25 */
@@ -12006,7 +12087,7 @@ var substr = 'ab'.substr(-1) === 'b'
     }
 ;
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(13)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ }),
 /* 28 */
@@ -12018,10 +12099,10 @@ const snekfetch = __webpack_require__(25);
 
 const Constants = __webpack_require__(0);
 const convertToBuffer = __webpack_require__(4).convertToBuffer;
-const User = __webpack_require__(9);
+const User = __webpack_require__(10);
 const Message = __webpack_require__(15);
 const Guild = __webpack_require__(22);
-const Channel = __webpack_require__(11);
+const Channel = __webpack_require__(12);
 const GuildMember = __webpack_require__(17);
 const Emoji = __webpack_require__(16);
 const ReactionEmoji = __webpack_require__(29);
@@ -12388,7 +12469,7 @@ class ClientDataResolver {
 
 module.exports = ClientDataResolver;
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(12).Buffer))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(13).Buffer))
 
 /***/ }),
 /* 29 */
@@ -12783,7 +12864,7 @@ module.exports = OAuth2Application;
 /* 32 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Channel = __webpack_require__(11);
+const Channel = __webpack_require__(12);
 const TextBasedChannel = __webpack_require__(14);
 const Collection = __webpack_require__(3);
 const Constants = __webpack_require__(0);
@@ -14738,7 +14819,7 @@ module.exports = PermissionOverwrites;
 /* 51 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Channel = __webpack_require__(11);
+const Channel = __webpack_require__(12);
 const TextBasedChannel = __webpack_require__(14);
 const Collection = __webpack_require__(3);
 
@@ -15586,13 +15667,13 @@ WebSocketConnection.WebSocket = WebSocket;
 
 module.exports = WebSocketConnection;
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(12).Buffer))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(13).Buffer))
 
 /***/ }),
 /* 55 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const User = __webpack_require__(9);
+const User = __webpack_require__(10);
 const Collection = __webpack_require__(3);
 const ClientUserSettings = __webpack_require__(56);
 const ClientUserGuildSettings = __webpack_require__(57);
@@ -16207,13 +16288,13 @@ module.exports = {
   // Structures
   Attachment: __webpack_require__(21),
   CategoryChannel: __webpack_require__(49),
-  Channel: __webpack_require__(11),
+  Channel: __webpack_require__(12),
   ClientUser: __webpack_require__(55),
   ClientUserSettings: __webpack_require__(56),
   Collector: __webpack_require__(30),
   DMChannel: __webpack_require__(51),
   Emoji: __webpack_require__(16),
-  Game: __webpack_require__(10).Game,
+  Game: __webpack_require__(11).Game,
   GroupDMChannel: __webpack_require__(32),
   Guild: __webpack_require__(22),
   GuildAuditLogs: __webpack_require__(47),
@@ -16231,13 +16312,13 @@ module.exports = {
   PartialGuild: __webpack_require__(45),
   PartialGuildChannel: __webpack_require__(46),
   PermissionOverwrites: __webpack_require__(50),
-  Presence: __webpack_require__(10).Presence,
+  Presence: __webpack_require__(11).Presence,
   ReactionEmoji: __webpack_require__(29),
   ReactionCollector: __webpack_require__(43),
   RichEmbed: __webpack_require__(20),
   Role: __webpack_require__(8),
   TextChannel: __webpack_require__(52),
-  User: __webpack_require__(9),
+  User: __webpack_require__(10),
   VoiceChannel: __webpack_require__(53),
   Webhook: __webpack_require__(24),
 };
@@ -16269,65 +16350,97 @@ for (var i = 0, len = code.length; i < len; ++i) {
 revLookup['-'.charCodeAt(0)] = 62
 revLookup['_'.charCodeAt(0)] = 63
 
-function placeHoldersCount (b64) {
+function getLens (b64) {
   var len = b64.length
+
   if (len % 4 > 0) {
     throw new Error('Invalid string. Length must be a multiple of 4')
   }
 
-  // the number of equal signs (place holders)
-  // if there are two placeholders, than the two characters before it
-  // represent one byte
-  // if there is only one, then the three characters before it represent 2 bytes
-  // this is just a cheap hack to not do indexOf twice
-  return b64[len - 2] === '=' ? 2 : b64[len - 1] === '=' ? 1 : 0
+  // Trim off extra bytes after placeholder bytes are found
+  // See: https://github.com/beatgammit/base64-js/issues/42
+  var validLen = b64.indexOf('=')
+  if (validLen === -1) validLen = len
+
+  var placeHoldersLen = validLen === len
+    ? 0
+    : 4 - (validLen % 4)
+
+  return [validLen, placeHoldersLen]
 }
 
+// base64 is 4/3 + up to two characters of the original data
 function byteLength (b64) {
-  // base64 is 4/3 + up to two characters of the original data
-  return (b64.length * 3 / 4) - placeHoldersCount(b64)
+  var lens = getLens(b64)
+  var validLen = lens[0]
+  var placeHoldersLen = lens[1]
+  return ((validLen + placeHoldersLen) * 3 / 4) - placeHoldersLen
+}
+
+function _byteLength (b64, validLen, placeHoldersLen) {
+  return ((validLen + placeHoldersLen) * 3 / 4) - placeHoldersLen
 }
 
 function toByteArray (b64) {
-  var i, l, tmp, placeHolders, arr
-  var len = b64.length
-  placeHolders = placeHoldersCount(b64)
+  var tmp
+  var lens = getLens(b64)
+  var validLen = lens[0]
+  var placeHoldersLen = lens[1]
 
-  arr = new Arr((len * 3 / 4) - placeHolders)
+  var arr = new Arr(_byteLength(b64, validLen, placeHoldersLen))
+
+  var curByte = 0
 
   // if there are placeholders, only get up to the last complete 4 chars
-  l = placeHolders > 0 ? len - 4 : len
+  var len = placeHoldersLen > 0
+    ? validLen - 4
+    : validLen
 
-  var L = 0
-
-  for (i = 0; i < l; i += 4) {
-    tmp = (revLookup[b64.charCodeAt(i)] << 18) | (revLookup[b64.charCodeAt(i + 1)] << 12) | (revLookup[b64.charCodeAt(i + 2)] << 6) | revLookup[b64.charCodeAt(i + 3)]
-    arr[L++] = (tmp >> 16) & 0xFF
-    arr[L++] = (tmp >> 8) & 0xFF
-    arr[L++] = tmp & 0xFF
+  for (var i = 0; i < len; i += 4) {
+    tmp =
+      (revLookup[b64.charCodeAt(i)] << 18) |
+      (revLookup[b64.charCodeAt(i + 1)] << 12) |
+      (revLookup[b64.charCodeAt(i + 2)] << 6) |
+      revLookup[b64.charCodeAt(i + 3)]
+    arr[curByte++] = (tmp >> 16) & 0xFF
+    arr[curByte++] = (tmp >> 8) & 0xFF
+    arr[curByte++] = tmp & 0xFF
   }
 
-  if (placeHolders === 2) {
-    tmp = (revLookup[b64.charCodeAt(i)] << 2) | (revLookup[b64.charCodeAt(i + 1)] >> 4)
-    arr[L++] = tmp & 0xFF
-  } else if (placeHolders === 1) {
-    tmp = (revLookup[b64.charCodeAt(i)] << 10) | (revLookup[b64.charCodeAt(i + 1)] << 4) | (revLookup[b64.charCodeAt(i + 2)] >> 2)
-    arr[L++] = (tmp >> 8) & 0xFF
-    arr[L++] = tmp & 0xFF
+  if (placeHoldersLen === 2) {
+    tmp =
+      (revLookup[b64.charCodeAt(i)] << 2) |
+      (revLookup[b64.charCodeAt(i + 1)] >> 4)
+    arr[curByte++] = tmp & 0xFF
+  }
+
+  if (placeHoldersLen === 1) {
+    tmp =
+      (revLookup[b64.charCodeAt(i)] << 10) |
+      (revLookup[b64.charCodeAt(i + 1)] << 4) |
+      (revLookup[b64.charCodeAt(i + 2)] >> 2)
+    arr[curByte++] = (tmp >> 8) & 0xFF
+    arr[curByte++] = tmp & 0xFF
   }
 
   return arr
 }
 
 function tripletToBase64 (num) {
-  return lookup[num >> 18 & 0x3F] + lookup[num >> 12 & 0x3F] + lookup[num >> 6 & 0x3F] + lookup[num & 0x3F]
+  return lookup[num >> 18 & 0x3F] +
+    lookup[num >> 12 & 0x3F] +
+    lookup[num >> 6 & 0x3F] +
+    lookup[num & 0x3F]
 }
 
 function encodeChunk (uint8, start, end) {
   var tmp
   var output = []
   for (var i = start; i < end; i += 3) {
-    tmp = ((uint8[i] << 16) & 0xFF0000) + ((uint8[i + 1] << 8) & 0xFF00) + (uint8[i + 2] & 0xFF)
+    tmp =
+      ((uint8[i] << 16) & 0xFF0000) +
+      ((uint8[i + 1] << 8) & 0xFF00) +
+      (uint8[i + 2] & 0xFF)
     output.push(tripletToBase64(tmp))
   }
   return output.join('')
@@ -16337,30 +16450,33 @@ function fromByteArray (uint8) {
   var tmp
   var len = uint8.length
   var extraBytes = len % 3 // if we have 1 byte left, pad 2 bytes
-  var output = ''
   var parts = []
   var maxChunkLength = 16383 // must be multiple of 3
 
   // go through the array every three bytes, we'll deal with trailing stuff later
   for (var i = 0, len2 = len - extraBytes; i < len2; i += maxChunkLength) {
-    parts.push(encodeChunk(uint8, i, (i + maxChunkLength) > len2 ? len2 : (i + maxChunkLength)))
+    parts.push(encodeChunk(
+      uint8, i, (i + maxChunkLength) > len2 ? len2 : (i + maxChunkLength)
+    ))
   }
 
   // pad the end with zeros, but make sure to not forget the extra bytes
   if (extraBytes === 1) {
     tmp = uint8[len - 1]
-    output += lookup[tmp >> 2]
-    output += lookup[(tmp << 4) & 0x3F]
-    output += '=='
+    parts.push(
+      lookup[tmp >> 2] +
+      lookup[(tmp << 4) & 0x3F] +
+      '=='
+    )
   } else if (extraBytes === 2) {
-    tmp = (uint8[len - 2] << 8) + (uint8[len - 1])
-    output += lookup[tmp >> 10]
-    output += lookup[(tmp >> 4) & 0x3F]
-    output += lookup[(tmp << 2) & 0x3F]
-    output += '='
+    tmp = (uint8[len - 2] << 8) + uint8[len - 1]
+    parts.push(
+      lookup[tmp >> 10] +
+      lookup[(tmp >> 4) & 0x3F] +
+      lookup[(tmp << 2) & 0x3F] +
+      '='
+    )
   }
-
-  parts.push(output)
 
   return parts.join('')
 }
@@ -17038,7 +17154,7 @@ const ClientVoiceManager = __webpack_require__(125);
 const WebSocketManager = __webpack_require__(126);
 const ActionsManager = __webpack_require__(127);
 const Collection = __webpack_require__(3);
-const Presence = __webpack_require__(10).Presence;
+const Presence = __webpack_require__(11).Presence;
 const ShardClientUtil = __webpack_require__(156);
 const VoiceBroadcast = __webpack_require__(157);
 
@@ -17581,7 +17697,7 @@ module.exports = Client;
  * @param {string} info The debug information
  */
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(13)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ }),
 /* 71 */
@@ -17653,7 +17769,7 @@ UserAgentManager.DEFAULT = {
 
 module.exports = UserAgentManager;
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(13)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ }),
 /* 74 */
@@ -17667,7 +17783,7 @@ const Endpoints = Constants.Endpoints;
 const Collection = __webpack_require__(3);
 const Util = __webpack_require__(4);
 
-const User = __webpack_require__(9);
+const User = __webpack_require__(10);
 const GuildMember = __webpack_require__(17);
 const Message = __webpack_require__(15);
 const Role = __webpack_require__(8);
@@ -17675,7 +17791,7 @@ const Invite = __webpack_require__(23);
 const Webhook = __webpack_require__(24);
 const UserProfile = __webpack_require__(75);
 const OAuth2Application = __webpack_require__(31);
-const Channel = __webpack_require__(11);
+const Channel = __webpack_require__(12);
 const GroupDMChannel = __webpack_require__(32);
 const Guild = __webpack_require__(22);
 const VoiceRegion = __webpack_require__(77);
@@ -18810,6 +18926,7 @@ module.exports = VoiceRegion;
 
 const RequestHandler = __webpack_require__(48);
 const DiscordAPIError = __webpack_require__(33);
+const { Events: { RATE_LIMIT } } = __webpack_require__(0);
 
 /**
  * Handles API Requests sequentially, i.e. we wait until the current request is finished before moving onto
@@ -18825,6 +18942,12 @@ class SequentialRequestHandler extends RequestHandler {
    */
   constructor(restManager, endpoint) {
     super(restManager, endpoint);
+
+    /**
+     * The client that instantiated this handler
+     * @type {Client}
+     */
+    this.client = restManager.client;
 
     /**
      * The endpoint that this handler is handling
@@ -18887,6 +19010,23 @@ class SequentialRequestHandler extends RequestHandler {
           const data = res && res.body ? res.body : {};
           item.resolve(data);
           if (this.requestRemaining === 0) {
+            if (this.client.listenerCount(RATE_LIMIT)) {
+              /**
+               * Emitted when the client hits a rate limit while making a request
+               * @event Client#rateLimit
+               * @param {Object} rateLimitInfo Object containing the rate limit info
+               * @prop {number} rateLimitInfo.requestLimit Number of requests that can be made to this endpoint
+               * @prop {number} rateLimitInfo.timeDifference Delta-T in ms between your system and Discord servers
+               * @param {string} rateLimitInfo.method HTTP method used for request that triggered this event
+               * @prop {string} rateLimitInfo.path Path used for request that triggered this event
+               */
+              this.client.emit(RATE_LIMIT, {
+                limit: this.requestLimit,
+                timeDifference: this.timeDifference,
+                path: item.request.path,
+                method: item.request.method,
+              });
+            }
             this.restManager.client.setTimeout(
               () => resolve(data),
               this.requestResetTime - Date.now() + this.timeDifference + this.restManager.client.options.restTimeOffset
@@ -18918,6 +19058,7 @@ module.exports = SequentialRequestHandler;
 
 const RequestHandler = __webpack_require__(48);
 const DiscordAPIError = __webpack_require__(33);
+const { Events: { RATE_LIMIT } } = __webpack_require__(0);
 
 class BurstRequestHandler extends RequestHandler {
   constructor(restManager, endpoint) {
@@ -18970,6 +19111,16 @@ class BurstRequestHandler extends RequestHandler {
           this.handle();
         }
       } else {
+        if (this.remaining === 0) {
+          if (this.client.listenerCount(RATE_LIMIT)) {
+            this.client.emit(RATE_LIMIT, {
+              limit: this.limit,
+              timeDifference: this.timeDifference,
+              path: item.request.path,
+              method: item.request.method,
+            });
+          }
+        }
         this.globalLimit = false;
         const data = res && res.body ? res.body : {};
         item.resolve(data);
@@ -18980,7 +19131,8 @@ class BurstRequestHandler extends RequestHandler {
 
   handle() {
     super.handle();
-    if (this.remaining <= 0 || this.queue.length === 0 || this.globalLimit) return;
+    if (this.queue.length === 0) return;
+    if ((this.remaining <= 0 || this.globalLimit) && Date.now() - this.timeDifference < this.resetTime) return;
     this.execute(this.queue.shift());
     this.remaining--;
     this.handle();
@@ -19055,7 +19207,7 @@ module.exports = APIRequest;
 const Constants = __webpack_require__(0);
 const Util = __webpack_require__(4);
 const Guild = __webpack_require__(22);
-const User = __webpack_require__(9);
+const User = __webpack_require__(10);
 const CategoryChannel = __webpack_require__(49);
 const DMChannel = __webpack_require__(51);
 const Emoji = __webpack_require__(16);
