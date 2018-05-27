@@ -8905,7 +8905,7 @@ class Guild {
    * // Fetch invite creator by their id
    * guild.fetchInvites()
    *  .then(invites => console.log(invites.find(invite => invite.inviter.id === '84484653687267328')))
-   *  .catch(console.error);
+   *  .then(console.error);
    */
   fetchInvites() {
     return this.client.rest.methods.getGuildInvites(this);
