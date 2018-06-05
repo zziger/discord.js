@@ -1679,94 +1679,6 @@ module.exports = Util;
 /* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Long = __webpack_require__(26);
-
-// Discord epoch (2015-01-01T00:00:00.000Z)
-const EPOCH = 1420070400000;
-let INCREMENT = 0;
-
-/**
- * A container for useful snowflake-related methods.
- */
-class SnowflakeUtil {
-  constructor() {
-    throw new Error(`The ${this.constructor.name} class may not be instantiated.`);
-  }
-
-  /**
-   * A Twitter snowflake, except the epoch is 2015-01-01T00:00:00.000Z
-   * ```
-   * If we have a snowflake '266241948824764416' we can represent it as binary:
-   *
-   * 64                                          22     17     12          0
-   *  000000111011000111100001101001000101000000  00001  00000  000000000000
-   *       number of ms since Discord epoch       worker  pid    increment
-   * ```
-   * @typedef {string} Snowflake
-   */
-
-  /**
-   * Generates a Discord snowflake.
-   * <info>This hardcodes the worker ID as 1 and the process ID as 0.</info>
-   * @param {number|Date} [timestamp=Date.now()] Timestamp or date of the snowflake to generate
-   * @returns {Snowflake} The generated snowflake
-   */
-  static generate(timestamp = Date.now()) {
-    if (timestamp instanceof Date) timestamp = timestamp.getTime();
-    if (typeof timestamp !== 'number' || isNaN(timestamp)) {
-      throw new TypeError(
-        `"timestamp" argument must be a number (received ${isNaN(timestamp) ? 'NaN' : typeof timestamp})`
-      );
-    }
-    if (INCREMENT >= 4095) INCREMENT = 0;
-    const BINARY = `${pad((timestamp - EPOCH).toString(2), 42)}0000100000${pad((INCREMENT++).toString(2), 12)}`;
-    return Long.fromString(BINARY, 2).toString();
-  }
-
-  /**
-   * A deconstructed snowflake.
-   * @typedef {Object} DeconstructedSnowflake
-   * @property {number} timestamp Timestamp the snowflake was created
-   * @property {Date} date Date the snowflake was created
-   * @property {number} workerID Worker ID in the snowflake
-   * @property {number} processID Process ID in the snowflake
-   * @property {number} increment Increment in the snowflake
-   * @property {string} binary Binary representation of the snowflake
-   */
-
-  /**
-   * Deconstructs a Discord snowflake.
-   * @param {Snowflake} snowflake Snowflake to deconstruct
-   * @returns {DeconstructedSnowflake} Deconstructed snowflake
-   */
-  static deconstruct(snowflake) {
-    const BINARY = pad(Long.fromString(snowflake).toString(2), 64);
-    const res = {
-      timestamp: parseInt(BINARY.substring(0, 42), 2) + EPOCH,
-      workerID: parseInt(BINARY.substring(42, 47), 2),
-      processID: parseInt(BINARY.substring(47, 52), 2),
-      increment: parseInt(BINARY.substring(52, 64), 2),
-      binary: BINARY,
-    };
-    Object.defineProperty(res, 'date', {
-      get: function get() { return new Date(this.timestamp); },
-      enumerable: true,
-    });
-    return res;
-  }
-}
-
-function pad(v, n, c = '0') {
-  return String(v).length >= n ? String(v) : (String(c).repeat(n) + v).slice(-n);
-}
-
-module.exports = SnowflakeUtil;
-
-
-/***/ }),
-/* 6 */
-/***/ (function(module, exports, __webpack_require__) {
-
 const Constants = __webpack_require__(0);
 const util = __webpack_require__(7);
 
@@ -2048,6 +1960,94 @@ Object.defineProperty(Permissions.prototype, 'member', {
 });
 
 module.exports = Permissions;
+
+
+/***/ }),
+/* 6 */
+/***/ (function(module, exports, __webpack_require__) {
+
+const Long = __webpack_require__(26);
+
+// Discord epoch (2015-01-01T00:00:00.000Z)
+const EPOCH = 1420070400000;
+let INCREMENT = 0;
+
+/**
+ * A container for useful snowflake-related methods.
+ */
+class SnowflakeUtil {
+  constructor() {
+    throw new Error(`The ${this.constructor.name} class may not be instantiated.`);
+  }
+
+  /**
+   * A Twitter snowflake, except the epoch is 2015-01-01T00:00:00.000Z
+   * ```
+   * If we have a snowflake '266241948824764416' we can represent it as binary:
+   *
+   * 64                                          22     17     12          0
+   *  000000111011000111100001101001000101000000  00001  00000  000000000000
+   *       number of ms since Discord epoch       worker  pid    increment
+   * ```
+   * @typedef {string} Snowflake
+   */
+
+  /**
+   * Generates a Discord snowflake.
+   * <info>This hardcodes the worker ID as 1 and the process ID as 0.</info>
+   * @param {number|Date} [timestamp=Date.now()] Timestamp or date of the snowflake to generate
+   * @returns {Snowflake} The generated snowflake
+   */
+  static generate(timestamp = Date.now()) {
+    if (timestamp instanceof Date) timestamp = timestamp.getTime();
+    if (typeof timestamp !== 'number' || isNaN(timestamp)) {
+      throw new TypeError(
+        `"timestamp" argument must be a number (received ${isNaN(timestamp) ? 'NaN' : typeof timestamp})`
+      );
+    }
+    if (INCREMENT >= 4095) INCREMENT = 0;
+    const BINARY = `${pad((timestamp - EPOCH).toString(2), 42)}0000100000${pad((INCREMENT++).toString(2), 12)}`;
+    return Long.fromString(BINARY, 2).toString();
+  }
+
+  /**
+   * A deconstructed snowflake.
+   * @typedef {Object} DeconstructedSnowflake
+   * @property {number} timestamp Timestamp the snowflake was created
+   * @property {Date} date Date the snowflake was created
+   * @property {number} workerID Worker ID in the snowflake
+   * @property {number} processID Process ID in the snowflake
+   * @property {number} increment Increment in the snowflake
+   * @property {string} binary Binary representation of the snowflake
+   */
+
+  /**
+   * Deconstructs a Discord snowflake.
+   * @param {Snowflake} snowflake Snowflake to deconstruct
+   * @returns {DeconstructedSnowflake} Deconstructed snowflake
+   */
+  static deconstruct(snowflake) {
+    const BINARY = pad(Long.fromString(snowflake).toString(2), 64);
+    const res = {
+      timestamp: parseInt(BINARY.substring(0, 42), 2) + EPOCH,
+      workerID: parseInt(BINARY.substring(42, 47), 2),
+      processID: parseInt(BINARY.substring(47, 52), 2),
+      increment: parseInt(BINARY.substring(52, 64), 2),
+      binary: BINARY,
+    };
+    Object.defineProperty(res, 'date', {
+      get: function get() { return new Date(this.timestamp); },
+      enumerable: true,
+    });
+    return res;
+  }
+}
+
+function pad(v, n, c = '0') {
+  return String(v).length >= n ? String(v) : (String(c).repeat(n) + v).slice(-n);
+}
+
+module.exports = SnowflakeUtil;
 
 
 /***/ }),
@@ -2647,8 +2647,8 @@ function hasOwnProperty(obj, prop) {
 /* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Snowflake = __webpack_require__(5);
-const Permissions = __webpack_require__(6);
+const Snowflake = __webpack_require__(6);
+const Permissions = __webpack_require__(5);
 const util = __webpack_require__(7);
 
 /**
@@ -3216,7 +3216,7 @@ process.umask = function() { return 0; };
 const TextBasedChannel = __webpack_require__(14);
 const Constants = __webpack_require__(0);
 const Presence = __webpack_require__(11).Presence;
-const Snowflake = __webpack_require__(5);
+const Snowflake = __webpack_require__(6);
 
 /**
  * Represents a user on Discord.
@@ -3628,7 +3628,7 @@ exports.Game = Game;
 /* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Snowflake = __webpack_require__(5);
+const Snowflake = __webpack_require__(6);
 
 /**
  * Represents any channel on Discord.
@@ -5507,7 +5507,7 @@ const MessageCollector = __webpack_require__(44);
 const Collection = __webpack_require__(3);
 const Attachment = __webpack_require__(21);
 const RichEmbed = __webpack_require__(20);
-const Snowflake = __webpack_require__(5);
+const Snowflake = __webpack_require__(6);
 const util = __webpack_require__(7);
 
 /**
@@ -5703,12 +5703,19 @@ class TextBasedChannel {
 
   /**
    * Gets the past messages sent in this channel. Resolves with a collection mapping message ID's to Message objects.
+   * <info>The returned Collection does not contain reaction users of the messages if they were not cached.
+   * Those need to be fetched separately in such a case.</info>
    * @param {ChannelLogsQueryOptions} [options={}] Query parameters to pass in
    * @returns {Promise<Collection<Snowflake, Message>>}
    * @example
    * // Get messages
    * channel.fetchMessages({ limit: 10 })
    *   .then(messages => console.log(`Received ${messages.size} messages`))
+   *   .catch(console.error);
+   * @example
+   * // Get messages and filter by user ID
+   * channel.fetchMessages()
+   *   .then(messages => console.log(`${messages.filter(m => m.author.id === '84484653687267328').size} messages`))
    *   .catch(console.error);
    */
   fetchMessages(options = {}) {
@@ -5725,7 +5732,14 @@ class TextBasedChannel {
 
   /**
    * Fetches the pinned messages of this channel and returns a collection of them.
+   * <info>The returned Collection does not contain any reaction data of the messages.
+   * Those need to be fetched separately.</info>
    * @returns {Promise<Collection<Snowflake, Message>>}
+   * @example
+   * // Get pinned messages
+   * channel.fetchPinnedMessages()
+   *   .then(messages => console.log(`Received ${messages.size} messages`))
+   *   .catch(console.error);
    */
   fetchPinnedMessages() {
     return this.client.rest.methods.getChannelPinnedMessages(this).then(data => {
@@ -6091,7 +6105,7 @@ const ReactionCollector = __webpack_require__(43);
 const Util = __webpack_require__(4);
 const Collection = __webpack_require__(3);
 const Constants = __webpack_require__(0);
-const Permissions = __webpack_require__(6);
+const Permissions = __webpack_require__(5);
 let GuildMember;
 
 /**
@@ -6679,8 +6693,8 @@ module.exports = Message;
 
 const Constants = __webpack_require__(0);
 const Collection = __webpack_require__(3);
-const Permissions = __webpack_require__(6);
-const Snowflake = __webpack_require__(5);
+const Permissions = __webpack_require__(5);
+const Snowflake = __webpack_require__(6);
 
 /**
  * Represents a custom emoji.
@@ -6929,7 +6943,7 @@ module.exports = Emoji;
 
 const TextBasedChannel = __webpack_require__(14);
 const Role = __webpack_require__(8);
-const Permissions = __webpack_require__(6);
+const Permissions = __webpack_require__(5);
 const Collection = __webpack_require__(3);
 const Presence = __webpack_require__(11).Presence;
 const util = __webpack_require__(7);
@@ -6955,7 +6969,7 @@ class GuildMember {
     this.guild = guild;
 
     /**
-     * The user that this guild member instance Represents
+     * The user that this member instance Represents
      * @type {User}
      */
     this.user = {};
@@ -6964,13 +6978,13 @@ class GuildMember {
     if (data) this.setup(data);
 
     /**
-     * The ID of the last message sent by the member in their guild, if one was sent
+     * The ID of the last message sent by this member in their guild, if one was sent
      * @type {?Snowflake}
      */
     this.lastMessageID = null;
 
     /**
-     * The Message object of the last message sent by the member in their guild, if one was sent
+     * The Message object of the last message sent by this member in their guild, if one was sent
      * @type {?Message}
      */
     this.lastMessage = null;
@@ -7014,19 +7028,19 @@ class GuildMember {
     this.voiceChannelID = data.channel_id;
 
     /**
-     * Whether this member is speaking
+     * Whether this member is speaking and the client is in the same channel
      * @type {boolean}
      */
     this.speaking = false;
 
     /**
-     * The nickname of this guild member, if they have one
+     * The nickname of this member, if they have one
      * @type {?string}
      */
     this.nickname = data.nick || null;
 
     /**
-     * The timestamp the member joined the guild at
+     * The timestamp this member joined the guild at
      * @type {number}
      */
     this.joinedTimestamp = new Date(data.joined_at).getTime();
@@ -7036,7 +7050,7 @@ class GuildMember {
   }
 
   /**
-   * The time the member joined the guild
+   * The time this member joined the guild
    * @type {Date}
    * @readonly
    */
@@ -7045,7 +7059,7 @@ class GuildMember {
   }
 
   /**
-   * The presence of this guild member
+   * The presence of this member
    * @type {Presence}
    * @readonly
    */
@@ -7054,7 +7068,7 @@ class GuildMember {
   }
 
   /**
-   * A list of roles that are applied to this GuildMember, mapped by the role ID
+   * A list of roles that are applied to this member, mapped by the role ID
    * @type {Collection<Snowflake, Role>}
    * @readonly
    */
@@ -7073,7 +7087,7 @@ class GuildMember {
   }
 
   /**
-   * The role of the member with the highest position
+   * The role of this member with the highest position
    * @type {Role}
    * @readonly
    */
@@ -7082,7 +7096,7 @@ class GuildMember {
   }
 
   /**
-   * The role of the member used to set their color
+   * The role of this member used to set their color
    * @type {?Role}
    * @readonly
    */
@@ -7093,7 +7107,7 @@ class GuildMember {
   }
 
   /**
-   * The displayed color of the member in base 10
+   * The displayed color of this member in base 10
    * @type {number}
    * @readonly
    */
@@ -7103,7 +7117,7 @@ class GuildMember {
   }
 
   /**
-   * The displayed color of the member in hexadecimal
+   * The displayed color of this member in hexadecimal
    * @type {string}
    * @readonly
    */
@@ -7113,7 +7127,7 @@ class GuildMember {
   }
 
   /**
-   * The role of the member used to hoist them in a separate category in the users list
+   * The role of this member used to hoist them in a separate category in the users list
    * @type {?Role}
    * @readonly
    */
@@ -7160,7 +7174,7 @@ class GuildMember {
   }
 
   /**
-   * The nickname of the member, or their username if they don't have one
+   * The nickname of this member, or their username if they don't have one
    * @type {string}
    * @readonly
    */
@@ -7169,7 +7183,7 @@ class GuildMember {
   }
 
   /**
-   * The overall set of permissions for the guild member, taking only roles into account
+   * The overall set of permissions for this member, taking only roles into account
    * @type {Permissions}
    * @readonly
    */
@@ -7184,7 +7198,7 @@ class GuildMember {
   }
 
   /**
-   * Whether the member is manageable in terms of role hierarchy by the client user
+   * Whether this member is manageable in terms of role hierarchy by the client user
    * @type {boolean}
    * @readonly
    */
@@ -7195,7 +7209,7 @@ class GuildMember {
   }
 
   /**
-   * Whether the member is kickable by the client user
+   * Whether this member is kickable by the client user
    * @type {boolean}
    * @readonly
    */
@@ -7204,7 +7218,7 @@ class GuildMember {
   }
 
   /**
-   * Whether the member is bannable by the client user
+   * Whether this member is bannable by the client user
    * @type {boolean}
    * @readonly
    */
@@ -7213,7 +7227,7 @@ class GuildMember {
   }
 
   /**
-   * Returns `channel.permissionsFor(guildMember)`. Returns permissions for a member in a guild channel,
+   * Returns `channel.permissionsFor(guildMember)`. Returns permissions for this member in a guild channel,
    * taking into account roles and permission overwrites.
    * @param {ChannelResolvable} channel The guild channel to use as context
    * @returns {?Permissions}
@@ -7225,7 +7239,7 @@ class GuildMember {
   }
 
   /**
-   * Checks if any of the member's roles have a permission.
+   * Checks if any of this member's roles have a permission.
    * @param {PermissionResolvable|PermissionResolvable[]} permission Permission(s) to check for
    * @param {boolean} [explicit=false] Whether to require the role to explicitly have the exact permission
    * **(deprecated)**
@@ -7243,7 +7257,7 @@ class GuildMember {
   }
 
   /**
-   * Checks whether the roles of the member allows them to perform specific actions.
+   * Checks whether the roles of this member allows them to perform specific actions.
    * @param {PermissionResolvable[]} permissions The permissions to check for
    * @param {boolean} [explicit=false] Whether to require the member to explicitly have the exact permissions
    * @returns {boolean}
@@ -7255,7 +7269,7 @@ class GuildMember {
   }
 
   /**
-   * Checks whether the roles of the member allows them to perform specific actions, and lists any missing permissions.
+   * Checks whether the roles of this member allows them to perform specific actions, and lists any missing permissions.
    * @param {PermissionResolvable[]} permissions The permissions to check for
    * @param {boolean} [explicit=false] Whether to require the member to explicitly have the exact permissions
    * @returns {PermissionResolvable[]}
@@ -7265,7 +7279,7 @@ class GuildMember {
   }
 
   /**
-   * The data for editing a guild member.
+   * The data for editing this member.
    * @typedef {Object} GuildMemberEditData
    * @property {string} [nick] The nickname to set for the member
    * @property {Collection<Snowflake, Role>|RoleResolvable[]} [roles] The roles or role IDs to apply
@@ -7275,7 +7289,7 @@ class GuildMember {
    */
 
   /**
-   * Edit a guild member.
+   * Edits this member.
    * @param {GuildMemberEditData} data The data to edit the member with
    * @param {string} [reason] Reason for editing this user
    * @returns {Promise<GuildMember>}
@@ -7293,7 +7307,7 @@ class GuildMember {
   }
 
   /**
-   * Mute/unmute a user.
+   * Mute/unmute this member.
    * @param {boolean} mute Whether or not the member should be muted
    * @param {string} [reason] Reason for muting or unmuting
    * @returns {Promise<GuildMember>}
@@ -7308,7 +7322,7 @@ class GuildMember {
   }
 
   /**
-   * Deafen/undeafen a user.
+   * Deafen/undeafen this member.
    * @param {boolean} deaf Whether or not the member should be deafened
    * @param {string} [reason] Reason for deafening or undeafening
    * @returns {Promise<GuildMember>}
@@ -7323,7 +7337,7 @@ class GuildMember {
   }
 
   /**
-   * Moves the guild member to the given channel.
+   * Moves this member to the given channel.
    * @param {ChannelResolvable} channel The channel to move the member to
    * @returns {Promise<GuildMember>}
    * @example
@@ -7337,7 +7351,7 @@ class GuildMember {
   }
 
   /**
-   * Sets the roles applied to the member.
+   * Sets the roles applied to this member.
    * @param {Collection<Snowflake, Role>|RoleResolvable[]} roles The roles or role IDs to apply
    * @param {string} [reason] Reason for applying the roles
    * @returns {Promise<GuildMember>}
@@ -7357,7 +7371,7 @@ class GuildMember {
   }
 
   /**
-   * Adds a single role to the member.
+   * Adds a single role to this member.
    * @param {RoleResolvable} role The role or ID of the role to add
    * @param {string} [reason] Reason for adding the role
    * @returns {Promise<GuildMember>}
@@ -7374,7 +7388,7 @@ class GuildMember {
   }
 
   /**
-   * Adds multiple roles to the member.
+   * Adds multiple roles to this member.
    * @param {Collection<Snowflake, Role>|RoleResolvable[]} roles The roles or role IDs to add
    * @param {string} [reason] Reason for adding the roles
    * @returns {Promise<GuildMember>}
@@ -7396,7 +7410,7 @@ class GuildMember {
   }
 
   /**
-   * Removes a single role from the member.
+   * Removes a single role from this member.
    * @param {RoleResolvable} role The role or ID of the role to remove
    * @param {string} [reason] Reason for removing the role
    * @returns {Promise<GuildMember>}
@@ -7413,7 +7427,7 @@ class GuildMember {
   }
 
   /**
-   * Removes multiple roles from the member.
+   * Removes multiple roles from this member.
    * @param {Collection<Snowflake, Role>|RoleResolvable[]} roles The roles or role IDs to remove
    * @param {string} [reason] Reason for removing the roles
    * @returns {Promise<GuildMember>}
@@ -7440,7 +7454,7 @@ class GuildMember {
   }
 
   /**
-   * Set the nickname for the guild member.
+   * Set the nickname for this member.
    * @param {string} nick The nickname for the guild member
    * @param {string} [reason] Reason for setting the nickname
    * @returns {Promise<GuildMember>}
@@ -7455,7 +7469,7 @@ class GuildMember {
   }
 
   /**
-   * Creates a DM channel between the client and the member.
+   * Creates a DM channel between the client and this member.
    * @returns {Promise<DMChannel>}
    */
   createDM() {
@@ -7485,7 +7499,7 @@ class GuildMember {
   }
 
   /**
-   * Ban this guild member.
+   * Ban this member.
    * @param {Object|number|string} [options] Ban options. If a number, the number of days to delete messages for, if a
    * string, the ban reason. Supplying an object allows you to do both.
    * @param {number} [options.days=0] Number of days of messages to delete
@@ -7536,7 +7550,7 @@ module.exports = GuildMember;
 const Channel = __webpack_require__(12);
 const Role = __webpack_require__(8);
 const PermissionOverwrites = __webpack_require__(50);
-const Permissions = __webpack_require__(6);
+const Permissions = __webpack_require__(5);
 const Collection = __webpack_require__(3);
 const Constants = __webpack_require__(0);
 const Invite = __webpack_require__(23);
@@ -8638,7 +8652,7 @@ const GuildMember = __webpack_require__(17);
 const Constants = __webpack_require__(0);
 const Collection = __webpack_require__(3);
 const Util = __webpack_require__(4);
-const Snowflake = __webpack_require__(5);
+const Snowflake = __webpack_require__(6);
 
 /**
  * Represents a guild (or a server) on Discord.
@@ -12715,7 +12729,7 @@ module.exports = Collector;
 /* 31 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Snowflake = __webpack_require__(5);
+const Snowflake = __webpack_require__(6);
 
 /**
  * Represents an OAuth2 Application.
@@ -13983,12 +13997,14 @@ class MessageReaction {
     const message = this.message;
     return message.client.rest.methods.getMessageReactionUsers(
       message, this.emoji.identifier, { after, before, limit }
-    ).then(users => {
-      for (const rawUser of users) {
+    ).then(data => {
+      const users = new Collection();
+      for (const rawUser of data) {
         const user = this.message.client.dataManager.newUser(rawUser);
         this.users.set(user.id, user);
+        users.set(user.id, user);
       }
-      return this.users;
+      return users;
     });
   }
 }
@@ -14305,7 +14321,7 @@ module.exports = PartialGuildChannel;
 /***/ (function(module, exports, __webpack_require__) {
 
 const Collection = __webpack_require__(3);
-const Snowflake = __webpack_require__(5);
+const Snowflake = __webpack_require__(6);
 const Webhook = __webpack_require__(24);
 const Invite = __webpack_require__(23);
 
@@ -15020,6 +15036,7 @@ module.exports = TextChannel;
 
 const GuildChannel = __webpack_require__(18);
 const Collection = __webpack_require__(3);
+const Permissions = __webpack_require__(5);
 
 /**
  * Represents a guild voice channel on Discord.
@@ -15072,6 +15089,15 @@ class VoiceChannel extends GuildChannel {
    */
   get full() {
     return this.userLimit > 0 && this.members.size >= this.userLimit;
+  }
+
+  /**
+   * Whether the channel is deletable by the client user
+   * @type {boolean}
+   * @readonly
+   */
+  get deletable() {
+    return super.deletable && this.permissionsFor(this.client.user).has(Permissions.FLAGS.CONNECT);
   }
 
   /**
@@ -16275,10 +16301,10 @@ module.exports = {
   Collection: __webpack_require__(3),
   Constants: __webpack_require__(0),
   DiscordAPIError: __webpack_require__(33),
-  EvaluatedPermissions: __webpack_require__(6),
-  Permissions: __webpack_require__(6),
-  Snowflake: __webpack_require__(5),
-  SnowflakeUtil: __webpack_require__(5),
+  EvaluatedPermissions: __webpack_require__(5),
+  Permissions: __webpack_require__(5),
+  Snowflake: __webpack_require__(6),
+  SnowflakeUtil: __webpack_require__(6),
   Util: Util,
   util: Util,
   version: __webpack_require__(36).version,
@@ -17147,7 +17173,7 @@ exports.homedir = function () {
 
 /* WEBPACK VAR INJECTION */(function(process) {const EventEmitter = __webpack_require__(19);
 const Constants = __webpack_require__(0);
-const Permissions = __webpack_require__(6);
+const Permissions = __webpack_require__(5);
 const Util = __webpack_require__(4);
 const RESTManager = __webpack_require__(37);
 const ClientDataManager = __webpack_require__(81);
@@ -17780,7 +17806,7 @@ module.exports = UserAgentManager;
 
 const querystring = __webpack_require__(35);
 const long = __webpack_require__(26);
-const Permissions = __webpack_require__(6);
+const Permissions = __webpack_require__(5);
 const Constants = __webpack_require__(0);
 const Endpoints = Constants.Endpoints;
 const Collection = __webpack_require__(3);
