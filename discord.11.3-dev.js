@@ -13107,6 +13107,10 @@ class GroupDMChannel extends Channel {
       }
     }
 
+    /**
+     * The ID of the last message in the channel, if one was sent
+     * @type {?Snowflake}
+     */
     this.lastMessageID = data.last_message_id;
   }
 
@@ -14994,6 +14998,10 @@ class DMChannel extends Channel {
      */
     this.recipient = this.client.dataManager.newUser(data.recipients[0]);
 
+    /**
+     * The ID of the last message in the channel, if one was sent
+     * @type {?Snowflake}
+     */
     this.lastMessageID = data.last_message_id;
   }
 
@@ -15072,6 +15080,10 @@ class TextChannel extends GuildChannel {
      */
     this.nsfw = Boolean(data.nsfw);
 
+    /**
+     * The ID of the last message sent in this channel, if one was sent
+     * @type {?Snowflake}
+     */
     this.lastMessageID = data.last_message_id;
   }
 
