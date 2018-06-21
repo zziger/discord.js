@@ -7183,7 +7183,7 @@ class GuildMember {
 
   /**
    * The time this member joined the guild
-   * @type {Date}
+   * @type {?Date}
    * @readonly
    */
   get joinedAt() {
