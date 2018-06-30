@@ -2681,6 +2681,12 @@ class Role {
      */
     this.guild = guild;
 
+    /**
+     * Whether the role has been deleted
+     * @type {boolean}
+     */
+    this.deleted = false;
+
     if (data) this.setup(data);
   }
 
@@ -3783,6 +3789,12 @@ class Channel {
      * @type {string}
      */
     this.type = null;
+
+    /**
+     * Whether the channel has been deleted
+     * @type {boolean}
+     */
+    this.deleted = false;
 
     if (data) this.setup(data);
   }
@@ -6087,7 +6099,7 @@ class TextBasedChannel {
       if (filterOld) {
         messages = messages.filter(m => Date.now() - Snowflake.deconstruct(m.id).date.getTime() < 1209600000);
       }
-      if (messages.length === 0) return new Collection();
+      if (messages.length === 0) return Promise.resolve(new Collection());
       if (messages.length === 1) {
         return messages[0].delete().then(() => new Collection([[messages[0].id, messages[0]]]));
       }
@@ -6256,6 +6268,12 @@ class Message {
      * @type {TextChannel|DMChannel|GroupDMChannel}
      */
     this.channel = channel;
+
+    /**
+     * Whether this message has been deleted
+     * @type {boolean}
+     */
+    this.deleted = false;
 
     if (data) this.setup(data);
   }
@@ -6547,9 +6565,9 @@ class Message {
    * @readonly
    */
   get deletable() {
-    return this.author.id === this.client.user.id || (this.guild &&
+    return !this.deleted && (this.author.id === this.client.user.id || (this.guild &&
       this.channel.permissionsFor(this.client.user).has(Permissions.FLAGS.MANAGE_MESSAGES)
-    );
+    ));
   }
 
   /**
@@ -6845,6 +6863,12 @@ class Emoji {
      */
     this.guild = guild;
 
+    /**
+     * Whether this emoji has been deleted
+     * @type {boolean}
+     */
+    this.deleted = false;
+
     this.setup(data);
   }
 
@@ -7124,6 +7148,12 @@ class GuildMember {
      * @type {?Message}
      */
     this.lastMessage = null;
+
+    /**
+     * Whether the member has been removed from the guild
+     * @type {boolean}
+     */
+    this.deleted = false;
   }
 
   setup(data) {
@@ -8824,6 +8854,12 @@ class Guild {
      * @type {Collection<Snowflake, Presence>}
      */
     this.presences = new Collection();
+
+    /**
+     * Whether the bot has been removed from the guild
+     * @type {boolean}
+     */
+    this.deleted = false;
 
     if (!data) return;
     if (data.unavailable) {
@@ -14516,7 +14552,7 @@ const Targets = {
  * * INVITE_DELETE: 42
  * * WEBHOOK_CREATE: 50
  * * WEBHOOK_UPDATE: 51
- * * WEBHOOK_DELETE: 50
+ * * WEBHOOK_DELETE: 52
  * * EMOJI_CREATE: 60
  * * EMOJI_UPDATE: 61
  * * EMOJI_DELETE: 62
@@ -17589,9 +17625,11 @@ class Client extends EventEmitter {
    * @param {string} token Token of the account to log in with
    * @returns {Promise<string>} Token of the account used
    * @example
-   * client.login('my token');
+   * client.login('my token')
+   *  .then(console.log)
+   *  .catch(console.error);
    */
-  login(token) {
+  login(token = this.token) {
     return this.rest.methods.login(token);
   }
 
@@ -17708,6 +17746,7 @@ class Client extends EventEmitter {
 
   /**
    * Obtains the OAuth Application of the bot from Discord.
+   * <warn>Bots can only fetch their own profile.</warn>
    * @param {Snowflake} [id='@me'] ID of application to fetch
    * @returns {Promise<OAuth2Application>}
    * client.fetchApplication('id')
@@ -17980,9 +18019,13 @@ class RESTMethods {
 
   login(token = this.client.token) {
     return new Promise((resolve, reject) => {
-      if (typeof token !== 'string') throw new Error(Constants.Errors.INVALID_TOKEN);
+      if (!token || typeof token !== 'string') throw new Error(Constants.Errors.INVALID_TOKEN);
       token = token.replace(/^Bot\s*/i, '');
-      this.client.manager.connectToWebSocket(token, resolve, reject);
+      this.client.manager.connectToWebSocket(token, resolve, reject)
+        .catch(e => {
+          this.client.destroy();
+          return Promise.reject(e);
+        });
     });
   }
 
@@ -19565,6 +19608,7 @@ class ClientManager {
       const gateway = `${res.url}/?v=${protocolVersion}&encoding=${WebSocketConnection.ENCODING}`;
       this.client.emit(Constants.Events.DEBUG, `Using gateway ${gateway}`);
       this.client.ws.connect(gateway);
+      this.client.ws.connection.once('error', reject);
       this.client.ws.connection.once('close', event => {
         if (event.code === 4004) reject(new Error(Constants.Errors.BAD_LOGIN));
         if (event.code === 4010) reject(new Error(Constants.Errors.INVALID_SHARD));
@@ -21055,6 +21099,7 @@ class MessageDeleteAction extends Action {
       } else {
         message = this.deleted.get(channel.id + data.id) || null;
       }
+      if (message) message.deleted = true;
     }
 
     return { message };
@@ -21086,6 +21131,7 @@ class MessageDeleteBulkAction extends Action {
       for (const id of data.ids) {
         const message = channel.messages.get(id);
         if (message) {
+          message.deleted = true;
           messages.set(message.id, message);
           channel.messages.delete(id);
         }
@@ -21303,6 +21349,7 @@ class ChannelDeleteAction extends Action {
     } else {
       channel = this.deleted.get(data.id) || null;
     }
+    if (channel) channel.deleted = true;
 
     return { channel };
   }
@@ -21399,6 +21446,7 @@ class GuildDeleteAction extends Action {
     } else {
       guild = this.deleted.get(data.id) || null;
     }
+    if (guild) guild.deleted = true;
 
     return { guild };
   }
@@ -21501,6 +21549,7 @@ class GuildMemberRemoveAction extends Action {
       } else {
         member = this.deleted.get(guild.id + data.user.id) || null;
       }
+      if (member) member.deleted = true;
     }
     return { guild, member };
   }
@@ -21598,6 +21647,7 @@ class GuildRoleDeleteAction extends Action {
       } else {
         role = this.deleted.get(guild.id + data.role_id) || null;
       }
+      if (role) role.deleted = true;
     }
 
     return { role };
@@ -21824,6 +21874,7 @@ class GuildEmojiDeleteAction extends Action {
   handle(emoji) {
     const client = this.client;
     client.dataManager.killEmoji(emoji);
+    emoji.deleted = true;
     return { emoji };
   }
 }
