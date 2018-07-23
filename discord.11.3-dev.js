@@ -9593,6 +9593,7 @@ class Guild {
   setDefaultMessageNotifications(defaultMessageNotifications, reason) {
     return this.edit({ defaultMessageNotifications }, reason);
   }
+  /* eslint-enable max-len */
 
   /**
    * Edit the name of the guild.
