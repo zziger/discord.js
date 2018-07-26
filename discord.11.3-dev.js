@@ -948,7 +948,7 @@ module.exports = GenericAction;
 /* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(process) {const util = __webpack_require__(7);
+/* WEBPACK VAR INJECTION */(function(process) {const util = __webpack_require__(6);
 
 /**
  * A Map with additional utility methods. This is used throughout discord.js rather than Arrays for anything that has
@@ -1714,7 +1714,7 @@ module.exports = Util;
 /***/ (function(module, exports, __webpack_require__) {
 
 const Constants = __webpack_require__(0);
-const util = __webpack_require__(7);
+const util = __webpack_require__(6);
 
 /**
  * Data structure that makes it easy to interact with a permission bitfield. All {@link GuildMember}s have a set of
@@ -2007,94 +2007,6 @@ module.exports = Permissions;
 
 /***/ }),
 /* 6 */
-/***/ (function(module, exports, __webpack_require__) {
-
-const Long = __webpack_require__(26);
-
-// Discord epoch (2015-01-01T00:00:00.000Z)
-const EPOCH = 1420070400000;
-let INCREMENT = 0;
-
-/**
- * A container for useful snowflake-related methods.
- */
-class SnowflakeUtil {
-  constructor() {
-    throw new Error(`The ${this.constructor.name} class may not be instantiated.`);
-  }
-
-  /**
-   * A Twitter snowflake, except the epoch is 2015-01-01T00:00:00.000Z
-   * ```
-   * If we have a snowflake '266241948824764416' we can represent it as binary:
-   *
-   * 64                                          22     17     12          0
-   *  000000111011000111100001101001000101000000  00001  00000  000000000000
-   *       number of ms since Discord epoch       worker  pid    increment
-   * ```
-   * @typedef {string} Snowflake
-   */
-
-  /**
-   * Generates a Discord snowflake.
-   * <info>This hardcodes the worker ID as 1 and the process ID as 0.</info>
-   * @param {number|Date} [timestamp=Date.now()] Timestamp or date of the snowflake to generate
-   * @returns {Snowflake} The generated snowflake
-   */
-  static generate(timestamp = Date.now()) {
-    if (timestamp instanceof Date) timestamp = timestamp.getTime();
-    if (typeof timestamp !== 'number' || isNaN(timestamp)) {
-      throw new TypeError(
-        `"timestamp" argument must be a number (received ${isNaN(timestamp) ? 'NaN' : typeof timestamp})`
-      );
-    }
-    if (INCREMENT >= 4095) INCREMENT = 0;
-    const BINARY = `${pad((timestamp - EPOCH).toString(2), 42)}0000100000${pad((INCREMENT++).toString(2), 12)}`;
-    return Long.fromString(BINARY, 2).toString();
-  }
-
-  /**
-   * A deconstructed snowflake.
-   * @typedef {Object} DeconstructedSnowflake
-   * @property {number} timestamp Timestamp the snowflake was created
-   * @property {Date} date Date the snowflake was created
-   * @property {number} workerID Worker ID in the snowflake
-   * @property {number} processID Process ID in the snowflake
-   * @property {number} increment Increment in the snowflake
-   * @property {string} binary Binary representation of the snowflake
-   */
-
-  /**
-   * Deconstructs a Discord snowflake.
-   * @param {Snowflake} snowflake Snowflake to deconstruct
-   * @returns {DeconstructedSnowflake} Deconstructed snowflake
-   */
-  static deconstruct(snowflake) {
-    const BINARY = pad(Long.fromString(snowflake).toString(2), 64);
-    const res = {
-      timestamp: parseInt(BINARY.substring(0, 42), 2) + EPOCH,
-      workerID: parseInt(BINARY.substring(42, 47), 2),
-      processID: parseInt(BINARY.substring(47, 52), 2),
-      increment: parseInt(BINARY.substring(52, 64), 2),
-      binary: BINARY,
-    };
-    Object.defineProperty(res, 'date', {
-      get: function get() { return new Date(this.timestamp); },
-      enumerable: true,
-    });
-    return res;
-  }
-}
-
-function pad(v, n, c = '0') {
-  return String(v).length >= n ? String(v) : (String(c).repeat(n) + v).slice(-n);
-}
-
-module.exports = SnowflakeUtil;
-
-
-/***/ }),
-/* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(global, process) {// Copyright Joyent, Inc. and other Node contributors.
@@ -2687,12 +2599,100 @@ function hasOwnProperty(obj, prop) {
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(34), __webpack_require__(9)))
 
 /***/ }),
+/* 7 */
+/***/ (function(module, exports, __webpack_require__) {
+
+const Long = __webpack_require__(26);
+
+// Discord epoch (2015-01-01T00:00:00.000Z)
+const EPOCH = 1420070400000;
+let INCREMENT = 0;
+
+/**
+ * A container for useful snowflake-related methods.
+ */
+class SnowflakeUtil {
+  constructor() {
+    throw new Error(`The ${this.constructor.name} class may not be instantiated.`);
+  }
+
+  /**
+   * A Twitter snowflake, except the epoch is 2015-01-01T00:00:00.000Z
+   * ```
+   * If we have a snowflake '266241948824764416' we can represent it as binary:
+   *
+   * 64                                          22     17     12          0
+   *  000000111011000111100001101001000101000000  00001  00000  000000000000
+   *       number of ms since Discord epoch       worker  pid    increment
+   * ```
+   * @typedef {string} Snowflake
+   */
+
+  /**
+   * Generates a Discord snowflake.
+   * <info>This hardcodes the worker ID as 1 and the process ID as 0.</info>
+   * @param {number|Date} [timestamp=Date.now()] Timestamp or date of the snowflake to generate
+   * @returns {Snowflake} The generated snowflake
+   */
+  static generate(timestamp = Date.now()) {
+    if (timestamp instanceof Date) timestamp = timestamp.getTime();
+    if (typeof timestamp !== 'number' || isNaN(timestamp)) {
+      throw new TypeError(
+        `"timestamp" argument must be a number (received ${isNaN(timestamp) ? 'NaN' : typeof timestamp})`
+      );
+    }
+    if (INCREMENT >= 4095) INCREMENT = 0;
+    const BINARY = `${pad((timestamp - EPOCH).toString(2), 42)}0000100000${pad((INCREMENT++).toString(2), 12)}`;
+    return Long.fromString(BINARY, 2).toString();
+  }
+
+  /**
+   * A deconstructed snowflake.
+   * @typedef {Object} DeconstructedSnowflake
+   * @property {number} timestamp Timestamp the snowflake was created
+   * @property {Date} date Date the snowflake was created
+   * @property {number} workerID Worker ID in the snowflake
+   * @property {number} processID Process ID in the snowflake
+   * @property {number} increment Increment in the snowflake
+   * @property {string} binary Binary representation of the snowflake
+   */
+
+  /**
+   * Deconstructs a Discord snowflake.
+   * @param {Snowflake} snowflake Snowflake to deconstruct
+   * @returns {DeconstructedSnowflake} Deconstructed snowflake
+   */
+  static deconstruct(snowflake) {
+    const BINARY = pad(Long.fromString(snowflake).toString(2), 64);
+    const res = {
+      timestamp: parseInt(BINARY.substring(0, 42), 2) + EPOCH,
+      workerID: parseInt(BINARY.substring(42, 47), 2),
+      processID: parseInt(BINARY.substring(47, 52), 2),
+      increment: parseInt(BINARY.substring(52, 64), 2),
+      binary: BINARY,
+    };
+    Object.defineProperty(res, 'date', {
+      get: function get() { return new Date(this.timestamp); },
+      enumerable: true,
+    });
+    return res;
+  }
+}
+
+function pad(v, n, c = '0') {
+  return String(v).length >= n ? String(v) : (String(c).repeat(n) + v).slice(-n);
+}
+
+module.exports = SnowflakeUtil;
+
+
+/***/ }),
 /* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Snowflake = __webpack_require__(6);
+const Snowflake = __webpack_require__(7);
 const Permissions = __webpack_require__(5);
-const util = __webpack_require__(7);
+const util = __webpack_require__(6);
 
 /**
  * Represents a role on Discord.
@@ -3265,7 +3265,8 @@ process.umask = function() { return 0; };
 const TextBasedChannel = __webpack_require__(14);
 const Constants = __webpack_require__(0);
 const Presence = __webpack_require__(11).Presence;
-const Snowflake = __webpack_require__(6);
+const Snowflake = __webpack_require__(7);
+const util = __webpack_require__(6);
 
 /**
  * Represents a user on Discord.
@@ -3564,6 +3565,24 @@ class User {
 
 TextBasedChannel.applyToClass(User);
 
+User.prototype.block =
+  util.deprecate(User.prototype.block, 'User#block: userbot methods will be removed');
+
+User.prototype.unblock =
+  util.deprecate(User.prototype.unblock, 'User#unblock: userbot methods will be removed');
+
+User.prototype.addFriend =
+  util.deprecate(User.prototype.addFriend, 'User#addFriend: userbot methods will be removed');
+
+User.prototype.removeFriend =
+  util.deprecate(User.prototype.removeFriend, 'User#removeFriend: userbot methods will be removed');
+
+User.prototype.setNote =
+  util.deprecate(User.prototype.setNote, 'User#setNote, userbot methods will be removed');
+
+User.prototype.fetchProfile =
+  util.deprecate(User.prototype.fetchProfile, 'User#fetchProfile: userbot methods will be removed');
+
 module.exports = User;
 
 
@@ -3796,7 +3815,7 @@ exports.RichPresenceAssets = RichPresenceAssets;
 /* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Snowflake = __webpack_require__(6);
+const Snowflake = __webpack_require__(7);
 
 /**
  * Represents any channel on Discord.
@@ -5681,8 +5700,8 @@ const MessageCollector = __webpack_require__(44);
 const Collection = __webpack_require__(3);
 const Attachment = __webpack_require__(21);
 const RichEmbed = __webpack_require__(20);
-const Snowflake = __webpack_require__(6);
-const util = __webpack_require__(7);
+const Snowflake = __webpack_require__(7);
+const util = __webpack_require__(6);
 
 /**
  * Interface for classes that have text-channel-like features.
@@ -6271,6 +6290,13 @@ exports.applyToClass = (structure, full = false, ignore = []) => {
   }
 };
 
+TextBasedChannel.prototype.acknowledge = util.deprecate(
+  TextBasedChannel.prototype.acknowledge, 'TextBasedChannel#acknowledge: userbot methods will be removed'
+);
+
+TextBasedChannel.prototype.search =
+  util.deprecate(TextBasedChannel.prototype.search, 'TextBasedChannel#search: userbot methods will be removed');
+
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(13).Buffer))
 
 /***/ }),
@@ -6492,6 +6518,15 @@ class Message {
    */
   get guild() {
     return this.channel.guild || null;
+  }
+
+  /**
+   * The url to jump to the message
+   * @type {string}
+   * @readonly
+   */
+  get url() {
+    return `https://discordapp.com/channels/${this.guild ? this.guild.id : '@me'}/${this.channel.id}/${this.id}`;
   }
 
   /**
@@ -6881,7 +6916,7 @@ module.exports = Message;
 const Constants = __webpack_require__(0);
 const Collection = __webpack_require__(3);
 const Permissions = __webpack_require__(5);
-const Snowflake = __webpack_require__(6);
+const Snowflake = __webpack_require__(7);
 
 /**
  * Represents a custom emoji.
@@ -7041,6 +7076,7 @@ class Emoji {
    * @returns {Promise<User>}
    */
   fetchAuthor() {
+    if (this.managed) return Promise.reject(new TypeError('Emoji is managed and has no Author.'));
     return this.client.rest.makeRequest('get', Constants.Endpoints.Guild(this.guild).Emoji(this.id), true)
       .then(emoji => this.client.dataManager.newUser(emoji.user));
   }
@@ -7139,7 +7175,7 @@ const Role = __webpack_require__(8);
 const Permissions = __webpack_require__(5);
 const Collection = __webpack_require__(3);
 const { Presence } = __webpack_require__(11);
-const util = __webpack_require__(7);
+const util = __webpack_require__(6);
 
 /**
  * Represents a member of a guild on Discord.
@@ -8911,7 +8947,7 @@ module.exports = Attachment;
 /* 22 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const util = __webpack_require__(7);
+const util = __webpack_require__(6);
 const Long = __webpack_require__(26);
 const User = __webpack_require__(10);
 const Role = __webpack_require__(8);
@@ -8921,7 +8957,7 @@ const GuildMember = __webpack_require__(17);
 const Constants = __webpack_require__(0);
 const Collection = __webpack_require__(3);
 const Util = __webpack_require__(4);
-const Snowflake = __webpack_require__(6);
+const Snowflake = __webpack_require__(7);
 
 /**
  * Represents a guild (or a server) on Discord.
@@ -10246,6 +10282,18 @@ Object.defineProperty(Guild.prototype, 'defaultChannel', {
   }, 'Guild#defaultChannel: This property is obsolete, will be removed in v12.0.0, and may not function as expected.'),
 });
 
+Guild.prototype.acknowledge =
+  util.deprecate(Guild.prototype.acknowledge, 'Guild#acknowledge: userbot methods will be removed');
+
+Guild.prototype.setPosition =
+  util.deprecate(Guild.prototype.setPosition, 'Guild#setPosition: userbot methods will be removed');
+
+Guild.prototype.search =
+  util.deprecate(Guild.prototype.search, 'Guild#search: userbot methods will be removed');
+
+Guild.prototype.sync =
+  util.deprecate(Guild.prototype.sync, 'Guild#sync:, userbot methods will be removed');
+
 module.exports = Guild;
 
 
@@ -10459,7 +10507,7 @@ class Webhook {
      * The token for the webhook
      * @type {string}
      */
-    this.token = data.token;
+    Object.defineProperty(this, 'token', { value: data.token, writable: true, configurable: true });
 
     /**
      * The avatar for the webhook
@@ -13032,7 +13080,8 @@ module.exports = Collector;
 /* 31 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Snowflake = __webpack_require__(6);
+const Snowflake = __webpack_require__(7);
+const util = __webpack_require__(6);
 
 /**
  * Represents an OAuth2 Application.
@@ -13173,6 +13222,9 @@ class OAuth2Application {
     return this.name;
   }
 }
+
+OAuth2Application.prototype.reset =
+  util.deprecate(OAuth2Application.prototype.reset, 'OAuth2Application#reset: userbot methods will be removed');
 
 module.exports = OAuth2Application;
 
@@ -14415,7 +14467,7 @@ module.exports = ReactionCollector;
 /***/ (function(module, exports, __webpack_require__) {
 
 const Collector = __webpack_require__(30);
-const util = __webpack_require__(7);
+const util = __webpack_require__(6);
 
 /**
  * @typedef {CollectorOptions} MessageCollectorOptions
@@ -14628,7 +14680,7 @@ module.exports = PartialGuildChannel;
 /***/ (function(module, exports, __webpack_require__) {
 
 const Collection = __webpack_require__(3);
-const Snowflake = __webpack_require__(6);
+const Snowflake = __webpack_require__(7);
 const Webhook = __webpack_require__(24);
 const Invite = __webpack_require__(23);
 
@@ -16042,7 +16094,7 @@ const Collection = __webpack_require__(3);
 const ClientUserSettings = __webpack_require__(56);
 const ClientUserGuildSettings = __webpack_require__(57);
 const Constants = __webpack_require__(0);
-const util = __webpack_require__(7);
+const util = __webpack_require__(6);
 
 /**
  * Represents the logged in client's Discord user.
@@ -16342,6 +16394,7 @@ class ClientUser extends User {
 
   /**
    * Fetches messages that mentioned the client's user.
+   * <warn>This is only available when using a user account.</warn>
    * @param {Object} [options] Options for the fetch
    * @param {number} [options.limit=25] Maximum number of mentions to retrieve
    * @param {boolean} [options.roles=true] Whether to include role mentions
@@ -16450,6 +16503,21 @@ class ClientUser extends User {
 
 ClientUser.prototype.setGame =
   util.deprecate(ClientUser.prototype.setGame, 'ClientUser#setGame: use ClientUser#setActivity instead');
+
+ClientUser.prototype.addFriend =
+  util.deprecate(ClientUser.prototype.addFriend, 'ClientUser#addFriend: userbot methods will be removed');
+
+ClientUser.prototype.removeFriend =
+  util.deprecate(ClientUser.prototype.removeFriend, 'ClientUser#removeFriend: userbot methods will be removed');
+
+ClientUser.prototype.setPassword =
+  util.deprecate(ClientUser.prototype.setPassword, 'ClientUser#setPassword: userbot methods will be removed');
+
+ClientUser.prototype.setEmail =
+  util.deprecate(ClientUser.prototype.setEmail, 'ClientUser#setEmail: userbot methods will be removed');
+
+ClientUser.prototype.fetchMentions =
+  util.deprecate(ClientUser.prototype.fetchMentions, 'ClientUser#fetchMentions: userbot methods will be removed');
 
 module.exports = ClientUser;
 
@@ -16641,8 +16709,8 @@ module.exports = {
   DiscordAPIError: __webpack_require__(33),
   EvaluatedPermissions: __webpack_require__(5),
   Permissions: __webpack_require__(5),
-  Snowflake: __webpack_require__(6),
-  SnowflakeUtil: __webpack_require__(6),
+  Snowflake: __webpack_require__(7),
+  SnowflakeUtil: __webpack_require__(7),
   Util: Util,
   util: Util,
   version: __webpack_require__(36).version,
@@ -17777,8 +17845,8 @@ class Client extends EventEmitter {
    * Logs the client in, establishing a websocket connection to Discord.
    * <info>Both bot and regular user accounts are supported, but it is highly recommended to use a bot account whenever
    * possible. User accounts are subject to harsher ratelimits and other restrictions that don't apply to bot accounts.
-   * Bot accounts also have access to many features that user accounts cannot utilise. User accounts that are found to
-   * be abusing/overusing the API will be banned, locking you out of Discord entirely.</info>
+   * Bot accounts also have access to many features that user accounts cannot utilise. Automating a user account is
+   * considered a violation of the ToS.</info>
    * @param {string} token Token of the account to log in with
    * @returns {Promise<string>} Token of the account used
    * @example
@@ -17906,11 +17974,12 @@ class Client extends EventEmitter {
    * <warn>Bots can only fetch their own profile.</warn>
    * @param {Snowflake} [id='@me'] ID of application to fetch
    * @returns {Promise<OAuth2Application>}
-   * client.fetchApplication('id')
+   * client.fetchApplication()
    *   .then(application => console.log(`Obtained application with name: ${application.name}`)
    *   .catch(console.error);
    */
   fetchApplication(id = '@me') {
+    if (id !== '@me') process.emitWarning('fetchApplication: use "@me" as an argument', 'DeprecationWarning');
     return this.rest.methods.getApplication(id);
   }
 
