@@ -67,7 +67,7 @@
 /* 0 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(process) {exports.Package = __webpack_require__(36);
+/* WEBPACK VAR INJECTION */(function(process) {exports.Package = __webpack_require__(37);
 
 /**
  * Options for a client.
@@ -2596,7 +2596,7 @@ function hasOwnProperty(obj, prop) {
   return Object.prototype.hasOwnProperty.call(obj, prop);
 }
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(34), __webpack_require__(9)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(35), __webpack_require__(9)))
 
 /***/ }),
 /* 7 */
@@ -3262,7 +3262,7 @@ process.umask = function() { return 0; };
 /* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const TextBasedChannel = __webpack_require__(14);
+const TextBasedChannel = __webpack_require__(15);
 const Constants = __webpack_require__(0);
 const Presence = __webpack_require__(11).Presence;
 const Snowflake = __webpack_require__(7);
@@ -5688,18 +5688,301 @@ function isnan (val) {
   return val !== val // eslint-disable-line no-self-compare
 }
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(34)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(35)))
 
 /***/ }),
 /* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(Buffer) {const path = __webpack_require__(27);
-const Message = __webpack_require__(15);
+const Attachment = __webpack_require__(21);
+const MessageEmbed = __webpack_require__(27);
+let ClientDataResolver;
+
+/**
+ * A rich embed to be sent with a message with a fluent interface for creation.
+ * @param {Object} [data] Data to set in the rich embed
+ */
+class RichEmbed {
+  constructor(data = {}) {
+    /**
+     * Title for this Embed
+     * @type {string}
+     */
+    this.title = data.title;
+
+    /**
+     * Description for this Embed
+     * @type {string}
+     */
+    this.description = data.description;
+
+    /**
+     * URL for this Embed
+     * @type {string}
+     */
+    this.url = data.url;
+
+    /**
+     * Color for this Embed
+     * @type {number}
+     */
+    this.color = data.color;
+
+    /**
+     * Author for this Embed
+     * @type {Object}
+     */
+    this.author = data.author;
+
+    /**
+     * Timestamp for this Embed
+     * @type {number}
+     */
+    this.timestamp = data.timestamp;
+
+    /**
+     * Fields for this Embed
+     * @type {Object[]}
+     */
+    this.fields = data.fields || [];
+
+    /**
+     * Thumbnail for this Embed
+     * @type {Object}
+     */
+    this.thumbnail = data.thumbnail;
+
+    /**
+     * Image for this Embed
+     * @type {Object}
+     */
+    this.image = data.image;
+
+    /**
+     * Footer for this Embed
+     * @type {Object}
+     */
+    this.footer = data.footer;
+
+    /**
+     * File to upload alongside this Embed
+     * @type {FileOptions|string|Attachment}
+     */
+    this.file = data.file;
+
+    /**
+     * The files to upload alongside this Embed
+     * @type {Array<FileOptions|string|Attachment>}
+     */
+    this.files = [];
+  }
+
+  /**
+   * Sets the title of this embed.
+   * @param {StringResolvable} title The title
+   * @returns {RichEmbed} This embed
+   */
+  setTitle(title) {
+    title = resolveString(title);
+    if (title.length > 256) throw new RangeError('RichEmbed titles may not exceed 256 characters.');
+    this.title = title;
+    return this;
+  }
+
+  /**
+   * Sets the description of this embed.
+   * @param {StringResolvable} description The description
+   * @returns {RichEmbed} This embed
+   */
+  setDescription(description) {
+    description = resolveString(description);
+    if (description.length > 2048) throw new RangeError('RichEmbed descriptions may not exceed 2048 characters.');
+    this.description = description;
+    return this;
+  }
+
+  /**
+   * Sets the URL of this embed.
+   * @param {string} url The URL
+   * @returns {RichEmbed} This embed
+   */
+  setURL(url) {
+    this.url = url;
+    return this;
+  }
+
+  /**
+   * Sets the color of this embed.
+   * @param {ColorResolvable} color The color of the embed
+   * @returns {RichEmbed} This embed
+   */
+  setColor(color) {
+    if (!ClientDataResolver) ClientDataResolver = __webpack_require__(28);
+    this.color = ClientDataResolver.resolveColor(color);
+    return this;
+  }
+
+  /**
+   * Sets the author of this embed.
+   * @param {StringResolvable} name The name of the author
+   * @param {string} [icon] The icon URL of the author
+   * @param {string} [url] The URL of the author
+   * @returns {RichEmbed} This embed
+   */
+  setAuthor(name, icon, url) {
+    this.author = { name: resolveString(name), icon_url: icon, url };
+    return this;
+  }
+
+  /**
+   * Sets the timestamp of this embed.
+   * @param {Date} [timestamp=new Date()] The timestamp
+   * @returns {RichEmbed} This embed
+   */
+  setTimestamp(timestamp = new Date()) {
+    this.timestamp = timestamp;
+    return this;
+  }
+
+  /**
+   * Adds a field to the embed (max 25).
+   * @param {StringResolvable} name The name of the field
+   * @param {StringResolvable} value The value of the field
+   * @param {boolean} [inline=false] Set the field to display inline
+   * @returns {RichEmbed} This embed
+   */
+  addField(name, value, inline = false) {
+    if (this.fields.length >= 25) throw new RangeError('RichEmbeds may not exceed 25 fields.');
+    name = resolveString(name);
+    if (name.length > 256) throw new RangeError('RichEmbed field names may not exceed 256 characters.');
+    if (!/\S/.test(name)) throw new RangeError('RichEmbed field names may not be empty.');
+    value = resolveString(value);
+    if (value.length > 1024) throw new RangeError('RichEmbed field values may not exceed 1024 characters.');
+    if (!/\S/.test(value)) throw new RangeError('RichEmbed field values may not be empty.');
+    this.fields.push({ name, value, inline });
+    return this;
+  }
+
+  /**
+   * Convenience function for `<RichEmbed>.addField('\u200B', '\u200B', inline)`.
+   * @param {boolean} [inline=false] Set the field to display inline
+   * @returns {RichEmbed} This embed
+   */
+  addBlankField(inline = false) {
+    return this.addField('\u200B', '\u200B', inline);
+  }
+
+  /**
+   * Set the thumbnail of this embed.
+   * @param {string} url The URL of the thumbnail
+   * @returns {RichEmbed} This embed
+   */
+  setThumbnail(url) {
+    this.thumbnail = { url };
+    return this;
+  }
+
+  /**
+   * Set the image of this embed.
+   * @param {string} url The URL of the image
+   * @returns {RichEmbed} This embed
+   */
+  setImage(url) {
+    this.image = { url };
+    return this;
+  }
+
+  /**
+   * Sets the footer of this embed.
+   * @param {StringResolvable} text The text of the footer
+   * @param {string} [icon] The icon URL of the footer
+   * @returns {RichEmbed} This embed
+   */
+  setFooter(text, icon) {
+    text = resolveString(text);
+    if (text.length > 2048) throw new RangeError('RichEmbed footer text may not exceed 2048 characters.');
+    this.footer = { text, icon_url: icon };
+    return this;
+  }
+
+  /**
+   * Sets the file to upload alongside the embed. This file can be accessed via `attachment://fileName.extension` when
+   * setting an embed image or author/footer icons. Only one file may be attached.
+   * @param {FileOptions|string|Attachment} file Local path or URL to the file to attach,
+   * or valid FileOptions for a file to attach
+   * @returns {RichEmbed} This embed
+   */
+  attachFile(file) {
+    if (this.file) throw new RangeError('You may not upload more than one file at once.');
+    if (file instanceof Attachment) file = file.file;
+    this.file = file;
+    return this;
+  }
+
+  /**
+   * Sets the files to upload alongside the embed. A file can be accessed via `attachment://fileName.extension` when
+   * setting an embed image or author/footer icons. Multiple files can be attached.
+   * @param {Array<FileOptions|string|Attachment>} files Files to attach
+   * @returns {RichEmbed}
+   */
+  attachFiles(files) {
+    files = files.map(file => file instanceof Attachment ? file.file : file);
+    this.files = this.files.concat(files);
+    return this;
+  }
+
+  /**
+   * Transforms the embed object to be processed.
+   * @returns {Object} The raw data of this embed
+   * @private
+   */
+  _apiTransform() {
+    return {
+      title: this.title,
+      type: 'rich',
+      description: this.description,
+      url: this.url,
+      timestamp: this.timestamp ? new Date(this.timestamp) : null,
+      color: this.color,
+      fields: this.fields ? this.fields.map(field => ({ name: field.name, value: field.value })) : null,
+      thumbnail: this.thumbnail ? {
+        url: this.thumbnail.url,
+      } : null,
+      image: this.image ? {
+        url: this.image.url,
+      } : null,
+      author: this.author ? {
+        name: this.author.name,
+        url: this.author.url,
+        icon_url: this.author instanceof MessageEmbed.Author ? this.author.iconURL : this.author.icon_url,
+      } : null,
+      footer: this.footer ? {
+        text: this.footer.text,
+        icon_url: this.footer instanceof MessageEmbed.Footer ? this.footer.iconURL : this.footer.icon_url,
+      } : null,
+    };
+  }
+}
+
+module.exports = RichEmbed;
+
+function resolveString(data) {
+  if (typeof data === 'string') return data;
+  if (data instanceof Array) return data.join('\n');
+  return String(data);
+}
+
+
+/***/ }),
+/* 15 */
+/***/ (function(module, exports, __webpack_require__) {
+
+/* WEBPACK VAR INJECTION */(function(Buffer) {const path = __webpack_require__(29);
+const Message = __webpack_require__(16);
 const MessageCollector = __webpack_require__(44);
 const Collection = __webpack_require__(3);
 const Attachment = __webpack_require__(21);
-const RichEmbed = __webpack_require__(20);
+const RichEmbed = __webpack_require__(14);
 const Snowflake = __webpack_require__(7);
 const util = __webpack_require__(6);
 
@@ -5821,9 +6104,15 @@ class TextBasedChannel {
     }
     options.reply = reply;
 
-    if (options.embed && options.embed.file) {
-      if (options.files) options.files.push(options.embed.file);
-      else options.files = [options.embed.file];
+    if (options.embed) {
+      if (options.embed.file) {
+        if (options.files) options.files.push(options.embed.file);
+        else options.files = [options.embed.file];
+      }
+      if (options.embed.files) {
+        if (options.files) options.files = options.files.concat(options.embed.files);
+        else options.files = options.embed.files;
+      }
     }
 
     if (options.file) {
@@ -6300,13 +6589,13 @@ TextBasedChannel.prototype.search =
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(13).Buffer))
 
 /***/ }),
-/* 15 */
+/* 16 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Mentions = __webpack_require__(38);
-const Attachment = __webpack_require__(39);
-const Embed = __webpack_require__(40);
-const RichEmbed = __webpack_require__(20);
+const Mentions = __webpack_require__(40);
+const Attachment = __webpack_require__(41);
+const Embed = __webpack_require__(27);
+const RichEmbed = __webpack_require__(14);
 const MessageReaction = __webpack_require__(42);
 const ReactionCollector = __webpack_require__(43);
 const Util = __webpack_require__(4);
@@ -6673,7 +6962,7 @@ class Message {
    */
   isMemberMentioned(member) {
     // Lazy-loading is used here to get around a circular dependency that breaks things
-    if (!GuildMember) GuildMember = __webpack_require__(17);
+    if (!GuildMember) GuildMember = __webpack_require__(18);
     if (this.mentions.everyone) return true;
     if (this.mentions.users.has(member.id)) return true;
     if (member instanceof GuildMember && member.roles.some(r => this.mentions.roles.has(r.id))) return true;
@@ -6910,7 +7199,7 @@ module.exports = Message;
 
 
 /***/ }),
-/* 16 */
+/* 17 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Constants = __webpack_require__(0);
@@ -7167,10 +7456,10 @@ module.exports = Emoji;
 
 
 /***/ }),
-/* 17 */
+/* 18 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const TextBasedChannel = __webpack_require__(14);
+const TextBasedChannel = __webpack_require__(15);
 const Role = __webpack_require__(8);
 const Permissions = __webpack_require__(5);
 const Collection = __webpack_require__(3);
@@ -7782,7 +8071,7 @@ module.exports = GuildMember;
 
 
 /***/ }),
-/* 18 */
+/* 19 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Channel = __webpack_require__(12);
@@ -8293,7 +8582,7 @@ module.exports = GuildChannel;
 
 
 /***/ }),
-/* 19 */
+/* 20 */
 /***/ (function(module, exports) {
 
 // Copyright Joyent, Inc. and other Node contributors.
@@ -8601,268 +8890,6 @@ function isUndefined(arg) {
 
 
 /***/ }),
-/* 20 */
-/***/ (function(module, exports, __webpack_require__) {
-
-const Attachment = __webpack_require__(21);
-let ClientDataResolver;
-
-/**
- * A rich embed to be sent with a message with a fluent interface for creation.
- * @param {Object} [data] Data to set in the rich embed
- */
-class RichEmbed {
-  constructor(data = {}) {
-    /**
-     * Title for this Embed
-     * @type {string}
-     */
-    this.title = data.title;
-
-    /**
-     * Description for this Embed
-     * @type {string}
-     */
-    this.description = data.description;
-
-    /**
-     * URL for this Embed
-     * @type {string}
-     */
-    this.url = data.url;
-
-    /**
-     * Color for this Embed
-     * @type {number}
-     */
-    this.color = data.color;
-
-    /**
-     * Author for this Embed
-     * @type {Object}
-     */
-    this.author = data.author;
-
-    /**
-     * Timestamp for this Embed
-     * @type {number}
-     */
-    this.timestamp = data.timestamp;
-
-    /**
-     * Fields for this Embed
-     * @type {Object[]}
-     */
-    this.fields = data.fields || [];
-
-    /**
-     * Thumbnail for this Embed
-     * @type {Object}
-     */
-    this.thumbnail = data.thumbnail;
-
-    /**
-     * Image for this Embed
-     * @type {Object}
-     */
-    this.image = data.image;
-
-    /**
-     * Footer for this Embed
-     * @type {Object}
-     */
-    this.footer = data.footer;
-
-    /**
-     * File to upload alongside this Embed
-     * @type {FileOptions|string|Attachment}
-     */
-    this.file = data.file;
-  }
-
-  /**
-   * Sets the title of this embed.
-   * @param {StringResolvable} title The title
-   * @returns {RichEmbed} This embed
-   */
-  setTitle(title) {
-    title = resolveString(title);
-    if (title.length > 256) throw new RangeError('RichEmbed titles may not exceed 256 characters.');
-    this.title = title;
-    return this;
-  }
-
-  /**
-   * Sets the description of this embed.
-   * @param {StringResolvable} description The description
-   * @returns {RichEmbed} This embed
-   */
-  setDescription(description) {
-    description = resolveString(description);
-    if (description.length > 2048) throw new RangeError('RichEmbed descriptions may not exceed 2048 characters.');
-    this.description = description;
-    return this;
-  }
-
-  /**
-   * Sets the URL of this embed.
-   * @param {string} url The URL
-   * @returns {RichEmbed} This embed
-   */
-  setURL(url) {
-    this.url = url;
-    return this;
-  }
-
-  /**
-   * Sets the color of this embed.
-   * @param {ColorResolvable} color The color of the embed
-   * @returns {RichEmbed} This embed
-   */
-  setColor(color) {
-    if (!ClientDataResolver) ClientDataResolver = __webpack_require__(28);
-    this.color = ClientDataResolver.resolveColor(color);
-    return this;
-  }
-
-  /**
-   * Sets the author of this embed.
-   * @param {StringResolvable} name The name of the author
-   * @param {string} [icon] The icon URL of the author
-   * @param {string} [url] The URL of the author
-   * @returns {RichEmbed} This embed
-   */
-  setAuthor(name, icon, url) {
-    this.author = { name: resolveString(name), icon_url: icon, url };
-    return this;
-  }
-
-  /**
-   * Sets the timestamp of this embed.
-   * @param {Date} [timestamp=new Date()] The timestamp
-   * @returns {RichEmbed} This embed
-   */
-  setTimestamp(timestamp = new Date()) {
-    this.timestamp = timestamp;
-    return this;
-  }
-
-  /**
-   * Adds a field to the embed (max 25).
-   * @param {StringResolvable} name The name of the field
-   * @param {StringResolvable} value The value of the field
-   * @param {boolean} [inline=false] Set the field to display inline
-   * @returns {RichEmbed} This embed
-   */
-  addField(name, value, inline = false) {
-    if (this.fields.length >= 25) throw new RangeError('RichEmbeds may not exceed 25 fields.');
-    name = resolveString(name);
-    if (name.length > 256) throw new RangeError('RichEmbed field names may not exceed 256 characters.');
-    if (!/\S/.test(name)) throw new RangeError('RichEmbed field names may not be empty.');
-    value = resolveString(value);
-    if (value.length > 1024) throw new RangeError('RichEmbed field values may not exceed 1024 characters.');
-    if (!/\S/.test(value)) throw new RangeError('RichEmbed field values may not be empty.');
-    this.fields.push({ name, value, inline });
-    return this;
-  }
-
-  /**
-   * Convenience function for `<RichEmbed>.addField('\u200B', '\u200B', inline)`.
-   * @param {boolean} [inline=false] Set the field to display inline
-   * @returns {RichEmbed} This embed
-   */
-  addBlankField(inline = false) {
-    return this.addField('\u200B', '\u200B', inline);
-  }
-
-  /**
-   * Set the thumbnail of this embed.
-   * @param {string} url The URL of the thumbnail
-   * @returns {RichEmbed} This embed
-   */
-  setThumbnail(url) {
-    this.thumbnail = { url };
-    return this;
-  }
-
-  /**
-   * Set the image of this embed.
-   * @param {string} url The URL of the image
-   * @returns {RichEmbed} This embed
-   */
-  setImage(url) {
-    this.image = { url };
-    return this;
-  }
-
-  /**
-   * Sets the footer of this embed.
-   * @param {StringResolvable} text The text of the footer
-   * @param {string} [icon] The icon URL of the footer
-   * @returns {RichEmbed} This embed
-   */
-  setFooter(text, icon) {
-    text = resolveString(text);
-    if (text.length > 2048) throw new RangeError('RichEmbed footer text may not exceed 2048 characters.');
-    this.footer = { text, icon_url: icon };
-    return this;
-  }
-
-  /**
-   * Sets the file to upload alongside the embed. This file can be accessed via `attachment://fileName.extension` when
-   * setting an embed image or author/footer icons. Only one file may be attached.
-   * @param {FileOptions|string|Attachment} file Local path or URL to the file to attach,
-   * or valid FileOptions for a file to attach
-   * @returns {RichEmbed} This embed
-   */
-  attachFile(file) {
-    if (this.file) throw new RangeError('You may not upload more than one file at once.');
-    if (file instanceof Attachment) file = file.file;
-    this.file = file;
-    return this;
-  }
-
-  /**
-   * Transforms the embed object to be processed.
-   * @returns {Object} The raw data of this embed
-   * @private
-   */
-  _apiTransform() {
-    return {
-      title: this.title,
-      type: 'rich',
-      description: this.description,
-      url: this.url,
-      timestamp: this.timestamp ? new Date(this.timestamp) : null,
-      color: this.color,
-      fields: this.fields,
-      thumbnail: this.thumbnail,
-      image: this.image ? {
-        url: this.image.url,
-      } : null,
-      author: this.author ? {
-        name: this.author.name,
-        url: this.author.url,
-        icon_url: this.author.iconURL,
-      } : null,
-      footer: this.footer ? {
-        text: this.footer.text,
-        icon_url: this.footer.iconURL,
-      } : null,
-    };
-  }
-}
-
-module.exports = RichEmbed;
-
-function resolveString(data) {
-  if (typeof data === 'string') return data;
-  if (data instanceof Array) return data.join('\n');
-  return String(data);
-}
-
-
-/***/ }),
 /* 21 */
 /***/ (function(module, exports) {
 
@@ -8951,9 +8978,9 @@ const util = __webpack_require__(6);
 const Long = __webpack_require__(26);
 const User = __webpack_require__(10);
 const Role = __webpack_require__(8);
-const Emoji = __webpack_require__(16);
+const Emoji = __webpack_require__(17);
 const Presence = __webpack_require__(11).Presence;
-const GuildMember = __webpack_require__(17);
+const GuildMember = __webpack_require__(18);
 const Constants = __webpack_require__(0);
 const Collection = __webpack_require__(3);
 const Util = __webpack_require__(4);
@@ -10470,10 +10497,10 @@ module.exports = Invite;
 /* 24 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(Buffer) {const path = __webpack_require__(27);
+/* WEBPACK VAR INJECTION */(function(Buffer) {const path = __webpack_require__(29);
 const Util = __webpack_require__(4);
 const Attachment = __webpack_require__(21);
-const RichEmbed = __webpack_require__(20);
+const RichEmbed = __webpack_require__(14);
 
 /**
  * Represents a webhook.
@@ -12225,1654 +12252,6 @@ Long.fromBytesBE = function fromBytesBE(bytes, unsigned) {
 
 /***/ }),
 /* 27 */
-/***/ (function(module, exports, __webpack_require__) {
-
-/* WEBPACK VAR INJECTION */(function(process) {// Copyright Joyent, Inc. and other Node contributors.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to permit
-// persons to whom the Software is furnished to do so, subject to the
-// following conditions:
-//
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-// USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-// resolves . and .. elements in a path array with directory names there
-// must be no slashes, empty elements, or device names (c:\) in the array
-// (so also no leading and trailing slashes - it does not distinguish
-// relative and absolute paths)
-function normalizeArray(parts, allowAboveRoot) {
-  // if the path tries to go above the root, `up` ends up > 0
-  var up = 0;
-  for (var i = parts.length - 1; i >= 0; i--) {
-    var last = parts[i];
-    if (last === '.') {
-      parts.splice(i, 1);
-    } else if (last === '..') {
-      parts.splice(i, 1);
-      up++;
-    } else if (up) {
-      parts.splice(i, 1);
-      up--;
-    }
-  }
-
-  // if the path is allowed to go above the root, restore leading ..s
-  if (allowAboveRoot) {
-    for (; up--; up) {
-      parts.unshift('..');
-    }
-  }
-
-  return parts;
-}
-
-// Split a filename into [root, dir, basename, ext], unix version
-// 'root' is just a slash, or nothing.
-var splitPathRe =
-    /^(\/?|)([\s\S]*?)((?:\.{1,2}|[^\/]+?|)(\.[^.\/]*|))(?:[\/]*)$/;
-var splitPath = function(filename) {
-  return splitPathRe.exec(filename).slice(1);
-};
-
-// path.resolve([from ...], to)
-// posix version
-exports.resolve = function() {
-  var resolvedPath = '',
-      resolvedAbsolute = false;
-
-  for (var i = arguments.length - 1; i >= -1 && !resolvedAbsolute; i--) {
-    var path = (i >= 0) ? arguments[i] : process.cwd();
-
-    // Skip empty and invalid entries
-    if (typeof path !== 'string') {
-      throw new TypeError('Arguments to path.resolve must be strings');
-    } else if (!path) {
-      continue;
-    }
-
-    resolvedPath = path + '/' + resolvedPath;
-    resolvedAbsolute = path.charAt(0) === '/';
-  }
-
-  // At this point the path should be resolved to a full absolute path, but
-  // handle relative paths to be safe (might happen when process.cwd() fails)
-
-  // Normalize the path
-  resolvedPath = normalizeArray(filter(resolvedPath.split('/'), function(p) {
-    return !!p;
-  }), !resolvedAbsolute).join('/');
-
-  return ((resolvedAbsolute ? '/' : '') + resolvedPath) || '.';
-};
-
-// path.normalize(path)
-// posix version
-exports.normalize = function(path) {
-  var isAbsolute = exports.isAbsolute(path),
-      trailingSlash = substr(path, -1) === '/';
-
-  // Normalize the path
-  path = normalizeArray(filter(path.split('/'), function(p) {
-    return !!p;
-  }), !isAbsolute).join('/');
-
-  if (!path && !isAbsolute) {
-    path = '.';
-  }
-  if (path && trailingSlash) {
-    path += '/';
-  }
-
-  return (isAbsolute ? '/' : '') + path;
-};
-
-// posix version
-exports.isAbsolute = function(path) {
-  return path.charAt(0) === '/';
-};
-
-// posix version
-exports.join = function() {
-  var paths = Array.prototype.slice.call(arguments, 0);
-  return exports.normalize(filter(paths, function(p, index) {
-    if (typeof p !== 'string') {
-      throw new TypeError('Arguments to path.join must be strings');
-    }
-    return p;
-  }).join('/'));
-};
-
-
-// path.relative(from, to)
-// posix version
-exports.relative = function(from, to) {
-  from = exports.resolve(from).substr(1);
-  to = exports.resolve(to).substr(1);
-
-  function trim(arr) {
-    var start = 0;
-    for (; start < arr.length; start++) {
-      if (arr[start] !== '') break;
-    }
-
-    var end = arr.length - 1;
-    for (; end >= 0; end--) {
-      if (arr[end] !== '') break;
-    }
-
-    if (start > end) return [];
-    return arr.slice(start, end - start + 1);
-  }
-
-  var fromParts = trim(from.split('/'));
-  var toParts = trim(to.split('/'));
-
-  var length = Math.min(fromParts.length, toParts.length);
-  var samePartsLength = length;
-  for (var i = 0; i < length; i++) {
-    if (fromParts[i] !== toParts[i]) {
-      samePartsLength = i;
-      break;
-    }
-  }
-
-  var outputParts = [];
-  for (var i = samePartsLength; i < fromParts.length; i++) {
-    outputParts.push('..');
-  }
-
-  outputParts = outputParts.concat(toParts.slice(samePartsLength));
-
-  return outputParts.join('/');
-};
-
-exports.sep = '/';
-exports.delimiter = ':';
-
-exports.dirname = function(path) {
-  var result = splitPath(path),
-      root = result[0],
-      dir = result[1];
-
-  if (!root && !dir) {
-    // No dirname whatsoever
-    return '.';
-  }
-
-  if (dir) {
-    // It has a dirname, strip trailing slash
-    dir = dir.substr(0, dir.length - 1);
-  }
-
-  return root + dir;
-};
-
-
-exports.basename = function(path, ext) {
-  var f = splitPath(path)[2];
-  // TODO: make this comparison case-insensitive on windows?
-  if (ext && f.substr(-1 * ext.length) === ext) {
-    f = f.substr(0, f.length - ext.length);
-  }
-  return f;
-};
-
-
-exports.extname = function(path) {
-  return splitPath(path)[3];
-};
-
-function filter (xs, f) {
-    if (xs.filter) return xs.filter(f);
-    var res = [];
-    for (var i = 0; i < xs.length; i++) {
-        if (f(xs[i], i, xs)) res.push(xs[i]);
-    }
-    return res;
-}
-
-// String.prototype.substr - negative index don't work in IE8
-var substr = 'ab'.substr(-1) === 'b'
-    ? function (str, start, len) { return str.substr(start, len) }
-    : function (str, start, len) {
-        if (start < 0) start = str.length + start;
-        return str.substr(start, len);
-    }
-;
-
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
-
-/***/ }),
-/* 28 */
-/***/ (function(module, exports, __webpack_require__) {
-
-/* WEBPACK VAR INJECTION */(function(Buffer) {const path = __webpack_require__(27);
-const fs = __webpack_require__(41);
-const snekfetch = __webpack_require__(25);
-
-const Constants = __webpack_require__(0);
-const convertToBuffer = __webpack_require__(4).convertToBuffer;
-const User = __webpack_require__(10);
-const Message = __webpack_require__(15);
-const Guild = __webpack_require__(22);
-const Channel = __webpack_require__(12);
-const GuildMember = __webpack_require__(17);
-const Emoji = __webpack_require__(16);
-const ReactionEmoji = __webpack_require__(29);
-const Role = __webpack_require__(8);
-
-/**
- * The DataResolver identifies different objects and tries to resolve a specific piece of information from them, e.g.
- * extracting a User from a Message object.
- * @private
- */
-class ClientDataResolver {
-  /**
-   * @param {Client} client The client the resolver is for
-   */
-  constructor(client) {
-    this.client = client;
-  }
-
-  /**
-   * Data that resolves to give a User object. This can be:
-   * * A User object
-   * * A Snowflake
-   * * A Message object (resolves to the message author)
-   * * A Guild object (owner of the guild)
-   * * A GuildMember object
-   * @typedef {User|Snowflake|Message|Guild|GuildMember} UserResolvable
-   */
-
-  /**
-   * Resolves a UserResolvable to a User object.
-   * @param {UserResolvable} user The UserResolvable to identify
-   * @returns {?User}
-   */
-  resolveUser(user) {
-    if (user instanceof User) return user;
-    if (typeof user === 'string') return this.client.users.get(user) || null;
-    if (user instanceof GuildMember) return user.user;
-    if (user instanceof Message) return user.author;
-    if (user instanceof Guild) return user.owner;
-    return null;
-  }
-
-  /**
-   * Resolves a UserResolvable to a user ID string.
-   * @param {UserResolvable} user The UserResolvable to identify
-   * @returns {?Snowflake}
-   */
-  resolveUserID(user) {
-    if (user instanceof User || user instanceof GuildMember) return user.id;
-    if (typeof user === 'string') return user || null;
-    if (user instanceof Message) return user.author.id;
-    if (user instanceof Guild) return user.ownerID;
-    return null;
-  }
-
-  /**
-   * Data that resolves to give a Guild object. This can be:
-   * * A Guild object
-   * * A Snowflake
-   * @typedef {Guild|Snowflake} GuildResolvable
-   */
-
-  /**
-   * Resolves a GuildResolvable to a Guild object.
-   * @param {GuildResolvable} guild The GuildResolvable to identify
-   * @returns {?Guild}
-   */
-  resolveGuild(guild) {
-    if (guild instanceof Guild) return guild;
-    if (typeof guild === 'string') return this.client.guilds.get(guild) || null;
-    return null;
-  }
-
-  /**
-   * Data that resolves to give a GuildMember object. This can be:
-   * * A GuildMember object
-   * * A User object
-   * @typedef {GuildMember|User} GuildMemberResolvable
-   */
-
-  /**
-   * Resolves a GuildMemberResolvable to a GuildMember object.
-   * @param {GuildResolvable} guild The guild that the member is part of
-   * @param {UserResolvable} user The user that is part of the guild
-   * @returns {?GuildMember}
-   */
-  resolveGuildMember(guild, user) {
-    if (user instanceof GuildMember) return user;
-    guild = this.resolveGuild(guild);
-    user = this.resolveUser(user);
-    if (!guild || !user) return null;
-    return guild.members.get(user.id) || null;
-  }
-
-  /**
-   * Data that can be resolved to a Role object. This can be:
-   * * A Role
-   * * A Snowflake
-   * @typedef {Role|Snowflake} RoleResolvable
-   */
-
-  /**
-    * Resolves a RoleResolvable to a Role object.
-    * @param {GuildResolvable} guild The guild that this role is part of
-    * @param {RoleResolvable} role The role resolvable to resolve
-    * @returns {?Role}
-    */
-  resolveRole(guild, role) {
-    if (role instanceof Role) return role;
-    guild = this.resolveGuild(guild);
-    if (!guild) return null;
-    if (typeof role === 'string') return guild.roles.get(role);
-    return null;
-  }
-
-  /**
-   * Data that can be resolved to give a Channel object. This can be:
-   * * A Channel object
-   * * A Message object (the channel the message was sent in)
-   * * A Guild object (the #general channel)
-   * * A Snowflake
-   * @typedef {Channel|Guild|Message|Snowflake} ChannelResolvable
-   */
-
-  /**
-   * Resolves a ChannelResolvable to a Channel object.
-   * @param {ChannelResolvable} channel The channel resolvable to resolve
-   * @returns {?Channel}
-   */
-  resolveChannel(channel) {
-    if (channel instanceof Channel) return channel;
-    if (typeof channel === 'string') return this.client.channels.get(channel) || null;
-    if (channel instanceof Message) return channel.channel;
-    if (channel instanceof Guild) return channel.channels.get(channel.id) || null;
-    return null;
-  }
-
-  /**
-   * Resolves a ChannelResolvable to a channel ID.
-   * @param {ChannelResolvable} channel The channel resolvable to resolve
-   * @returns {?Snowflake}
-   */
-  resolveChannelID(channel) {
-    if (channel instanceof Channel) return channel.id;
-    if (typeof channel === 'string') return channel;
-    if (channel instanceof Message) return channel.channel.id;
-    if (channel instanceof Guild) return channel.defaultChannel.id;
-    return null;
-  }
-
-  /**
-   * Data that can be resolved to give an invite code. This can be:
-   * * An invite code
-   * * An invite URL
-   * @typedef {string} InviteResolvable
-   */
-
-  /**
-   * Resolves InviteResolvable to an invite code.
-   * @param {InviteResolvable} data The invite resolvable to resolve
-   * @returns {string}
-   */
-  resolveInviteCode(data) {
-    const inviteRegex = /discord(?:app\.com\/invite|\.gg(?:\/invite)?)\/([\w-]{2,255})/i;
-    const match = inviteRegex.exec(data);
-    if (match && match[1]) return match[1];
-    return data;
-  }
-
-  /**
-   * Data that can be resolved to give a string. This can be:
-   * * A string
-   * * An array (joined with a new line delimiter to give a string)
-   * * Any value
-   * @typedef {string|Array|*} StringResolvable
-   */
-
-  /**
-   * Resolves a StringResolvable to a string.
-   * @param {StringResolvable} data The string resolvable to resolve
-   * @returns {string}
-   */
-  resolveString(data) {
-    if (typeof data === 'string') return data;
-    if (data instanceof Array) return data.join('\n');
-    return String(data);
-  }
-
-
-  /**
-   * Resolves a Base64Resolvable, a string, or a BufferResolvable to a Base 64 image.
-   * @param {BufferResolvable|Base64Resolvable} image The image to be resolved
-   * @returns {Promise<?string>}
-   */
-  resolveImage(image) {
-    if (!image) return Promise.resolve(null);
-    if (typeof image === 'string' && image.startsWith('data:')) {
-      return Promise.resolve(image);
-    }
-    return this.resolveFile(image).then(this.resolveBase64);
-  }
-
-  /**
-   * Data that resolves to give a Base64 string, typically for image uploading. This can be:
-   * * A Buffer
-   * * A base64 string
-   * @typedef {Buffer|string} Base64Resolvable
-   */
-
-  /**
-   * Resolves a Base64Resolvable to a Base 64 image.
-   * @param {Base64Resolvable} data The base 64 resolvable you want to resolve
-   * @returns {?string}
-   */
-  resolveBase64(data) {
-    if (data instanceof Buffer) return `data:image/jpg;base64,${data.toString('base64')}`;
-    return data;
-  }
-
-  /**
-    * Data that can be resolved to give a Buffer. This can be:
-    * * A Buffer
-    * * The path to a local file
-    * * A URL
-    * * A Stream
-    * @typedef {string|Buffer} BufferResolvable
-    */
-
-  /**
-    * @external Stream
-    * @see {@link https://nodejs.org/api/stream.html}
-    */
-
-  /**
-    * Resolves a BufferResolvable to a Buffer.
-    * @param {BufferResolvable|Stream} resource The buffer or stream resolvable to resolve
-    * @returns {Promise<Buffer>}
-    */
-  resolveFile(resource) {
-    if (resource instanceof Buffer) return Promise.resolve(resource);
-    if (this.client.browser && resource instanceof ArrayBuffer) return Promise.resolve(convertToBuffer(resource));
-
-    if (typeof resource === 'string') {
-      if (/^https?:\/\//.test(resource)) {
-        return snekfetch.get(resource).then(res => res.body instanceof Buffer ? res.body : Buffer.from(res.text));
-      }
-      return new Promise((resolve, reject) => {
-        const file = path.resolve(resource);
-        fs.stat(file, (err, stats) => {
-          if (err) return reject(err);
-          if (!stats || !stats.isFile()) return reject(new Error(`The file could not be found: ${file}`));
-          fs.readFile(file, (err2, data) => {
-            if (err2) reject(err2);
-            else resolve(data);
-          });
-          return null;
-        });
-      });
-    } else if (resource && resource.pipe && typeof resource.pipe === 'function') {
-      return new Promise((resolve, reject) => {
-        const buffers = [];
-        resource.once('error', reject);
-        resource.on('data', data => buffers.push(data));
-        resource.once('end', () => resolve(Buffer.concat(buffers)));
-      });
-    }
-
-    return Promise.reject(new TypeError('The resource must be a string or Buffer.'));
-  }
-
-  /**
-   * Data that can be resolved to give an emoji identifier. This can be:
-   * * The unicode representation of an emoji
-   * * A custom emoji ID
-   * * An Emoji object
-   * * A ReactionEmoji object
-   * @typedef {string|Emoji|ReactionEmoji} EmojiIdentifierResolvable
-   */
-
-  /**
-   * Resolves an EmojiResolvable to an emoji identifier.
-   * @param {EmojiIdentifierResolvable} emoji The emoji resolvable to resolve
-   * @returns {?string}
-   */
-  resolveEmojiIdentifier(emoji) {
-    if (emoji instanceof Emoji || emoji instanceof ReactionEmoji) return emoji.identifier;
-    if (typeof emoji === 'string') {
-      if (this.client.emojis.has(emoji)) return this.client.emojis.get(emoji).identifier;
-      else if (!emoji.includes('%')) return encodeURIComponent(emoji);
-      else return emoji;
-    }
-    return null;
-  }
-
-  /**
-   * Can be a Hex Literal, Hex String, Number, RGB Array, or one of the following
-   * ```
-   * [
-   *   'DEFAULT',
-   *   'AQUA',
-   *   'GREEN',
-   *   'BLUE',
-   *   'PURPLE',
-   *   'LUMINOUS_VIVID_PINK',
-   *   'GOLD',
-   *   'ORANGE',
-   *   'RED',
-   *   'GREY',
-   *   'DARKER_GREY',
-   *   'NAVY',
-   *   'DARK_AQUA',
-   *   'DARK_GREEN',
-   *   'DARK_BLUE',
-   *   'DARK_PURPLE',
-   *   'DARK_VIVID_PINK',
-   *   'DARK_GOLD',
-   *   'DARK_ORANGE',
-   *   'DARK_RED',
-   *   'DARK_GREY',
-   *   'LIGHT_GREY',
-   *   'DARK_NAVY',
-   *   'RANDOM',
-   * ]
-   * ```
-   * or something like
-   * ```
-   * [255, 0, 255]
-   * ```
-   * for purple
-   * @typedef {string|number|Array} ColorResolvable
-   */
-
-  /**
-   * Resolves a ColorResolvable into a color number.
-   * @param {ColorResolvable} color Color to resolve
-   * @returns {number} A color
-   */
-  static resolveColor(color) {
-    if (typeof color === 'string') {
-      if (color === 'RANDOM') return Math.floor(Math.random() * (0xFFFFFF + 1));
-      if (color === 'DEFAULT') return 0;
-      color = Constants.Colors[color] || parseInt(color.replace('#', ''), 16);
-    } else if (color instanceof Array) {
-      color = (color[0] << 16) + (color[1] << 8) + color[2];
-    }
-
-    if (color < 0 || color > 0xFFFFFF) {
-      throw new RangeError('Color must be within the range 0 - 16777215 (0xFFFFFF).');
-    } else if (color && isNaN(color)) {
-      throw new TypeError('Unable to convert color to a number.');
-    }
-
-    return color;
-  }
-
-  /**
-   * @param {ColorResolvable} color Color to resolve
-   * @returns {number} A color
-   */
-  resolveColor(color) {
-    return this.constructor.resolveColor(color);
-  }
-}
-
-module.exports = ClientDataResolver;
-
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(13).Buffer))
-
-/***/ }),
-/* 29 */
-/***/ (function(module, exports) {
-
-/**
- * Represents a limited emoji set used for both custom and unicode emojis. Custom emojis
- * will use this class opposed to the Emoji class when the client doesn't know enough
- * information about them.
- */
-class ReactionEmoji {
-  constructor(reaction, name, id) {
-    /**
-     * The message reaction this emoji refers to
-     * @type {MessageReaction}
-     */
-    this.reaction = reaction;
-
-    /**
-     * The name of this reaction emoji
-     * @type {string}
-     */
-    this.name = name;
-
-    /**
-     * The ID of this reaction emoji
-     * @type {?Snowflake}
-     */
-    this.id = id;
-  }
-
-  /**
-   * The identifier of this emoji, used for message reactions
-   * @type {string}
-   * @readonly
-   */
-  get identifier() {
-    if (this.id) return `${this.name}:${this.id}`;
-    return encodeURIComponent(this.name);
-  }
-
-  /**
-   * Creates the text required to form a graphical emoji on Discord.
-   * @example
-   * // Send the emoji used in a reaction to the channel the reaction is part of
-   * reaction.message.channel.send(`The emoji used is ${reaction.emoji}`);
-   * @returns {string}
-   */
-  toString() {
-    return this.id ? `<:${this.name}:${this.id}>` : this.name;
-  }
-}
-
-module.exports = ReactionEmoji;
-
-
-/***/ }),
-/* 30 */
-/***/ (function(module, exports, __webpack_require__) {
-
-const Collection = __webpack_require__(3);
-const EventEmitter = __webpack_require__(19).EventEmitter;
-
-/**
- * Filter to be applied to the collector.
- * @typedef {Function} CollectorFilter
- * @param {...*} args Any arguments received by the listener
- * @param {Collection} collection The items collected by this collector
- * @returns {boolean}
- */
-
-/**
- * Options to be applied to the collector.
- * @typedef {Object} CollectorOptions
- * @property {number} [time] How long to run the collector for
- */
-
-/**
- * Abstract class for defining a new Collector.
- * @abstract
- */
-class Collector extends EventEmitter {
-  constructor(client, filter, options = {}) {
-    super();
-
-    /**
-     * The client
-     * @name Collector#client
-     * @type {Client}
-     * @readonly
-     */
-    Object.defineProperty(this, 'client', { value: client });
-
-    /**
-     * The filter applied to this collector
-     * @type {CollectorFilter}
-     */
-    this.filter = filter;
-
-    /**
-     * The options of this collector
-     * @type {CollectorOptions}
-     */
-    this.options = options;
-
-    /**
-     * The items collected by this collector
-     * @type {Collection}
-     */
-    this.collected = new Collection();
-
-    /**
-     * Whether this collector has finished collecting
-     * @type {boolean}
-     */
-    this.ended = false;
-
-    /**
-     * Timeout for cleanup
-     * @type {?Timeout}
-     * @private
-     */
-    this._timeout = null;
-
-    /**
-     * Call this to handle an event as a collectable element
-     * Accepts any event data as parameters
-     * @type {Function}
-     * @private
-     */
-    this.listener = this._handle.bind(this);
-    if (options.time) this._timeout = this.client.setTimeout(() => this.stop('time'), options.time);
-  }
-
-  /**
-   * @param {...*} args The arguments emitted by the listener
-   * @emits Collector#collect
-   * @private
-   */
-  _handle(...args) {
-    const collect = this.handle(...args);
-    if (!collect || !this.filter(...args, this.collected)) return;
-
-    this.collected.set(collect.key, collect.value);
-
-    /**
-     * Emitted whenever an element is collected.
-     * @event Collector#collect
-     * @param {*} element The element that got collected
-     * @param {Collector} collector The collector
-     */
-    this.emit('collect', collect.value, this);
-
-    const post = this.postCheck(...args);
-    if (post) this.stop(post);
-  }
-
-  /**
-   * Return a promise that resolves with the next collected element;
-   * rejects with collected elements if the collector finishes without receiving a next element
-   * @type {Promise}
-   * @readonly
-   */
-  get next() {
-    return new Promise((resolve, reject) => {
-      if (this.ended) {
-        reject(this.collected);
-        return;
-      }
-
-      const cleanup = () => {
-        this.removeListener('collect', onCollect);
-        this.removeListener('end', onEnd);
-      };
-
-      const onCollect = item => {
-        cleanup();
-        resolve(item);
-      };
-
-      const onEnd = () => {
-        cleanup();
-        reject(this.collected); // eslint-disable-line prefer-promise-reject-errors
-      };
-
-      this.on('collect', onCollect);
-      this.on('end', onEnd);
-    });
-  }
-
-  /**
-   * Stop this collector and emit the `end` event.
-   * @param {string} [reason='user'] The reason this collector is ending
-   * @emits Collector#end
-   */
-  stop(reason = 'user') {
-    if (this.ended) return;
-
-    if (this._timeout) this.client.clearTimeout(this._timeout);
-    this.ended = true;
-    this.cleanup();
-
-    /**
-     * Emitted when the collector is finished collecting.
-     * @event Collector#end
-     * @param {Collection} collected The elements collected by the collector
-     * @param {string} reason The reason the collector ended
-     */
-    this.emit('end', this.collected, reason);
-  }
-
-  /* eslint-disable no-empty-function, valid-jsdoc */
-  /**
-   * Handles incoming events from the `listener` function. Returns null if the event should not be collected,
-   * or returns an object describing the data that should be stored.
-   * @see Collector#listener
-   * @param {...*} args Any args the event listener emits
-   * @returns {?{key: string, value}} Data to insert into collection, if any
-   * @abstract
-   */
-  handle() {}
-
-  /**
-   * This method runs after collection to see if the collector should finish.
-   * @param {...*} args Any args the event listener emits
-   * @returns {?string} Reason to end the collector, if any
-   * @abstract
-   */
-  postCheck() {}
-
-  /**
-   * Called when the collector is ending.
-   * @abstract
-   */
-  cleanup() {}
-  /* eslint-enable no-empty-function, valid-jsdoc */
-}
-
-module.exports = Collector;
-
-
-/***/ }),
-/* 31 */
-/***/ (function(module, exports, __webpack_require__) {
-
-const Snowflake = __webpack_require__(7);
-const util = __webpack_require__(6);
-
-/**
- * Represents an OAuth2 Application.
- */
-class OAuth2Application {
-  constructor(client, data) {
-    /**
-     * The client that instantiated the application
-     * @name OAuth2Application#client
-     * @type {Client}
-     * @readonly
-     */
-    Object.defineProperty(this, 'client', { value: client });
-
-    this.setup(data);
-  }
-
-  setup(data) {
-    /**
-     * The ID of the app
-     * @type {Snowflake}
-     */
-    this.id = data.id;
-
-    /**
-     * The name of the app
-     * @type {string}
-     */
-    this.name = data.name;
-
-    /**
-     * The app's description
-     * @type {string}
-     */
-    this.description = data.description;
-
-    /**
-     * The app's icon hash
-     * @type {?string}
-     */
-    this.icon = data.icon;
-
-    /**
-     * The app's icon URL
-     * @type {string}
-     */
-    this.iconURL = `https://cdn.discordapp.com/app-icons/${this.id}/${this.icon}.jpg`;
-
-    /**
-     * The app's RPC origins
-     * @type {?string[]}
-     */
-    this.rpcOrigins = data.rpc_origins;
-
-    /**
-     * The app's redirect URIs
-     * @type {string[]}
-     */
-    this.redirectURIs = data.redirect_uris;
-
-    /**
-     * If this app's bot requires a code grant when using the OAuth2 flow
-     * @type {boolean}
-     */
-    this.botRequireCodeGrant = data.bot_require_code_grant;
-
-    /**
-     * If this app's bot is public
-     * @type {boolean}
-     */
-    this.botPublic = data.bot_public;
-
-    /**
-     * If this app can use rpc
-     * @type {boolean}
-     */
-    this.rpcApplicationState = data.rpc_application_state;
-
-    /**
-     * Object containing basic info about this app's bot
-     * @type {Object}
-     */
-    this.bot = data.bot;
-
-    /**
-     * The flags for the app
-     * @type {number}
-     */
-    this.flags = data.flags;
-
-    /**
-     * OAuth2 secret for the application
-     * @type {boolean}
-     */
-    this.secret = data.secret;
-
-    if (data.owner) {
-      /**
-       * The owner of this OAuth application
-       * @type {?User}
-       */
-      this.owner = this.client.dataManager.newUser(data.owner);
-    }
-  }
-
-  /**
-   * The timestamp the app was created at
-   * @type {number}
-   * @readonly
-   */
-  get createdTimestamp() {
-    return Snowflake.deconstruct(this.id).timestamp;
-  }
-
-  /**
-   * The time the app was created
-   * @type {Date}
-   * @readonly
-   */
-  get createdAt() {
-    return new Date(this.createdTimestamp);
-  }
-
-  /**
-   * Reset the app's secret and bot token.
-   * <warn>This is only available when using a user account.</warn>
-   * @returns {OAuth2Application}
-   */
-  reset() {
-    return this.client.rest.methods.resetApplication(this.id);
-  }
-
-  /**
-   * When concatenated with a string, this automatically concatenates the app name rather than the app object.
-   * @returns {string}
-   */
-  toString() {
-    return this.name;
-  }
-}
-
-OAuth2Application.prototype.reset =
-  util.deprecate(OAuth2Application.prototype.reset, 'OAuth2Application#reset: userbot methods will be removed');
-
-module.exports = OAuth2Application;
-
-
-/***/ }),
-/* 32 */
-/***/ (function(module, exports, __webpack_require__) {
-
-const Channel = __webpack_require__(12);
-const TextBasedChannel = __webpack_require__(14);
-const Collection = __webpack_require__(3);
-const Constants = __webpack_require__(0);
-
-/*
-{ type: 3,
-  recipients:
-   [ { username: 'Charlie',
-       id: '123',
-       discriminator: '6631',
-       avatar: '123' },
-     { username: 'Ben',
-       id: '123',
-       discriminator: '2055',
-       avatar: '123' },
-     { username: 'Adam',
-       id: '123',
-       discriminator: '2406',
-       avatar: '123' } ],
-  owner_id: '123',
-  name: null,
-  last_message_id: '123',
-  id: '123',
-  icon: null }
-*/
-
-/**
- * Represents a Group DM on Discord.
- * @extends {Channel}
- * @implements {TextBasedChannel}
- */
-class GroupDMChannel extends Channel {
-  constructor(client, data) {
-    super(client, data);
-    this.type = 'group';
-    this.messages = new Collection();
-    this._typing = new Map();
-  }
-
-  setup(data) {
-    super.setup(data);
-
-    /**
-     * The name of this Group DM, can be null if one isn't set
-     * @type {string}
-     */
-    this.name = data.name;
-
-    /**
-     * A hash of this Group DM icon
-     * @type {?string}
-     */
-    this.icon = data.icon;
-
-    /**
-     * The user ID of this Group DM's owner
-     * @type {string}
-     */
-    this.ownerID = data.owner_id;
-
-    /**
-     * If the DM is managed by an application
-     * @type {boolean}
-     */
-    this.managed = data.managed;
-
-    /**
-     * Application ID of the application that made this Group DM, if applicable
-     * @type {?string}
-     */
-    this.applicationID = data.application_id;
-
-    if (data.nicks) {
-      /**
-       * Nicknames for group members
-       * @type {?Collection<Snowflake, string>}
-       */
-      this.nicks = new Collection(data.nicks.map(n => [n.id, n.nick]));
-    }
-
-    if (!this.recipients) {
-      /**
-       * A collection of the recipients of this DM, mapped by their ID
-       * @type {Collection<Snowflake, User>}
-       */
-      this.recipients = new Collection();
-    }
-
-    if (data.recipients) {
-      for (const recipient of data.recipients) {
-        const user = this.client.dataManager.newUser(recipient);
-        this.recipients.set(user.id, user);
-      }
-    }
-
-    /**
-     * The ID of the last message in the channel, if one was sent
-     * @type {?Snowflake}
-     */
-    this.lastMessageID = data.last_message_id;
-  }
-
-  /**
-   * The owner of this Group DM
-   * @type {User}
-   * @readonly
-   */
-  get owner() {
-    return this.client.users.get(this.ownerID);
-  }
-
-  /**
-   * The URL to this guild's icon
-   * @type {?string}
-   * @readonly
-   */
-  get iconURL() {
-    if (!this.icon) return null;
-    return Constants.Endpoints.Channel(this).Icon(this.client.options.http.cdn, this.icon);
-  }
-
-  edit(data) {
-    const _data = {};
-    if (data.name) _data.name = data.name;
-    if (typeof data.icon !== 'undefined') _data.icon = data.icon;
-    return this.client.rest.methods.updateGroupDMChannel(this, _data);
-  }
-
-  /**
-   * Whether this channel equals another channel. It compares all properties, so for most operations
-   * it is advisable to just compare `channel.id === channel2.id` as it is much faster and is often
-   * what most users need.
-   * @param {GroupDMChannel} channel Channel to compare with
-   * @returns {boolean}
-   */
-  equals(channel) {
-    const equal = channel &&
-      this.id === channel.id &&
-      this.name === channel.name &&
-      this.icon === channel.icon &&
-      this.ownerID === channel.ownerID;
-
-    if (equal) {
-      return this.recipients.equals(channel.recipients);
-    }
-
-    return equal;
-  }
-
-  /**
-   * Add a user to the DM
-   * @param {UserResolvable|string} accessTokenOrID Access token or user resolvable
-   * @param {string} [nick] Permanent nickname to give the user (only available if a bot is creating the DM)
-   * @returns {Promise<GroupDMChannel>}
-   */
-
-  addUser(accessTokenOrID, nick) {
-    return this.client.rest.methods.addUserToGroupDM(this, {
-      nick,
-      id: this.client.resolver.resolveUserID(accessTokenOrID),
-      accessToken: accessTokenOrID,
-    });
-  }
-
-  /**
-   * Set a new GroupDMChannel icon.
-   * @param {Base64Resolvable|BufferResolvable} icon The new icon of the group dm
-   * @returns {Promise<GroupDMChannel>}
-   * @example
-   * // Edit the group dm icon
-   * channel.setIcon('./icon.png')
-   *  .then(updated => console.log('Updated the channel icon'))
-   *  .catch(console.error);
-   */
-  setIcon(icon) {
-    return this.client.resolver.resolveImage(icon).then(data => this.edit({ icon: data }));
-  }
-
-  /**
-   * Sets a new name for this Group DM.
-   * @param {string} name New name for this Group DM
-   * @returns {Promise<GroupDMChannel>}
-   */
-  setName(name) {
-    return this.edit({ name });
-  }
-
-  /**
-   * Removes a user from this Group DM.
-   * @param {UserResolvable} user User to remove
-   * @returns {Promise<GroupDMChannel>}
-   */
-  removeUser(user) {
-    const id = this.client.resolver.resolveUserID(user);
-    return this.client.rest.methods.removeUserFromGroupDM(this, id);
-  }
-
-  /**
-   * When concatenated with a string, this automatically concatenates the channel's name instead of the Channel object.
-   * @returns {string}
-   * @example
-   * // Logs: Hello from My Group DM!
-   * console.log(`Hello from ${channel}!`);
-   * @example
-   * // Logs: Hello from My Group DM!
-   * console.log(`Hello from ' + channel + '!');
-   */
-  toString() {
-    return this.name;
-  }
-
-  // These are here only for documentation purposes - they are implemented by TextBasedChannel
-  /* eslint-disable no-empty-function */
-  send() {}
-  sendMessage() {}
-  sendEmbed() {}
-  sendFile() {}
-  sendFiles() {}
-  sendCode() {}
-  fetchMessage() {}
-  fetchMessages() {}
-  fetchPinnedMessages() {}
-  search() {}
-  startTyping() {}
-  stopTyping() {}
-  get typing() {}
-  get typingCount() {}
-  createCollector() {}
-  createMessageCollector() {}
-  awaitMessages() {}
-  // Doesn't work on Group DMs; bulkDelete() {}
-  acknowledge() {}
-  _cacheMessage() {}
-}
-
-TextBasedChannel.applyToClass(GroupDMChannel, true, ['bulkDelete']);
-
-module.exports = GroupDMChannel;
-
-
-/***/ }),
-/* 33 */
-/***/ (function(module, exports) {
-
-/**
- * Represents an error from the Discord API.
- * @extends Error
- */
-class DiscordAPIError extends Error {
-  constructor(path, error, method) {
-    super();
-    const flattened = this.constructor.flattenErrors(error.errors || error).join('\n');
-    this.name = 'DiscordAPIError';
-    this.message = error.message && flattened ? `${error.message}\n${flattened}` : error.message || flattened;
-
-    /**
-     * The path of the request relative to the HTTP endpoint
-     * @type {string}
-     */
-    this.path = path;
-
-    /**
-     * HTTP error code returned by Discord
-     * @type {number}
-     */
-    this.code = error.code;
-
-    /**
-     * The HTTP method used for the request
-     * @type {string}
-     */
-    this.method = method;
-  }
-
-  /**
-   * Flattens an errors object returned from the API into an array.
-   * @param {Object} obj Discord errors object
-   * @param {string} [key] Used internally to determine key names of nested fields
-   * @returns {string[]}
-   * @private
-   */
-  static flattenErrors(obj, key = '') {
-    let messages = [];
-
-    for (const k of Object.keys(obj)) {
-      if (k === 'message') continue;
-      const newKey = key ? isNaN(k) ? `${key}.${k}` : `${key}[${k}]` : k;
-
-      if (obj[k]._errors) {
-        messages.push(`${newKey}: ${obj[k]._errors.map(e => e.message).join(' ')}`);
-      } else if (obj[k].code || obj[k].message) {
-        messages.push(`${obj[k].code ? `${obj[k].code}: ` : ''}: ${obj[k].message}`.trim());
-      } else if (typeof obj[k] === 'string') {
-        messages.push(obj[k]);
-      } else {
-        messages = messages.concat(this.flattenErrors(obj[k], newKey));
-      }
-    }
-
-    return messages;
-  }
-}
-
-module.exports = DiscordAPIError;
-
-
-/***/ }),
-/* 34 */
-/***/ (function(module, exports) {
-
-var g;
-
-// This works in non-strict mode
-g = (function() {
-	return this;
-})();
-
-try {
-	// This works if eval is allowed (see CSP)
-	g = g || Function("return this")() || (1,eval)("this");
-} catch(e) {
-	// This works if the window reference is available
-	if(typeof window === "object")
-		g = window;
-}
-
-// g can still be undefined, but nothing to do about it...
-// We return undefined, instead of nothing here, so it's
-// easier to handle this case. if(!global) { ...}
-
-module.exports = g;
-
-
-/***/ }),
-/* 35 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-exports.decode = exports.parse = __webpack_require__(65);
-exports.encode = exports.stringify = __webpack_require__(66);
-
-
-/***/ }),
-/* 36 */
-/***/ (function(module, exports) {
-
-module.exports = {"name":"discord.js","version":"11.3.2","description":"A powerful library for interacting with the Discord API","main":"./src/index","types":"./typings/index.d.ts","scripts":{"test":"npm run lint && npm run docs:test","docs":"docgen --source src --custom docs/index.yml --output docs/docs.json","docs:test":"docgen --source src --custom docs/index.yml","lint":"eslint src","lint:fix":"eslint --fix src","webpack":"parallel-webpack"},"repository":{"type":"git","url":"git+https://github.com/discordjs/discord.js.git"},"keywords":["discord","api","bot","client","node","discordapp"],"author":"Amish Shah <amishshah.2k@gmail.com>","license":"Apache-2.0","bugs":{"url":"https://github.com/discordjs/discord.js/issues"},"homepage":"https://github.com/discordjs/discord.js#readme","runkitExampleFilename":"./docs/examples/ping.js","dependencies":{"long":"^4.0.0","prism-media":"^0.0.2","snekfetch":"^3.6.4","tweetnacl":"^1.0.0","ws":"^4.0.0"},"peerDependencies":{"bufferutil":"^3.0.3","erlpack":"discordapp/erlpack","node-opus":"^0.2.7","opusscript":"^0.0.6","sodium":"^2.0.3","libsodium-wrappers":"^0.7.3","uws":"^9.14.0"},"devDependencies":{"@types/node":"^9.4.6","discord.js-docgen":"discordjs/docgen","eslint":"^4.18.0","parallel-webpack":"^2.2.0","uglifyjs-webpack-plugin":"^1.2.0","webpack":"^3.11.0"},"engines":{"node":">=6.0.0"},"browser":{"ws":false,"uws":false,"erlpack":false,"prism-media":false,"opusscript":false,"node-opus":false,"tweetnacl":false,"sodium":false,"src/sharding/Shard.js":false,"src/sharding/ShardClientUtil.js":false,"src/sharding/ShardingManager.js":false,"src/client/voice/dispatcher/StreamDispatcher.js":false,"src/client/voice/opus/BaseOpusEngine.js":false,"src/client/voice/opus/NodeOpusEngine.js":false,"src/client/voice/opus/OpusEngineList.js":false,"src/client/voice/opus/OpusScriptEngine.js":false,"src/client/voice/pcm/ConverterEngine.js":false,"src/client/voice/pcm/ConverterEngineList.js":false,"src/client/voice/pcm/FfmpegConverterEngine.js":false,"src/client/voice/player/AudioPlayer.js":false,"src/client/voice/receiver/VoiceReadable.js":false,"src/client/voice/receiver/VoiceReceiver.js":false,"src/client/voice/util/Secretbox.js":false,"src/client/voice/util/SecretKey.js":false,"src/client/voice/util/VolumeInterface.js":false,"src/client/voice/ClientVoiceManager.js":false,"src/client/voice/VoiceBroadcast.js":false,"src/client/voice/VoiceConnection.js":false,"src/client/voice/VoiceUDPClient.js":false,"src/client/voice/VoiceWebSocket.js":false}}
-
-/***/ }),
-/* 37 */
-/***/ (function(module, exports, __webpack_require__) {
-
-const UserAgentManager = __webpack_require__(73);
-const RESTMethods = __webpack_require__(74);
-const SequentialRequestHandler = __webpack_require__(79);
-const BurstRequestHandler = __webpack_require__(80);
-const APIRequest = __webpack_require__(81);
-const Constants = __webpack_require__(0);
-
-class RESTManager {
-  constructor(client) {
-    this.client = client;
-    this.handlers = {};
-    this.userAgentManager = new UserAgentManager(this);
-    this.methods = new RESTMethods(this);
-    this.rateLimitedEndpoints = {};
-    this.globallyRateLimited = false;
-  }
-
-  destroy() {
-    for (const handlerKey of Object.keys(this.handlers)) {
-      const handler = this.handlers[handlerKey];
-      if (handler.destroy) handler.destroy();
-    }
-  }
-
-  push(handler, apiRequest) {
-    return new Promise((resolve, reject) => {
-      handler.push({
-        request: apiRequest,
-        resolve,
-        reject,
-      });
-    });
-  }
-
-  getRequestHandler() {
-    switch (this.client.options.apiRequestMethod) {
-      case 'sequential':
-        return SequentialRequestHandler;
-      case 'burst':
-        return BurstRequestHandler;
-      default:
-        throw new Error(Constants.Errors.INVALID_RATE_LIMIT_METHOD);
-    }
-  }
-
-  makeRequest(method, url, auth, data, file, reason) {
-    const apiRequest = new APIRequest(this, method, url, auth, data, file, reason);
-    if (!this.handlers[apiRequest.route]) {
-      const RequestHandlerType = this.getRequestHandler();
-      this.handlers[apiRequest.route] = new RequestHandlerType(this, apiRequest.route);
-    }
-
-    return this.push(this.handlers[apiRequest.route], apiRequest);
-  }
-}
-
-module.exports = RESTManager;
-
-
-/***/ }),
-/* 38 */
-/***/ (function(module, exports, __webpack_require__) {
-
-const Collection = __webpack_require__(3);
-
-/**
- * Keeps track of mentions in a {@link Message}.
- */
-class MessageMentions {
-  constructor(message, users, roles, everyone) {
-    /**
-     * Whether `@everyone` or `@here` were mentioned
-     * @type {boolean}
-     */
-    this.everyone = Boolean(everyone);
-
-    if (users) {
-      if (users instanceof Collection) {
-        /**
-         * Any users that were mentioned
-         * @type {Collection<Snowflake, User>}
-         */
-        this.users = new Collection(users);
-      } else {
-        this.users = new Collection();
-        for (const mention of users) {
-          let user = message.client.users.get(mention.id);
-          if (!user) user = message.client.dataManager.newUser(mention);
-          this.users.set(user.id, user);
-        }
-      }
-    } else {
-      this.users = new Collection();
-    }
-
-    if (roles) {
-      if (roles instanceof Collection) {
-        /**
-         * Any roles that were mentioned
-         * @type {Collection<Snowflake, Role>}
-         */
-        this.roles = new Collection(roles);
-      } else {
-        this.roles = new Collection();
-        for (const mention of roles) {
-          const role = message.channel.guild.roles.get(mention);
-          if (role) this.roles.set(role.id, role);
-        }
-      }
-    } else {
-      this.roles = new Collection();
-    }
-
-    /**
-     * Content of the message
-     * @type {Message}
-     * @private
-     */
-    this._content = message.content;
-
-    /**
-     * The client the message is from
-     * @type {Client}
-     * @private
-     */
-    this._client = message.client;
-
-    /**
-     * The guild the message is in
-     * @type {?Guild}
-     * @private
-     */
-    this._guild = message.channel.guild;
-
-    /**
-     * Cached members for {@MessageMention#members}
-     * @type {?Collection<Snowflake, GuildMember>}
-     * @private
-     */
-    this._members = null;
-
-    /**
-     * Cached channels for {@MessageMention#channels}
-     * @type {?Collection<Snowflake, GuildChannel>}
-     * @private
-     */
-    this._channels = null;
-  }
-
-  /**
-   * Any members that were mentioned (only in {@link TextChannel}s)
-   * @type {?Collection<Snowflake, GuildMember>}
-   * @readonly
-   */
-  get members() {
-    if (this._members) return this._members;
-    if (!this._guild) return null;
-    this._members = new Collection();
-    this.users.forEach(user => {
-      const member = this._guild.member(user);
-      if (member) this._members.set(member.user.id, member);
-    });
-    return this._members;
-  }
-
-  /**
-   * Any channels that were mentioned
-   * @type {Collection<Snowflake, GuildChannel>}
-   * @readonly
-   */
-  get channels() {
-    if (this._channels) return this._channels;
-    this._channels = new Collection();
-    let matches;
-    while ((matches = this.constructor.CHANNELS_PATTERN.exec(this._content)) !== null) {
-      const chan = this._client.channels.get(matches[1]);
-      if (chan) this._channels.set(chan.id, chan);
-    }
-    return this._channels;
-  }
-}
-
-/**
- * Regular expression that globally matches `@everyone` and `@here`
- * @type {RegExp}
- */
-MessageMentions.EVERYONE_PATTERN = /@(everyone|here)/g;
-
-/**
- * Regular expression that globally matches user mentions like `<@81440962496172032>`
- * @type {RegExp}
- */
-MessageMentions.USERS_PATTERN = /<@!?[0-9]+>/g;
-
-/**
- * Regular expression that globally matches role mentions like `<@&297577916114403338>`
- * @type {RegExp}
- */
-MessageMentions.ROLES_PATTERN = /<@&[0-9]+>/g;
-
-/**
- * Regular expression that globally matches channel mentions like `<#222079895583457280>`
- * @type {RegExp}
- */
-MessageMentions.CHANNELS_PATTERN = /<#([0-9]+)>/g;
-
-module.exports = MessageMentions;
-
-
-/***/ }),
-/* 39 */
-/***/ (function(module, exports) {
-
-/**
- * Represents an attachment in a message.
- */
-class MessageAttachment {
-  constructor(message, data) {
-    /**
-     * The client that instantiated this MessageAttachment
-     * @name MessageAttachment#client
-     * @type {Client}
-     * @readonly
-     */
-    Object.defineProperty(this, 'client', { value: message.client });
-
-    /**
-     * The message this attachment is part of
-     * @type {Message}
-     */
-    this.message = message;
-
-    this.setup(data);
-  }
-
-  setup(data) {
-    /**
-     * The ID of this attachment
-     * @type {Snowflake}
-     */
-    this.id = data.id;
-
-    /**
-     * The file name of this attachment
-     * @type {string}
-     */
-    this.filename = data.filename;
-
-    /**
-     * The size of this attachment in bytes
-     * @type {number}
-     */
-    this.filesize = data.size;
-
-    /**
-     * The URL to this attachment
-     * @type {string}
-     */
-    this.url = data.url;
-
-    /**
-     * The Proxy URL to this attachment
-     * @type {string}
-     */
-    this.proxyURL = data.proxy_url;
-
-    /**
-     * The height of this attachment (if an image)
-     * @type {?number}
-     */
-    this.height = data.height;
-
-    /**
-     * The width of this attachment (if an image)
-     * @type {?number}
-     */
-    this.width = data.width;
-  }
-}
-
-module.exports = MessageAttachment;
-
-
-/***/ }),
-/* 40 */
 /***/ (function(module, exports) {
 
 /**
@@ -14264,9 +12643,1657 @@ module.exports = MessageEmbed;
 
 
 /***/ }),
+/* 28 */
+/***/ (function(module, exports, __webpack_require__) {
+
+/* WEBPACK VAR INJECTION */(function(Buffer) {const path = __webpack_require__(29);
+const fs = __webpack_require__(39);
+const snekfetch = __webpack_require__(25);
+
+const Constants = __webpack_require__(0);
+const convertToBuffer = __webpack_require__(4).convertToBuffer;
+const User = __webpack_require__(10);
+const Message = __webpack_require__(16);
+const Guild = __webpack_require__(22);
+const Channel = __webpack_require__(12);
+const GuildMember = __webpack_require__(18);
+const Emoji = __webpack_require__(17);
+const ReactionEmoji = __webpack_require__(30);
+const Role = __webpack_require__(8);
+
+/**
+ * The DataResolver identifies different objects and tries to resolve a specific piece of information from them, e.g.
+ * extracting a User from a Message object.
+ * @private
+ */
+class ClientDataResolver {
+  /**
+   * @param {Client} client The client the resolver is for
+   */
+  constructor(client) {
+    this.client = client;
+  }
+
+  /**
+   * Data that resolves to give a User object. This can be:
+   * * A User object
+   * * A Snowflake
+   * * A Message object (resolves to the message author)
+   * * A Guild object (owner of the guild)
+   * * A GuildMember object
+   * @typedef {User|Snowflake|Message|Guild|GuildMember} UserResolvable
+   */
+
+  /**
+   * Resolves a UserResolvable to a User object.
+   * @param {UserResolvable} user The UserResolvable to identify
+   * @returns {?User}
+   */
+  resolveUser(user) {
+    if (user instanceof User) return user;
+    if (typeof user === 'string') return this.client.users.get(user) || null;
+    if (user instanceof GuildMember) return user.user;
+    if (user instanceof Message) return user.author;
+    if (user instanceof Guild) return user.owner;
+    return null;
+  }
+
+  /**
+   * Resolves a UserResolvable to a user ID string.
+   * @param {UserResolvable} user The UserResolvable to identify
+   * @returns {?Snowflake}
+   */
+  resolveUserID(user) {
+    if (user instanceof User || user instanceof GuildMember) return user.id;
+    if (typeof user === 'string') return user || null;
+    if (user instanceof Message) return user.author.id;
+    if (user instanceof Guild) return user.ownerID;
+    return null;
+  }
+
+  /**
+   * Data that resolves to give a Guild object. This can be:
+   * * A Guild object
+   * * A Snowflake
+   * @typedef {Guild|Snowflake} GuildResolvable
+   */
+
+  /**
+   * Resolves a GuildResolvable to a Guild object.
+   * @param {GuildResolvable} guild The GuildResolvable to identify
+   * @returns {?Guild}
+   */
+  resolveGuild(guild) {
+    if (guild instanceof Guild) return guild;
+    if (typeof guild === 'string') return this.client.guilds.get(guild) || null;
+    return null;
+  }
+
+  /**
+   * Data that resolves to give a GuildMember object. This can be:
+   * * A GuildMember object
+   * * A User object
+   * @typedef {GuildMember|User} GuildMemberResolvable
+   */
+
+  /**
+   * Resolves a GuildMemberResolvable to a GuildMember object.
+   * @param {GuildResolvable} guild The guild that the member is part of
+   * @param {UserResolvable} user The user that is part of the guild
+   * @returns {?GuildMember}
+   */
+  resolveGuildMember(guild, user) {
+    if (user instanceof GuildMember) return user;
+    guild = this.resolveGuild(guild);
+    user = this.resolveUser(user);
+    if (!guild || !user) return null;
+    return guild.members.get(user.id) || null;
+  }
+
+  /**
+   * Data that can be resolved to a Role object. This can be:
+   * * A Role
+   * * A Snowflake
+   * @typedef {Role|Snowflake} RoleResolvable
+   */
+
+  /**
+    * Resolves a RoleResolvable to a Role object.
+    * @param {GuildResolvable} guild The guild that this role is part of
+    * @param {RoleResolvable} role The role resolvable to resolve
+    * @returns {?Role}
+    */
+  resolveRole(guild, role) {
+    if (role instanceof Role) return role;
+    guild = this.resolveGuild(guild);
+    if (!guild) return null;
+    if (typeof role === 'string') return guild.roles.get(role);
+    return null;
+  }
+
+  /**
+   * Data that can be resolved to give a Channel object. This can be:
+   * * A Channel object
+   * * A Message object (the channel the message was sent in)
+   * * A Guild object (the #general channel)
+   * * A Snowflake
+   * @typedef {Channel|Guild|Message|Snowflake} ChannelResolvable
+   */
+
+  /**
+   * Resolves a ChannelResolvable to a Channel object.
+   * @param {ChannelResolvable} channel The channel resolvable to resolve
+   * @returns {?Channel}
+   */
+  resolveChannel(channel) {
+    if (channel instanceof Channel) return channel;
+    if (typeof channel === 'string') return this.client.channels.get(channel) || null;
+    if (channel instanceof Message) return channel.channel;
+    if (channel instanceof Guild) return channel.channels.get(channel.id) || null;
+    return null;
+  }
+
+  /**
+   * Resolves a ChannelResolvable to a channel ID.
+   * @param {ChannelResolvable} channel The channel resolvable to resolve
+   * @returns {?Snowflake}
+   */
+  resolveChannelID(channel) {
+    if (channel instanceof Channel) return channel.id;
+    if (typeof channel === 'string') return channel;
+    if (channel instanceof Message) return channel.channel.id;
+    if (channel instanceof Guild) return channel.defaultChannel.id;
+    return null;
+  }
+
+  /**
+   * Data that can be resolved to give an invite code. This can be:
+   * * An invite code
+   * * An invite URL
+   * @typedef {string} InviteResolvable
+   */
+
+  /**
+   * Resolves InviteResolvable to an invite code.
+   * @param {InviteResolvable} data The invite resolvable to resolve
+   * @returns {string}
+   */
+  resolveInviteCode(data) {
+    const inviteRegex = /discord(?:app\.com\/invite|\.gg(?:\/invite)?)\/([\w-]{2,255})/i;
+    const match = inviteRegex.exec(data);
+    if (match && match[1]) return match[1];
+    return data;
+  }
+
+  /**
+   * Data that can be resolved to give a string. This can be:
+   * * A string
+   * * An array (joined with a new line delimiter to give a string)
+   * * Any value
+   * @typedef {string|Array|*} StringResolvable
+   */
+
+  /**
+   * Resolves a StringResolvable to a string.
+   * @param {StringResolvable} data The string resolvable to resolve
+   * @returns {string}
+   */
+  resolveString(data) {
+    if (typeof data === 'string') return data;
+    if (data instanceof Array) return data.join('\n');
+    return String(data);
+  }
+
+
+  /**
+   * Resolves a Base64Resolvable, a string, or a BufferResolvable to a Base 64 image.
+   * @param {BufferResolvable|Base64Resolvable} image The image to be resolved
+   * @returns {Promise<?string>}
+   */
+  resolveImage(image) {
+    if (!image) return Promise.resolve(null);
+    if (typeof image === 'string' && image.startsWith('data:')) {
+      return Promise.resolve(image);
+    }
+    return this.resolveFile(image).then(this.resolveBase64);
+  }
+
+  /**
+   * Data that resolves to give a Base64 string, typically for image uploading. This can be:
+   * * A Buffer
+   * * A base64 string
+   * @typedef {Buffer|string} Base64Resolvable
+   */
+
+  /**
+   * Resolves a Base64Resolvable to a Base 64 image.
+   * @param {Base64Resolvable} data The base 64 resolvable you want to resolve
+   * @returns {?string}
+   */
+  resolveBase64(data) {
+    if (data instanceof Buffer) return `data:image/jpg;base64,${data.toString('base64')}`;
+    return data;
+  }
+
+  /**
+    * Data that can be resolved to give a Buffer. This can be:
+    * * A Buffer
+    * * The path to a local file
+    * * A URL
+    * * A Stream
+    * @typedef {string|Buffer} BufferResolvable
+    */
+
+  /**
+    * @external Stream
+    * @see {@link https://nodejs.org/api/stream.html}
+    */
+
+  /**
+    * Resolves a BufferResolvable to a Buffer.
+    * @param {BufferResolvable|Stream} resource The buffer or stream resolvable to resolve
+    * @returns {Promise<Buffer>}
+    */
+  resolveFile(resource) {
+    if (resource instanceof Buffer) return Promise.resolve(resource);
+    if (this.client.browser && resource instanceof ArrayBuffer) return Promise.resolve(convertToBuffer(resource));
+
+    if (typeof resource === 'string') {
+      if (/^https?:\/\//.test(resource)) {
+        return snekfetch.get(resource).then(res => res.body instanceof Buffer ? res.body : Buffer.from(res.text));
+      }
+      return new Promise((resolve, reject) => {
+        const file = path.resolve(resource);
+        fs.stat(file, (err, stats) => {
+          if (err) return reject(err);
+          if (!stats || !stats.isFile()) return reject(new Error(`The file could not be found: ${file}`));
+          fs.readFile(file, (err2, data) => {
+            if (err2) reject(err2);
+            else resolve(data);
+          });
+          return null;
+        });
+      });
+    } else if (resource && resource.pipe && typeof resource.pipe === 'function') {
+      return new Promise((resolve, reject) => {
+        const buffers = [];
+        resource.once('error', reject);
+        resource.on('data', data => buffers.push(data));
+        resource.once('end', () => resolve(Buffer.concat(buffers)));
+      });
+    }
+
+    return Promise.reject(new TypeError('The resource must be a string or Buffer.'));
+  }
+
+  /**
+   * Data that can be resolved to give an emoji identifier. This can be:
+   * * The unicode representation of an emoji
+   * * A custom emoji ID
+   * * An Emoji object
+   * * A ReactionEmoji object
+   * @typedef {string|Emoji|ReactionEmoji} EmojiIdentifierResolvable
+   */
+
+  /**
+   * Resolves an EmojiResolvable to an emoji identifier.
+   * @param {EmojiIdentifierResolvable} emoji The emoji resolvable to resolve
+   * @returns {?string}
+   */
+  resolveEmojiIdentifier(emoji) {
+    if (emoji instanceof Emoji || emoji instanceof ReactionEmoji) return emoji.identifier;
+    if (typeof emoji === 'string') {
+      if (this.client.emojis.has(emoji)) return this.client.emojis.get(emoji).identifier;
+      else if (!emoji.includes('%')) return encodeURIComponent(emoji);
+      else return emoji;
+    }
+    return null;
+  }
+
+  /**
+   * Can be a Hex Literal, Hex String, Number, RGB Array, or one of the following
+   * ```
+   * [
+   *   'DEFAULT',
+   *   'AQUA',
+   *   'GREEN',
+   *   'BLUE',
+   *   'PURPLE',
+   *   'LUMINOUS_VIVID_PINK',
+   *   'GOLD',
+   *   'ORANGE',
+   *   'RED',
+   *   'GREY',
+   *   'DARKER_GREY',
+   *   'NAVY',
+   *   'DARK_AQUA',
+   *   'DARK_GREEN',
+   *   'DARK_BLUE',
+   *   'DARK_PURPLE',
+   *   'DARK_VIVID_PINK',
+   *   'DARK_GOLD',
+   *   'DARK_ORANGE',
+   *   'DARK_RED',
+   *   'DARK_GREY',
+   *   'LIGHT_GREY',
+   *   'DARK_NAVY',
+   *   'RANDOM',
+   * ]
+   * ```
+   * or something like
+   * ```
+   * [255, 0, 255]
+   * ```
+   * for purple
+   * @typedef {string|number|Array} ColorResolvable
+   */
+
+  /**
+   * Resolves a ColorResolvable into a color number.
+   * @param {ColorResolvable} color Color to resolve
+   * @returns {number} A color
+   */
+  static resolveColor(color) {
+    if (typeof color === 'string') {
+      if (color === 'RANDOM') return Math.floor(Math.random() * (0xFFFFFF + 1));
+      if (color === 'DEFAULT') return 0;
+      color = Constants.Colors[color] || parseInt(color.replace('#', ''), 16);
+    } else if (color instanceof Array) {
+      color = (color[0] << 16) + (color[1] << 8) + color[2];
+    }
+
+    if (color < 0 || color > 0xFFFFFF) {
+      throw new RangeError('Color must be within the range 0 - 16777215 (0xFFFFFF).');
+    } else if (color && isNaN(color)) {
+      throw new TypeError('Unable to convert color to a number.');
+    }
+
+    return color;
+  }
+
+  /**
+   * @param {ColorResolvable} color Color to resolve
+   * @returns {number} A color
+   */
+  resolveColor(color) {
+    return this.constructor.resolveColor(color);
+  }
+}
+
+module.exports = ClientDataResolver;
+
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(13).Buffer))
+
+/***/ }),
+/* 29 */
+/***/ (function(module, exports, __webpack_require__) {
+
+/* WEBPACK VAR INJECTION */(function(process) {// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+// resolves . and .. elements in a path array with directory names there
+// must be no slashes, empty elements, or device names (c:\) in the array
+// (so also no leading and trailing slashes - it does not distinguish
+// relative and absolute paths)
+function normalizeArray(parts, allowAboveRoot) {
+  // if the path tries to go above the root, `up` ends up > 0
+  var up = 0;
+  for (var i = parts.length - 1; i >= 0; i--) {
+    var last = parts[i];
+    if (last === '.') {
+      parts.splice(i, 1);
+    } else if (last === '..') {
+      parts.splice(i, 1);
+      up++;
+    } else if (up) {
+      parts.splice(i, 1);
+      up--;
+    }
+  }
+
+  // if the path is allowed to go above the root, restore leading ..s
+  if (allowAboveRoot) {
+    for (; up--; up) {
+      parts.unshift('..');
+    }
+  }
+
+  return parts;
+}
+
+// Split a filename into [root, dir, basename, ext], unix version
+// 'root' is just a slash, or nothing.
+var splitPathRe =
+    /^(\/?|)([\s\S]*?)((?:\.{1,2}|[^\/]+?|)(\.[^.\/]*|))(?:[\/]*)$/;
+var splitPath = function(filename) {
+  return splitPathRe.exec(filename).slice(1);
+};
+
+// path.resolve([from ...], to)
+// posix version
+exports.resolve = function() {
+  var resolvedPath = '',
+      resolvedAbsolute = false;
+
+  for (var i = arguments.length - 1; i >= -1 && !resolvedAbsolute; i--) {
+    var path = (i >= 0) ? arguments[i] : process.cwd();
+
+    // Skip empty and invalid entries
+    if (typeof path !== 'string') {
+      throw new TypeError('Arguments to path.resolve must be strings');
+    } else if (!path) {
+      continue;
+    }
+
+    resolvedPath = path + '/' + resolvedPath;
+    resolvedAbsolute = path.charAt(0) === '/';
+  }
+
+  // At this point the path should be resolved to a full absolute path, but
+  // handle relative paths to be safe (might happen when process.cwd() fails)
+
+  // Normalize the path
+  resolvedPath = normalizeArray(filter(resolvedPath.split('/'), function(p) {
+    return !!p;
+  }), !resolvedAbsolute).join('/');
+
+  return ((resolvedAbsolute ? '/' : '') + resolvedPath) || '.';
+};
+
+// path.normalize(path)
+// posix version
+exports.normalize = function(path) {
+  var isAbsolute = exports.isAbsolute(path),
+      trailingSlash = substr(path, -1) === '/';
+
+  // Normalize the path
+  path = normalizeArray(filter(path.split('/'), function(p) {
+    return !!p;
+  }), !isAbsolute).join('/');
+
+  if (!path && !isAbsolute) {
+    path = '.';
+  }
+  if (path && trailingSlash) {
+    path += '/';
+  }
+
+  return (isAbsolute ? '/' : '') + path;
+};
+
+// posix version
+exports.isAbsolute = function(path) {
+  return path.charAt(0) === '/';
+};
+
+// posix version
+exports.join = function() {
+  var paths = Array.prototype.slice.call(arguments, 0);
+  return exports.normalize(filter(paths, function(p, index) {
+    if (typeof p !== 'string') {
+      throw new TypeError('Arguments to path.join must be strings');
+    }
+    return p;
+  }).join('/'));
+};
+
+
+// path.relative(from, to)
+// posix version
+exports.relative = function(from, to) {
+  from = exports.resolve(from).substr(1);
+  to = exports.resolve(to).substr(1);
+
+  function trim(arr) {
+    var start = 0;
+    for (; start < arr.length; start++) {
+      if (arr[start] !== '') break;
+    }
+
+    var end = arr.length - 1;
+    for (; end >= 0; end--) {
+      if (arr[end] !== '') break;
+    }
+
+    if (start > end) return [];
+    return arr.slice(start, end - start + 1);
+  }
+
+  var fromParts = trim(from.split('/'));
+  var toParts = trim(to.split('/'));
+
+  var length = Math.min(fromParts.length, toParts.length);
+  var samePartsLength = length;
+  for (var i = 0; i < length; i++) {
+    if (fromParts[i] !== toParts[i]) {
+      samePartsLength = i;
+      break;
+    }
+  }
+
+  var outputParts = [];
+  for (var i = samePartsLength; i < fromParts.length; i++) {
+    outputParts.push('..');
+  }
+
+  outputParts = outputParts.concat(toParts.slice(samePartsLength));
+
+  return outputParts.join('/');
+};
+
+exports.sep = '/';
+exports.delimiter = ':';
+
+exports.dirname = function(path) {
+  var result = splitPath(path),
+      root = result[0],
+      dir = result[1];
+
+  if (!root && !dir) {
+    // No dirname whatsoever
+    return '.';
+  }
+
+  if (dir) {
+    // It has a dirname, strip trailing slash
+    dir = dir.substr(0, dir.length - 1);
+  }
+
+  return root + dir;
+};
+
+
+exports.basename = function(path, ext) {
+  var f = splitPath(path)[2];
+  // TODO: make this comparison case-insensitive on windows?
+  if (ext && f.substr(-1 * ext.length) === ext) {
+    f = f.substr(0, f.length - ext.length);
+  }
+  return f;
+};
+
+
+exports.extname = function(path) {
+  return splitPath(path)[3];
+};
+
+function filter (xs, f) {
+    if (xs.filter) return xs.filter(f);
+    var res = [];
+    for (var i = 0; i < xs.length; i++) {
+        if (f(xs[i], i, xs)) res.push(xs[i]);
+    }
+    return res;
+}
+
+// String.prototype.substr - negative index don't work in IE8
+var substr = 'ab'.substr(-1) === 'b'
+    ? function (str, start, len) { return str.substr(start, len) }
+    : function (str, start, len) {
+        if (start < 0) start = str.length + start;
+        return str.substr(start, len);
+    }
+;
+
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
+
+/***/ }),
+/* 30 */
+/***/ (function(module, exports) {
+
+/**
+ * Represents a limited emoji set used for both custom and unicode emojis. Custom emojis
+ * will use this class opposed to the Emoji class when the client doesn't know enough
+ * information about them.
+ */
+class ReactionEmoji {
+  constructor(reaction, name, id) {
+    /**
+     * The message reaction this emoji refers to
+     * @type {MessageReaction}
+     */
+    this.reaction = reaction;
+
+    /**
+     * The name of this reaction emoji
+     * @type {string}
+     */
+    this.name = name;
+
+    /**
+     * The ID of this reaction emoji
+     * @type {?Snowflake}
+     */
+    this.id = id;
+  }
+
+  /**
+   * The identifier of this emoji, used for message reactions
+   * @type {string}
+   * @readonly
+   */
+  get identifier() {
+    if (this.id) return `${this.name}:${this.id}`;
+    return encodeURIComponent(this.name);
+  }
+
+  /**
+   * Creates the text required to form a graphical emoji on Discord.
+   * @example
+   * // Send the emoji used in a reaction to the channel the reaction is part of
+   * reaction.message.channel.send(`The emoji used is ${reaction.emoji}`);
+   * @returns {string}
+   */
+  toString() {
+    return this.id ? `<:${this.name}:${this.id}>` : this.name;
+  }
+}
+
+module.exports = ReactionEmoji;
+
+
+/***/ }),
+/* 31 */
+/***/ (function(module, exports, __webpack_require__) {
+
+const Collection = __webpack_require__(3);
+const EventEmitter = __webpack_require__(20).EventEmitter;
+
+/**
+ * Filter to be applied to the collector.
+ * @typedef {Function} CollectorFilter
+ * @param {...*} args Any arguments received by the listener
+ * @param {Collection} collection The items collected by this collector
+ * @returns {boolean}
+ */
+
+/**
+ * Options to be applied to the collector.
+ * @typedef {Object} CollectorOptions
+ * @property {number} [time] How long to run the collector for
+ */
+
+/**
+ * Abstract class for defining a new Collector.
+ * @abstract
+ */
+class Collector extends EventEmitter {
+  constructor(client, filter, options = {}) {
+    super();
+
+    /**
+     * The client
+     * @name Collector#client
+     * @type {Client}
+     * @readonly
+     */
+    Object.defineProperty(this, 'client', { value: client });
+
+    /**
+     * The filter applied to this collector
+     * @type {CollectorFilter}
+     */
+    this.filter = filter;
+
+    /**
+     * The options of this collector
+     * @type {CollectorOptions}
+     */
+    this.options = options;
+
+    /**
+     * The items collected by this collector
+     * @type {Collection}
+     */
+    this.collected = new Collection();
+
+    /**
+     * Whether this collector has finished collecting
+     * @type {boolean}
+     */
+    this.ended = false;
+
+    /**
+     * Timeout for cleanup
+     * @type {?Timeout}
+     * @private
+     */
+    this._timeout = null;
+
+    /**
+     * Call this to handle an event as a collectable element
+     * Accepts any event data as parameters
+     * @type {Function}
+     * @private
+     */
+    this.listener = this._handle.bind(this);
+    if (options.time) this._timeout = this.client.setTimeout(() => this.stop('time'), options.time);
+  }
+
+  /**
+   * @param {...*} args The arguments emitted by the listener
+   * @emits Collector#collect
+   * @private
+   */
+  _handle(...args) {
+    const collect = this.handle(...args);
+    if (!collect || !this.filter(...args, this.collected)) return;
+
+    this.collected.set(collect.key, collect.value);
+
+    /**
+     * Emitted whenever an element is collected.
+     * @event Collector#collect
+     * @param {*} element The element that got collected
+     * @param {Collector} collector The collector
+     */
+    this.emit('collect', collect.value, this);
+
+    const post = this.postCheck(...args);
+    if (post) this.stop(post);
+  }
+
+  /**
+   * Return a promise that resolves with the next collected element;
+   * rejects with collected elements if the collector finishes without receiving a next element
+   * @type {Promise}
+   * @readonly
+   */
+  get next() {
+    return new Promise((resolve, reject) => {
+      if (this.ended) {
+        reject(this.collected);
+        return;
+      }
+
+      const cleanup = () => {
+        this.removeListener('collect', onCollect);
+        this.removeListener('end', onEnd);
+      };
+
+      const onCollect = item => {
+        cleanup();
+        resolve(item);
+      };
+
+      const onEnd = () => {
+        cleanup();
+        reject(this.collected); // eslint-disable-line prefer-promise-reject-errors
+      };
+
+      this.on('collect', onCollect);
+      this.on('end', onEnd);
+    });
+  }
+
+  /**
+   * Stop this collector and emit the `end` event.
+   * @param {string} [reason='user'] The reason this collector is ending
+   * @emits Collector#end
+   */
+  stop(reason = 'user') {
+    if (this.ended) return;
+
+    if (this._timeout) this.client.clearTimeout(this._timeout);
+    this.ended = true;
+    this.cleanup();
+
+    /**
+     * Emitted when the collector is finished collecting.
+     * @event Collector#end
+     * @param {Collection} collected The elements collected by the collector
+     * @param {string} reason The reason the collector ended
+     */
+    this.emit('end', this.collected, reason);
+  }
+
+  /* eslint-disable no-empty-function, valid-jsdoc */
+  /**
+   * Handles incoming events from the `listener` function. Returns null if the event should not be collected,
+   * or returns an object describing the data that should be stored.
+   * @see Collector#listener
+   * @param {...*} args Any args the event listener emits
+   * @returns {?{key: string, value}} Data to insert into collection, if any
+   * @abstract
+   */
+  handle() {}
+
+  /**
+   * This method runs after collection to see if the collector should finish.
+   * @param {...*} args Any args the event listener emits
+   * @returns {?string} Reason to end the collector, if any
+   * @abstract
+   */
+  postCheck() {}
+
+  /**
+   * Called when the collector is ending.
+   * @abstract
+   */
+  cleanup() {}
+  /* eslint-enable no-empty-function, valid-jsdoc */
+}
+
+module.exports = Collector;
+
+
+/***/ }),
+/* 32 */
+/***/ (function(module, exports, __webpack_require__) {
+
+const Snowflake = __webpack_require__(7);
+const util = __webpack_require__(6);
+
+/**
+ * Represents an OAuth2 Application.
+ */
+class OAuth2Application {
+  constructor(client, data) {
+    /**
+     * The client that instantiated the application
+     * @name OAuth2Application#client
+     * @type {Client}
+     * @readonly
+     */
+    Object.defineProperty(this, 'client', { value: client });
+
+    this.setup(data);
+  }
+
+  setup(data) {
+    /**
+     * The ID of the app
+     * @type {Snowflake}
+     */
+    this.id = data.id;
+
+    /**
+     * The name of the app
+     * @type {string}
+     */
+    this.name = data.name;
+
+    /**
+     * The app's description
+     * @type {string}
+     */
+    this.description = data.description;
+
+    /**
+     * The app's icon hash
+     * @type {?string}
+     */
+    this.icon = data.icon;
+
+    /**
+     * The app's icon URL
+     * @type {string}
+     */
+    this.iconURL = `https://cdn.discordapp.com/app-icons/${this.id}/${this.icon}.jpg`;
+
+    /**
+     * The app's RPC origins
+     * @type {?string[]}
+     */
+    this.rpcOrigins = data.rpc_origins;
+
+    /**
+     * The app's redirect URIs
+     * @type {string[]}
+     */
+    this.redirectURIs = data.redirect_uris;
+
+    /**
+     * If this app's bot requires a code grant when using the OAuth2 flow
+     * @type {boolean}
+     */
+    this.botRequireCodeGrant = data.bot_require_code_grant;
+
+    /**
+     * If this app's bot is public
+     * @type {boolean}
+     */
+    this.botPublic = data.bot_public;
+
+    /**
+     * If this app can use rpc
+     * @type {boolean}
+     */
+    this.rpcApplicationState = data.rpc_application_state;
+
+    /**
+     * Object containing basic info about this app's bot
+     * @type {Object}
+     */
+    this.bot = data.bot;
+
+    /**
+     * The flags for the app
+     * @type {number}
+     */
+    this.flags = data.flags;
+
+    /**
+     * OAuth2 secret for the application
+     * @type {boolean}
+     */
+    this.secret = data.secret;
+
+    if (data.owner) {
+      /**
+       * The owner of this OAuth application
+       * @type {?User}
+       */
+      this.owner = this.client.dataManager.newUser(data.owner);
+    }
+  }
+
+  /**
+   * The timestamp the app was created at
+   * @type {number}
+   * @readonly
+   */
+  get createdTimestamp() {
+    return Snowflake.deconstruct(this.id).timestamp;
+  }
+
+  /**
+   * The time the app was created
+   * @type {Date}
+   * @readonly
+   */
+  get createdAt() {
+    return new Date(this.createdTimestamp);
+  }
+
+  /**
+   * Reset the app's secret and bot token.
+   * <warn>This is only available when using a user account.</warn>
+   * @returns {OAuth2Application}
+   */
+  reset() {
+    return this.client.rest.methods.resetApplication(this.id);
+  }
+
+  /**
+   * When concatenated with a string, this automatically concatenates the app name rather than the app object.
+   * @returns {string}
+   */
+  toString() {
+    return this.name;
+  }
+}
+
+OAuth2Application.prototype.reset =
+  util.deprecate(OAuth2Application.prototype.reset, 'OAuth2Application#reset: userbot methods will be removed');
+
+module.exports = OAuth2Application;
+
+
+/***/ }),
+/* 33 */
+/***/ (function(module, exports, __webpack_require__) {
+
+const Channel = __webpack_require__(12);
+const TextBasedChannel = __webpack_require__(15);
+const Collection = __webpack_require__(3);
+const Constants = __webpack_require__(0);
+
+/*
+{ type: 3,
+  recipients:
+   [ { username: 'Charlie',
+       id: '123',
+       discriminator: '6631',
+       avatar: '123' },
+     { username: 'Ben',
+       id: '123',
+       discriminator: '2055',
+       avatar: '123' },
+     { username: 'Adam',
+       id: '123',
+       discriminator: '2406',
+       avatar: '123' } ],
+  owner_id: '123',
+  name: null,
+  last_message_id: '123',
+  id: '123',
+  icon: null }
+*/
+
+/**
+ * Represents a Group DM on Discord.
+ * @extends {Channel}
+ * @implements {TextBasedChannel}
+ */
+class GroupDMChannel extends Channel {
+  constructor(client, data) {
+    super(client, data);
+    this.type = 'group';
+    this.messages = new Collection();
+    this._typing = new Map();
+  }
+
+  setup(data) {
+    super.setup(data);
+
+    /**
+     * The name of this Group DM, can be null if one isn't set
+     * @type {string}
+     */
+    this.name = data.name;
+
+    /**
+     * A hash of this Group DM icon
+     * @type {?string}
+     */
+    this.icon = data.icon;
+
+    /**
+     * The user ID of this Group DM's owner
+     * @type {string}
+     */
+    this.ownerID = data.owner_id;
+
+    /**
+     * If the DM is managed by an application
+     * @type {boolean}
+     */
+    this.managed = data.managed;
+
+    /**
+     * Application ID of the application that made this Group DM, if applicable
+     * @type {?string}
+     */
+    this.applicationID = data.application_id;
+
+    if (data.nicks) {
+      /**
+       * Nicknames for group members
+       * @type {?Collection<Snowflake, string>}
+       */
+      this.nicks = new Collection(data.nicks.map(n => [n.id, n.nick]));
+    }
+
+    if (!this.recipients) {
+      /**
+       * A collection of the recipients of this DM, mapped by their ID
+       * @type {Collection<Snowflake, User>}
+       */
+      this.recipients = new Collection();
+    }
+
+    if (data.recipients) {
+      for (const recipient of data.recipients) {
+        const user = this.client.dataManager.newUser(recipient);
+        this.recipients.set(user.id, user);
+      }
+    }
+
+    /**
+     * The ID of the last message in the channel, if one was sent
+     * @type {?Snowflake}
+     */
+    this.lastMessageID = data.last_message_id;
+  }
+
+  /**
+   * The owner of this Group DM
+   * @type {User}
+   * @readonly
+   */
+  get owner() {
+    return this.client.users.get(this.ownerID);
+  }
+
+  /**
+   * The URL to this guild's icon
+   * @type {?string}
+   * @readonly
+   */
+  get iconURL() {
+    if (!this.icon) return null;
+    return Constants.Endpoints.Channel(this).Icon(this.client.options.http.cdn, this.icon);
+  }
+
+  edit(data) {
+    const _data = {};
+    if (data.name) _data.name = data.name;
+    if (typeof data.icon !== 'undefined') _data.icon = data.icon;
+    return this.client.rest.methods.updateGroupDMChannel(this, _data);
+  }
+
+  /**
+   * Whether this channel equals another channel. It compares all properties, so for most operations
+   * it is advisable to just compare `channel.id === channel2.id` as it is much faster and is often
+   * what most users need.
+   * @param {GroupDMChannel} channel Channel to compare with
+   * @returns {boolean}
+   */
+  equals(channel) {
+    const equal = channel &&
+      this.id === channel.id &&
+      this.name === channel.name &&
+      this.icon === channel.icon &&
+      this.ownerID === channel.ownerID;
+
+    if (equal) {
+      return this.recipients.equals(channel.recipients);
+    }
+
+    return equal;
+  }
+
+  /**
+   * Add a user to the DM
+   * @param {UserResolvable|string} accessTokenOrID Access token or user resolvable
+   * @param {string} [nick] Permanent nickname to give the user (only available if a bot is creating the DM)
+   * @returns {Promise<GroupDMChannel>}
+   */
+
+  addUser(accessTokenOrID, nick) {
+    return this.client.rest.methods.addUserToGroupDM(this, {
+      nick,
+      id: this.client.resolver.resolveUserID(accessTokenOrID),
+      accessToken: accessTokenOrID,
+    });
+  }
+
+  /**
+   * Set a new GroupDMChannel icon.
+   * @param {Base64Resolvable|BufferResolvable} icon The new icon of the group dm
+   * @returns {Promise<GroupDMChannel>}
+   * @example
+   * // Edit the group dm icon
+   * channel.setIcon('./icon.png')
+   *  .then(updated => console.log('Updated the channel icon'))
+   *  .catch(console.error);
+   */
+  setIcon(icon) {
+    return this.client.resolver.resolveImage(icon).then(data => this.edit({ icon: data }));
+  }
+
+  /**
+   * Sets a new name for this Group DM.
+   * @param {string} name New name for this Group DM
+   * @returns {Promise<GroupDMChannel>}
+   */
+  setName(name) {
+    return this.edit({ name });
+  }
+
+  /**
+   * Removes a user from this Group DM.
+   * @param {UserResolvable} user User to remove
+   * @returns {Promise<GroupDMChannel>}
+   */
+  removeUser(user) {
+    const id = this.client.resolver.resolveUserID(user);
+    return this.client.rest.methods.removeUserFromGroupDM(this, id);
+  }
+
+  /**
+   * When concatenated with a string, this automatically concatenates the channel's name instead of the Channel object.
+   * @returns {string}
+   * @example
+   * // Logs: Hello from My Group DM!
+   * console.log(`Hello from ${channel}!`);
+   * @example
+   * // Logs: Hello from My Group DM!
+   * console.log(`Hello from ' + channel + '!');
+   */
+  toString() {
+    return this.name;
+  }
+
+  // These are here only for documentation purposes - they are implemented by TextBasedChannel
+  /* eslint-disable no-empty-function */
+  send() {}
+  sendMessage() {}
+  sendEmbed() {}
+  sendFile() {}
+  sendFiles() {}
+  sendCode() {}
+  fetchMessage() {}
+  fetchMessages() {}
+  fetchPinnedMessages() {}
+  search() {}
+  startTyping() {}
+  stopTyping() {}
+  get typing() {}
+  get typingCount() {}
+  createCollector() {}
+  createMessageCollector() {}
+  awaitMessages() {}
+  // Doesn't work on Group DMs; bulkDelete() {}
+  acknowledge() {}
+  _cacheMessage() {}
+}
+
+TextBasedChannel.applyToClass(GroupDMChannel, true, ['bulkDelete']);
+
+module.exports = GroupDMChannel;
+
+
+/***/ }),
+/* 34 */
+/***/ (function(module, exports) {
+
+/**
+ * Represents an error from the Discord API.
+ * @extends Error
+ */
+class DiscordAPIError extends Error {
+  constructor(path, error, method) {
+    super();
+    const flattened = this.constructor.flattenErrors(error.errors || error).join('\n');
+    this.name = 'DiscordAPIError';
+    this.message = error.message && flattened ? `${error.message}\n${flattened}` : error.message || flattened;
+
+    /**
+     * The path of the request relative to the HTTP endpoint
+     * @type {string}
+     */
+    this.path = path;
+
+    /**
+     * HTTP error code returned by Discord
+     * @type {number}
+     */
+    this.code = error.code;
+
+    /**
+     * The HTTP method used for the request
+     * @type {string}
+     */
+    this.method = method;
+  }
+
+  /**
+   * Flattens an errors object returned from the API into an array.
+   * @param {Object} obj Discord errors object
+   * @param {string} [key] Used internally to determine key names of nested fields
+   * @returns {string[]}
+   * @private
+   */
+  static flattenErrors(obj, key = '') {
+    let messages = [];
+
+    for (const k of Object.keys(obj)) {
+      if (k === 'message') continue;
+      const newKey = key ? isNaN(k) ? `${key}.${k}` : `${key}[${k}]` : k;
+
+      if (obj[k]._errors) {
+        messages.push(`${newKey}: ${obj[k]._errors.map(e => e.message).join(' ')}`);
+      } else if (obj[k].code || obj[k].message) {
+        messages.push(`${obj[k].code ? `${obj[k].code}: ` : ''}: ${obj[k].message}`.trim());
+      } else if (typeof obj[k] === 'string') {
+        messages.push(obj[k]);
+      } else {
+        messages = messages.concat(this.flattenErrors(obj[k], newKey));
+      }
+    }
+
+    return messages;
+  }
+}
+
+module.exports = DiscordAPIError;
+
+
+/***/ }),
+/* 35 */
+/***/ (function(module, exports) {
+
+var g;
+
+// This works in non-strict mode
+g = (function() {
+	return this;
+})();
+
+try {
+	// This works if eval is allowed (see CSP)
+	g = g || Function("return this")() || (1,eval)("this");
+} catch(e) {
+	// This works if the window reference is available
+	if(typeof window === "object")
+		g = window;
+}
+
+// g can still be undefined, but nothing to do about it...
+// We return undefined, instead of nothing here, so it's
+// easier to handle this case. if(!global) { ...}
+
+module.exports = g;
+
+
+/***/ }),
+/* 36 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+exports.decode = exports.parse = __webpack_require__(65);
+exports.encode = exports.stringify = __webpack_require__(66);
+
+
+/***/ }),
+/* 37 */
+/***/ (function(module, exports) {
+
+module.exports = {"name":"discord.js","version":"11.3.2","description":"A powerful library for interacting with the Discord API","main":"./src/index","types":"./typings/index.d.ts","scripts":{"test":"npm run lint && npm run docs:test","docs":"docgen --source src --custom docs/index.yml --output docs/docs.json","docs:test":"docgen --source src --custom docs/index.yml","lint":"eslint src","lint:fix":"eslint --fix src","webpack":"parallel-webpack"},"repository":{"type":"git","url":"git+https://github.com/discordjs/discord.js.git"},"keywords":["discord","api","bot","client","node","discordapp"],"author":"Amish Shah <amishshah.2k@gmail.com>","license":"Apache-2.0","bugs":{"url":"https://github.com/discordjs/discord.js/issues"},"homepage":"https://github.com/discordjs/discord.js#readme","runkitExampleFilename":"./docs/examples/ping.js","dependencies":{"long":"^4.0.0","prism-media":"^0.0.2","snekfetch":"^3.6.4","tweetnacl":"^1.0.0","ws":"^4.0.0"},"peerDependencies":{"bufferutil":"^3.0.3","erlpack":"discordapp/erlpack","node-opus":"^0.2.7","opusscript":"^0.0.6","sodium":"^2.0.3","libsodium-wrappers":"^0.7.3","uws":"^9.14.0"},"devDependencies":{"@types/node":"^9.4.6","discord.js-docgen":"discordjs/docgen","eslint":"^4.18.0","parallel-webpack":"^2.2.0","uglifyjs-webpack-plugin":"^1.2.0","webpack":"^3.11.0"},"engines":{"node":">=6.0.0"},"browser":{"ws":false,"uws":false,"erlpack":false,"prism-media":false,"opusscript":false,"node-opus":false,"tweetnacl":false,"sodium":false,"src/sharding/Shard.js":false,"src/sharding/ShardClientUtil.js":false,"src/sharding/ShardingManager.js":false,"src/client/voice/dispatcher/StreamDispatcher.js":false,"src/client/voice/opus/BaseOpusEngine.js":false,"src/client/voice/opus/NodeOpusEngine.js":false,"src/client/voice/opus/OpusEngineList.js":false,"src/client/voice/opus/OpusScriptEngine.js":false,"src/client/voice/pcm/ConverterEngine.js":false,"src/client/voice/pcm/ConverterEngineList.js":false,"src/client/voice/pcm/FfmpegConverterEngine.js":false,"src/client/voice/player/AudioPlayer.js":false,"src/client/voice/receiver/VoiceReadable.js":false,"src/client/voice/receiver/VoiceReceiver.js":false,"src/client/voice/util/Secretbox.js":false,"src/client/voice/util/SecretKey.js":false,"src/client/voice/util/VolumeInterface.js":false,"src/client/voice/ClientVoiceManager.js":false,"src/client/voice/VoiceBroadcast.js":false,"src/client/voice/VoiceConnection.js":false,"src/client/voice/VoiceUDPClient.js":false,"src/client/voice/VoiceWebSocket.js":false}}
+
+/***/ }),
+/* 38 */
+/***/ (function(module, exports, __webpack_require__) {
+
+const UserAgentManager = __webpack_require__(73);
+const RESTMethods = __webpack_require__(74);
+const SequentialRequestHandler = __webpack_require__(79);
+const BurstRequestHandler = __webpack_require__(80);
+const APIRequest = __webpack_require__(81);
+const Constants = __webpack_require__(0);
+
+class RESTManager {
+  constructor(client) {
+    this.client = client;
+    this.handlers = {};
+    this.userAgentManager = new UserAgentManager(this);
+    this.methods = new RESTMethods(this);
+    this.rateLimitedEndpoints = {};
+    this.globallyRateLimited = false;
+  }
+
+  destroy() {
+    for (const handlerKey of Object.keys(this.handlers)) {
+      const handler = this.handlers[handlerKey];
+      if (handler.destroy) handler.destroy();
+    }
+  }
+
+  push(handler, apiRequest) {
+    return new Promise((resolve, reject) => {
+      handler.push({
+        request: apiRequest,
+        resolve,
+        reject,
+      });
+    });
+  }
+
+  getRequestHandler() {
+    switch (this.client.options.apiRequestMethod) {
+      case 'sequential':
+        return SequentialRequestHandler;
+      case 'burst':
+        return BurstRequestHandler;
+      default:
+        throw new Error(Constants.Errors.INVALID_RATE_LIMIT_METHOD);
+    }
+  }
+
+  makeRequest(method, url, auth, data, file, reason) {
+    const apiRequest = new APIRequest(this, method, url, auth, data, file, reason);
+    if (!this.handlers[apiRequest.route]) {
+      const RequestHandlerType = this.getRequestHandler();
+      this.handlers[apiRequest.route] = new RequestHandlerType(this, apiRequest.route);
+    }
+
+    return this.push(this.handlers[apiRequest.route], apiRequest);
+  }
+}
+
+module.exports = RESTManager;
+
+
+/***/ }),
+/* 39 */
+/***/ (function(module, exports) {
+
+
+
+/***/ }),
+/* 40 */
+/***/ (function(module, exports, __webpack_require__) {
+
+const Collection = __webpack_require__(3);
+
+/**
+ * Keeps track of mentions in a {@link Message}.
+ */
+class MessageMentions {
+  constructor(message, users, roles, everyone) {
+    /**
+     * Whether `@everyone` or `@here` were mentioned
+     * @type {boolean}
+     */
+    this.everyone = Boolean(everyone);
+
+    if (users) {
+      if (users instanceof Collection) {
+        /**
+         * Any users that were mentioned
+         * @type {Collection<Snowflake, User>}
+         */
+        this.users = new Collection(users);
+      } else {
+        this.users = new Collection();
+        for (const mention of users) {
+          let user = message.client.users.get(mention.id);
+          if (!user) user = message.client.dataManager.newUser(mention);
+          this.users.set(user.id, user);
+        }
+      }
+    } else {
+      this.users = new Collection();
+    }
+
+    if (roles) {
+      if (roles instanceof Collection) {
+        /**
+         * Any roles that were mentioned
+         * @type {Collection<Snowflake, Role>}
+         */
+        this.roles = new Collection(roles);
+      } else {
+        this.roles = new Collection();
+        for (const mention of roles) {
+          const role = message.channel.guild.roles.get(mention);
+          if (role) this.roles.set(role.id, role);
+        }
+      }
+    } else {
+      this.roles = new Collection();
+    }
+
+    /**
+     * Content of the message
+     * @type {Message}
+     * @private
+     */
+    this._content = message.content;
+
+    /**
+     * The client the message is from
+     * @type {Client}
+     * @private
+     */
+    this._client = message.client;
+
+    /**
+     * The guild the message is in
+     * @type {?Guild}
+     * @private
+     */
+    this._guild = message.channel.guild;
+
+    /**
+     * Cached members for {@MessageMention#members}
+     * @type {?Collection<Snowflake, GuildMember>}
+     * @private
+     */
+    this._members = null;
+
+    /**
+     * Cached channels for {@MessageMention#channels}
+     * @type {?Collection<Snowflake, GuildChannel>}
+     * @private
+     */
+    this._channels = null;
+  }
+
+  /**
+   * Any members that were mentioned (only in {@link TextChannel}s)
+   * @type {?Collection<Snowflake, GuildMember>}
+   * @readonly
+   */
+  get members() {
+    if (this._members) return this._members;
+    if (!this._guild) return null;
+    this._members = new Collection();
+    this.users.forEach(user => {
+      const member = this._guild.member(user);
+      if (member) this._members.set(member.user.id, member);
+    });
+    return this._members;
+  }
+
+  /**
+   * Any channels that were mentioned
+   * @type {Collection<Snowflake, GuildChannel>}
+   * @readonly
+   */
+  get channels() {
+    if (this._channels) return this._channels;
+    this._channels = new Collection();
+    let matches;
+    while ((matches = this.constructor.CHANNELS_PATTERN.exec(this._content)) !== null) {
+      const chan = this._client.channels.get(matches[1]);
+      if (chan) this._channels.set(chan.id, chan);
+    }
+    return this._channels;
+  }
+}
+
+/**
+ * Regular expression that globally matches `@everyone` and `@here`
+ * @type {RegExp}
+ */
+MessageMentions.EVERYONE_PATTERN = /@(everyone|here)/g;
+
+/**
+ * Regular expression that globally matches user mentions like `<@81440962496172032>`
+ * @type {RegExp}
+ */
+MessageMentions.USERS_PATTERN = /<@!?[0-9]+>/g;
+
+/**
+ * Regular expression that globally matches role mentions like `<@&297577916114403338>`
+ * @type {RegExp}
+ */
+MessageMentions.ROLES_PATTERN = /<@&[0-9]+>/g;
+
+/**
+ * Regular expression that globally matches channel mentions like `<#222079895583457280>`
+ * @type {RegExp}
+ */
+MessageMentions.CHANNELS_PATTERN = /<#([0-9]+)>/g;
+
+module.exports = MessageMentions;
+
+
+/***/ }),
 /* 41 */
 /***/ (function(module, exports) {
 
+/**
+ * Represents an attachment in a message.
+ */
+class MessageAttachment {
+  constructor(message, data) {
+    /**
+     * The client that instantiated this MessageAttachment
+     * @name MessageAttachment#client
+     * @type {Client}
+     * @readonly
+     */
+    Object.defineProperty(this, 'client', { value: message.client });
+
+    /**
+     * The message this attachment is part of
+     * @type {Message}
+     */
+    this.message = message;
+
+    this.setup(data);
+  }
+
+  setup(data) {
+    /**
+     * The ID of this attachment
+     * @type {Snowflake}
+     */
+    this.id = data.id;
+
+    /**
+     * The file name of this attachment
+     * @type {string}
+     */
+    this.filename = data.filename;
+
+    /**
+     * The size of this attachment in bytes
+     * @type {number}
+     */
+    this.filesize = data.size;
+
+    /**
+     * The URL to this attachment
+     * @type {string}
+     */
+    this.url = data.url;
+
+    /**
+     * The Proxy URL to this attachment
+     * @type {string}
+     */
+    this.proxyURL = data.proxy_url;
+
+    /**
+     * The height of this attachment (if an image)
+     * @type {?number}
+     */
+    this.height = data.height;
+
+    /**
+     * The width of this attachment (if an image)
+     * @type {?number}
+     */
+    this.width = data.width;
+  }
+}
+
+module.exports = MessageAttachment;
 
 
 /***/ }),
@@ -14274,8 +14301,8 @@ module.exports = MessageEmbed;
 /***/ (function(module, exports, __webpack_require__) {
 
 const Collection = __webpack_require__(3);
-const Emoji = __webpack_require__(16);
-const ReactionEmoji = __webpack_require__(29);
+const Emoji = __webpack_require__(17);
+const ReactionEmoji = __webpack_require__(30);
 
 /**
  * Represents a reaction to a message.
@@ -14375,7 +14402,7 @@ module.exports = MessageReaction;
 /* 43 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Collector = __webpack_require__(30);
+const Collector = __webpack_require__(31);
 const Collection = __webpack_require__(3);
 
 /**
@@ -14466,7 +14493,7 @@ module.exports = ReactionCollector;
 /* 44 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Collector = __webpack_require__(30);
+const Collector = __webpack_require__(31);
 const util = __webpack_require__(6);
 
 /**
@@ -15116,7 +15143,7 @@ module.exports = RequestHandler;
 /* 49 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const GuildChannel = __webpack_require__(18);
+const GuildChannel = __webpack_require__(19);
 
 /**
  * Represents a guild category channel on Discord.
@@ -15218,7 +15245,7 @@ module.exports = PermissionOverwrites;
 /***/ (function(module, exports, __webpack_require__) {
 
 const Channel = __webpack_require__(12);
-const TextBasedChannel = __webpack_require__(14);
+const TextBasedChannel = __webpack_require__(15);
 const Collection = __webpack_require__(3);
 
 /**
@@ -15292,8 +15319,8 @@ module.exports = DMChannel;
 /* 52 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const GuildChannel = __webpack_require__(18);
-const TextBasedChannel = __webpack_require__(14);
+const GuildChannel = __webpack_require__(19);
+const TextBasedChannel = __webpack_require__(15);
 const Collection = __webpack_require__(3);
 
 /**
@@ -15424,7 +15451,7 @@ module.exports = TextChannel;
 /* 53 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const GuildChannel = __webpack_require__(18);
+const GuildChannel = __webpack_require__(19);
 const Collection = __webpack_require__(3);
 const Permissions = __webpack_require__(5);
 
@@ -15577,9 +15604,9 @@ module.exports = VoiceChannel;
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(Buffer) {const browser = typeof window !== 'undefined';
-const EventEmitter = __webpack_require__(19);
+const EventEmitter = __webpack_require__(20);
 const Constants = __webpack_require__(0);
-const zlib = __webpack_require__(41);
+const zlib = __webpack_require__(39);
 const PacketManager = __webpack_require__(84);
 const erlpack = (function findErlpack() {
   try {
@@ -16706,14 +16733,14 @@ module.exports = {
   // Utilities
   Collection: __webpack_require__(3),
   Constants: __webpack_require__(0),
-  DiscordAPIError: __webpack_require__(33),
+  DiscordAPIError: __webpack_require__(34),
   EvaluatedPermissions: __webpack_require__(5),
   Permissions: __webpack_require__(5),
   Snowflake: __webpack_require__(7),
   SnowflakeUtil: __webpack_require__(7),
   Util: Util,
   util: Util,
-  version: __webpack_require__(36).version,
+  version: __webpack_require__(37).version,
 
   // Shortcuts to Util methods
   escapeMarkdown: Util.escapeMarkdown,
@@ -16726,31 +16753,31 @@ module.exports = {
   Channel: __webpack_require__(12),
   ClientUser: __webpack_require__(55),
   ClientUserSettings: __webpack_require__(56),
-  Collector: __webpack_require__(30),
+  Collector: __webpack_require__(31),
   DMChannel: __webpack_require__(51),
-  Emoji: __webpack_require__(16),
+  Emoji: __webpack_require__(17),
   Game: __webpack_require__(11).Game,
-  GroupDMChannel: __webpack_require__(32),
+  GroupDMChannel: __webpack_require__(33),
   Guild: __webpack_require__(22),
   GuildAuditLogs: __webpack_require__(47),
-  GuildChannel: __webpack_require__(18),
-  GuildMember: __webpack_require__(17),
+  GuildChannel: __webpack_require__(19),
+  GuildMember: __webpack_require__(18),
   Invite: __webpack_require__(23),
-  Message: __webpack_require__(15),
-  MessageAttachment: __webpack_require__(39),
+  Message: __webpack_require__(16),
+  MessageAttachment: __webpack_require__(41),
   MessageCollector: __webpack_require__(44),
-  MessageEmbed: __webpack_require__(40),
-  MessageMentions: __webpack_require__(38),
+  MessageEmbed: __webpack_require__(27),
+  MessageMentions: __webpack_require__(40),
   MessageReaction: __webpack_require__(42),
-  OAuth2Application: __webpack_require__(31),
-  ClientOAuth2Application: __webpack_require__(31),
+  OAuth2Application: __webpack_require__(32),
+  ClientOAuth2Application: __webpack_require__(32),
   PartialGuild: __webpack_require__(45),
   PartialGuildChannel: __webpack_require__(46),
   PermissionOverwrites: __webpack_require__(50),
   Presence: __webpack_require__(11).Presence,
-  ReactionEmoji: __webpack_require__(29),
+  ReactionEmoji: __webpack_require__(30),
   ReactionCollector: __webpack_require__(43),
-  RichEmbed: __webpack_require__(20),
+  RichEmbed: __webpack_require__(14),
   Role: __webpack_require__(8),
   TextChannel: __webpack_require__(52),
   User: __webpack_require__(10),
@@ -17030,7 +17057,7 @@ module.exports = __webpack_require__(64);
 /***/ (function(module, exports, __webpack_require__) {
 
 const browser = typeof window !== 'undefined';
-const querystring = __webpack_require__(35);
+const querystring = __webpack_require__(36);
 const transport = browser ? __webpack_require__(67) : __webpack_require__(68);
 
 /**
@@ -17577,11 +17604,11 @@ exports.homedir = function () {
 /* 70 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(process) {const EventEmitter = __webpack_require__(19);
+/* WEBPACK VAR INJECTION */(function(process) {const EventEmitter = __webpack_require__(20);
 const Constants = __webpack_require__(0);
 const Permissions = __webpack_require__(5);
 const Util = __webpack_require__(4);
-const RESTManager = __webpack_require__(37);
+const RESTManager = __webpack_require__(38);
 const ClientDataManager = __webpack_require__(82);
 const ClientManager = __webpack_require__(83);
 const ClientDataResolver = __webpack_require__(28);
@@ -18214,7 +18241,7 @@ module.exports = UserAgentManager;
 /* 74 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const querystring = __webpack_require__(35);
+const querystring = __webpack_require__(36);
 const long = __webpack_require__(26);
 const Permissions = __webpack_require__(5);
 const Constants = __webpack_require__(0);
@@ -18223,16 +18250,17 @@ const Collection = __webpack_require__(3);
 const Util = __webpack_require__(4);
 const resolvePermissions = __webpack_require__(75);
 
+const RichEmbed = __webpack_require__(14);
 const User = __webpack_require__(10);
-const GuildMember = __webpack_require__(17);
-const Message = __webpack_require__(15);
+const GuildMember = __webpack_require__(18);
+const Message = __webpack_require__(16);
 const Role = __webpack_require__(8);
 const Invite = __webpack_require__(23);
 const Webhook = __webpack_require__(24);
 const UserProfile = __webpack_require__(76);
-const OAuth2Application = __webpack_require__(31);
+const OAuth2Application = __webpack_require__(32);
 const Channel = __webpack_require__(12);
-const GroupDMChannel = __webpack_require__(32);
+const GroupDMChannel = __webpack_require__(33);
 const Guild = __webpack_require__(22);
 const VoiceRegion = __webpack_require__(78);
 const GuildAuditLogs = __webpack_require__(47);
@@ -18355,6 +18383,8 @@ class RESTMethods {
       const mention = `<@${reply instanceof GuildMember && reply.nickname ? '!' : ''}${id}>`;
       content = `${mention}${content ? `, ${content}` : ''}`;
     }
+
+    if (embed instanceof RichEmbed) embed = embed._apiTransform();
 
     return this.rest.makeRequest('patch', Endpoints.Message(message), true, {
       content, embed,
@@ -19378,7 +19408,7 @@ module.exports = VoiceRegion;
 /***/ (function(module, exports, __webpack_require__) {
 
 const RequestHandler = __webpack_require__(48);
-const DiscordAPIError = __webpack_require__(33);
+const DiscordAPIError = __webpack_require__(34);
 const { Events: { RATE_LIMIT } } = __webpack_require__(0);
 
 /**
@@ -19510,7 +19540,7 @@ module.exports = SequentialRequestHandler;
 /***/ (function(module, exports, __webpack_require__) {
 
 const RequestHandler = __webpack_require__(48);
-const DiscordAPIError = __webpack_require__(33);
+const DiscordAPIError = __webpack_require__(34);
 const { Events: { RATE_LIMIT } } = __webpack_require__(0);
 
 class BurstRequestHandler extends RequestHandler {
@@ -19663,11 +19693,11 @@ const Guild = __webpack_require__(22);
 const User = __webpack_require__(10);
 const CategoryChannel = __webpack_require__(49);
 const DMChannel = __webpack_require__(51);
-const Emoji = __webpack_require__(16);
+const Emoji = __webpack_require__(17);
 const TextChannel = __webpack_require__(52);
 const VoiceChannel = __webpack_require__(53);
-const GuildChannel = __webpack_require__(18);
-const GroupDMChannel = __webpack_require__(32);
+const GuildChannel = __webpack_require__(19);
+const GroupDMChannel = __webpack_require__(33);
 
 class ClientDataManager {
   constructor(client) {
@@ -21110,7 +21140,7 @@ module.exports = MessageReactionRemoveAll;
 /* 127 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const EventEmitter = __webpack_require__(19).EventEmitter;
+const EventEmitter = __webpack_require__(20).EventEmitter;
 const Constants = __webpack_require__(0);
 const WebSocketConnection = __webpack_require__(54);
 
@@ -21253,7 +21283,7 @@ module.exports = ActionsManager;
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
-const Message = __webpack_require__(15);
+const Message = __webpack_require__(16);
 
 class MessageCreateAction extends Action {
   handle(data) {
@@ -22276,7 +22306,7 @@ module.exports = GuildChannelsPositionUpdate;
 /***/ (function(module, exports, __webpack_require__) {
 
 const Webhook = __webpack_require__(24);
-const RESTManager = __webpack_require__(37);
+const RESTManager = __webpack_require__(38);
 const ClientDataResolver = __webpack_require__(28);
 const Constants = __webpack_require__(0);
 const Util = __webpack_require__(4);
