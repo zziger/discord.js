@@ -1797,11 +1797,13 @@ class Permissions {
    */
   add(...permissions) {
     let total = 0;
-    for (let p = 0; p < permissions.length; p++) {
+    for (let p = permissions.length - 1; p >= 0; p--) {
       const perm = this.constructor.resolve(permissions[p]);
-      if ((this.bitfield & perm) !== perm) total |= perm;
+      total |= perm;
     }
-    return new this.constructor(this.member, this.bitfield | total);
+    if (Object.isFrozen(this)) return new this.constructor(this.bitfield | total);
+    this.bitfield |= total;
+    return this;
   }
 
   /**
@@ -1811,11 +1813,13 @@ class Permissions {
    */
   remove(...permissions) {
     let total = 0;
-    for (let p = 0; p < permissions.length; p++) {
+    for (let p = permissions.length - 1; p >= 0; p--) {
       const perm = this.constructor.resolve(permissions[p]);
-      if ((this.bitfield & perm) === perm) total |= perm;
+      total |= perm;
     }
-    return new this.constructor(this.member, this.bitfield & ~total);
+    if (Object.isFrozen(this)) return new this.constructor(this.bitfield & ~total);
+    this.bitfield &= ~total;
+    return this;
   }
 
   /**
@@ -1864,6 +1868,15 @@ class Permissions {
    */
   missingPermissions(permissions, explicit = false) {
     return this.missing(permissions, !explicit);
+  }
+
+  /**
+   * Gets an {@link Array} of permission names (such as `VIEW_CHANNEL`) based on the permissions available.
+   * @param {boolean} [checkAdmin=true] Whether to allow the administrator permission to override
+   * @returns {string[]}
+   */
+  toArray(checkAdmin = true) {
+    return Object.keys(this.constructor.FLAGS).filter(perm => this.has(perm, checkAdmin));
   }
 
   /**
@@ -6433,7 +6446,8 @@ class TextBasedChannel {
   /**
    * Bulk delete given messages that are newer than two weeks.
    * <warn>This is only available when using a bot account.</warn>
-   * @param {Collection<Snowflake, Message>|Message[]|number} messages Messages or number of messages to delete
+   * @param {Collection<Snowflake, Message>|Message[]|Snowflake[]|number} messages
+   * Messages or number of messages to delete
    * @param {boolean} [filterOld=false] Filter messages to remove those which are older than two weeks automatically
    * @returns {Promise<Collection<Snowflake, Message>>} Deleted messages
    * @example
@@ -6443,16 +6457,16 @@ class TextBasedChannel {
    *   .catch(console.error);
    */
   bulkDelete(messages, filterOld = false) {
-    if (messages instanceof Collection) messages = [...messages.values()];
-    if (messages instanceof Array) {
+    if (messages instanceof Array || messages instanceof Collection) {
+      let messageIDs = messages instanceof Collection ? messages.keyArray() : messages.map(m => m.id || m);
       if (filterOld) {
-        messages = messages.filter(m => Date.now() - Snowflake.deconstruct(m.id).date.getTime() < 1209600000);
+        messageIDs = messageIDs.filter(id => Date.now() - Snowflake.deconstruct(id).date.getTime() < 1209600000);
       }
-      if (messages.length === 0) return Promise.resolve(new Collection());
-      if (messages.length === 1) {
-        return messages[0].delete().then(() => new Collection([[messages[0].id, messages[0]]]));
+      if (messageIDs.length === 0) return Promise.resolve(new Collection());
+      if (messageIDs.length === 1) {
+        return this.fetchMessage(messageIDs[0]).then(m => m.delete()).then(m => new Collection([[m.id, m]]));
       }
-      return this.client.rest.methods.bulkDeleteMessages(this, messages);
+      return this.client.rest.methods.bulkDeleteMessages(this, messageIDs);
     }
     if (!isNaN(messages)) return this.fetchMessages({ limit: messages }).then(msgs => this.bulkDelete(msgs, filterOld));
     throw new TypeError('The messages must be an Array, Collection, or number.');
@@ -8152,44 +8166,63 @@ class GuildChannel extends Channel {
   }
 
   /**
-   * Gets the overall set of permissions for a user in this channel, taking into account roles and permission
-   * overwrites.
+   * Gets the overall set of permissions for a user in this channel, taking into account channel overwrites.
    * @param {GuildMemberResolvable} member The user that you want to obtain the overall permissions for
    * @returns {?Permissions}
    */
-  permissionsFor(member) {
+  memberPermissions(member) {
     member = this.client.resolver.resolveGuildMember(this.guild, member);
     if (!member) return null;
+
     if (member.id === this.guild.ownerID) return new Permissions(member, Permissions.ALL);
 
-    let permissions = 0;
-
     const roles = member.roles;
-    for (const role of roles.values()) permissions |= role.permissions;
+    const permissions = new Permissions(roles.map(role => role.permissions));
 
-    const admin = Boolean(permissions & Permissions.FLAGS.ADMINISTRATOR);
-    if (admin) return new Permissions(Permissions.ALL);
+    if (permissions.has(Permissions.FLAGS.ADMINISTRATOR)) return new Permissions(Permissions.ALL).freeze();
 
     const overwrites = this.overwritesFor(member, true, roles);
 
-    if (overwrites.everyone) {
-      permissions &= ~overwrites.everyone.deny;
-      permissions |= overwrites.everyone.allow;
-    }
+    return permissions
+      .remove(overwrites.everyone ? overwrites.everyone.deny : 0)
+      .add(overwrites.everyone ? overwrites.everyone.allow : 0)
+      .remove(overwrites.roles.length > 0 ? overwrites.roles.map(role => role.deny) : 0)
+      .add(overwrites.roles.length > 0 ? overwrites.roles.map(role => role.allow) : 0)
+      .remove(overwrites.member ? overwrites.member.deny : 0)
+      .add(overwrites.member ? overwrites.member.allow : 0)
+      .freeze();
+  }
 
-    let allow = 0;
-    for (const overwrite of overwrites.roles) {
-      permissions &= ~overwrite.deny;
-      allow |= overwrite.allow;
-    }
-    permissions |= allow;
+  /**
+   * Gets the overall set of permissions for a role in this channel, taking into account channel overwrites.
+   * @param {RoleResolvable} role The role that you want to obtain the overall permissions for
+   * @returns {?Permissions}
+   */
+  rolePermissions(role) {
+    if (role.permissions & Permissions.FLAGS.ADMINISTRATOR) return new Permissions(Permissions.ALL).freeze();
 
-    if (overwrites.member) {
-      permissions &= ~overwrites.member.deny;
-      permissions |= overwrites.member.allow;
-    }
+    const everyoneOverwrites = this.permissionOverwrites.get(this.guild.id);
+    const roleOverwrites = this.permissionOverwrites.get(role.id);
 
-    return new Permissions(member, permissions);
+    return new Permissions(role.permissions)
+      .remove(everyoneOverwrites ? everyoneOverwrites.deny : 0)
+      .add(everyoneOverwrites ? everyoneOverwrites.allow : 0)
+      .remove(roleOverwrites ? roleOverwrites.deny : 0)
+      .add(roleOverwrites ? roleOverwrites.allow : 0)
+      .freeze();
+  }
+
+  /**
+   * Get the overall set of permissions for a member or role in this channel, taking into account channel overwrites.
+   * @param {GuildMemberResolvable|RoleResolvable} memberOrRole The member or role to obtain the overall permissions for
+   * @returns {?Permissions}
+   */
+  permissionsFor(memberOrRole) {
+    const member = this.guild.member(memberOrRole);
+    if (member) return this.memberPermissions(member);
+    const role = this.client.resolver.resolveRole(this.guild, memberOrRole);
+    if (role) return this.rolePermissions(role);
+    return null;
   }
 
   overwritesFor(member, verified = false, roles = null) {
@@ -18426,13 +18459,12 @@ class RESTMethods {
   }
 
   bulkDeleteMessages(channel, messages) {
-    const ids = messages.map(m => m.id);
     return this.rest.makeRequest('post', Endpoints.Channel(channel).messages.bulkDelete, true, {
-      messages: ids,
+      messages: messages,
     }).then(() =>
       this.client.actions.MessageDeleteBulk.handle({
         channel_id: channel.id,
-        ids,
+        ids: messages,
       }).messages
     );
   }
