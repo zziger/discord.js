@@ -3278,7 +3278,7 @@ process.umask = function() { return 0; };
 /* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const TextBasedChannel = __webpack_require__(15);
+const TextBasedChannel = __webpack_require__(16);
 const Constants = __webpack_require__(0);
 const Presence = __webpack_require__(11).Presence;
 const Snowflake = __webpack_require__(7);
@@ -5708,6 +5708,314 @@ function isnan (val) {
 
 /***/ }),
 /* 14 */
+/***/ (function(module, exports) {
+
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+function EventEmitter() {
+  this._events = this._events || {};
+  this._maxListeners = this._maxListeners || undefined;
+}
+module.exports = EventEmitter;
+
+// Backwards-compat with node 0.10.x
+EventEmitter.EventEmitter = EventEmitter;
+
+EventEmitter.prototype._events = undefined;
+EventEmitter.prototype._maxListeners = undefined;
+
+// By default EventEmitters will print a warning if more than 10 listeners are
+// added to it. This is a useful default which helps finding memory leaks.
+EventEmitter.defaultMaxListeners = 10;
+
+// Obviously not all Emitters should be limited to 10. This function allows
+// that to be increased. Set to zero for unlimited.
+EventEmitter.prototype.setMaxListeners = function(n) {
+  if (!isNumber(n) || n < 0 || isNaN(n))
+    throw TypeError('n must be a positive number');
+  this._maxListeners = n;
+  return this;
+};
+
+EventEmitter.prototype.emit = function(type) {
+  var er, handler, len, args, i, listeners;
+
+  if (!this._events)
+    this._events = {};
+
+  // If there is no 'error' event listener then throw.
+  if (type === 'error') {
+    if (!this._events.error ||
+        (isObject(this._events.error) && !this._events.error.length)) {
+      er = arguments[1];
+      if (er instanceof Error) {
+        throw er; // Unhandled 'error' event
+      } else {
+        // At least give some kind of context to the user
+        var err = new Error('Uncaught, unspecified "error" event. (' + er + ')');
+        err.context = er;
+        throw err;
+      }
+    }
+  }
+
+  handler = this._events[type];
+
+  if (isUndefined(handler))
+    return false;
+
+  if (isFunction(handler)) {
+    switch (arguments.length) {
+      // fast cases
+      case 1:
+        handler.call(this);
+        break;
+      case 2:
+        handler.call(this, arguments[1]);
+        break;
+      case 3:
+        handler.call(this, arguments[1], arguments[2]);
+        break;
+      // slower
+      default:
+        args = Array.prototype.slice.call(arguments, 1);
+        handler.apply(this, args);
+    }
+  } else if (isObject(handler)) {
+    args = Array.prototype.slice.call(arguments, 1);
+    listeners = handler.slice();
+    len = listeners.length;
+    for (i = 0; i < len; i++)
+      listeners[i].apply(this, args);
+  }
+
+  return true;
+};
+
+EventEmitter.prototype.addListener = function(type, listener) {
+  var m;
+
+  if (!isFunction(listener))
+    throw TypeError('listener must be a function');
+
+  if (!this._events)
+    this._events = {};
+
+  // To avoid recursion in the case that type === "newListener"! Before
+  // adding it to the listeners, first emit "newListener".
+  if (this._events.newListener)
+    this.emit('newListener', type,
+              isFunction(listener.listener) ?
+              listener.listener : listener);
+
+  if (!this._events[type])
+    // Optimize the case of one listener. Don't need the extra array object.
+    this._events[type] = listener;
+  else if (isObject(this._events[type]))
+    // If we've already got an array, just append.
+    this._events[type].push(listener);
+  else
+    // Adding the second element, need to change to array.
+    this._events[type] = [this._events[type], listener];
+
+  // Check for listener leak
+  if (isObject(this._events[type]) && !this._events[type].warned) {
+    if (!isUndefined(this._maxListeners)) {
+      m = this._maxListeners;
+    } else {
+      m = EventEmitter.defaultMaxListeners;
+    }
+
+    if (m && m > 0 && this._events[type].length > m) {
+      this._events[type].warned = true;
+      console.error('(node) warning: possible EventEmitter memory ' +
+                    'leak detected. %d listeners added. ' +
+                    'Use emitter.setMaxListeners() to increase limit.',
+                    this._events[type].length);
+      if (typeof console.trace === 'function') {
+        // not supported in IE 10
+        console.trace();
+      }
+    }
+  }
+
+  return this;
+};
+
+EventEmitter.prototype.on = EventEmitter.prototype.addListener;
+
+EventEmitter.prototype.once = function(type, listener) {
+  if (!isFunction(listener))
+    throw TypeError('listener must be a function');
+
+  var fired = false;
+
+  function g() {
+    this.removeListener(type, g);
+
+    if (!fired) {
+      fired = true;
+      listener.apply(this, arguments);
+    }
+  }
+
+  g.listener = listener;
+  this.on(type, g);
+
+  return this;
+};
+
+// emits a 'removeListener' event iff the listener was removed
+EventEmitter.prototype.removeListener = function(type, listener) {
+  var list, position, length, i;
+
+  if (!isFunction(listener))
+    throw TypeError('listener must be a function');
+
+  if (!this._events || !this._events[type])
+    return this;
+
+  list = this._events[type];
+  length = list.length;
+  position = -1;
+
+  if (list === listener ||
+      (isFunction(list.listener) && list.listener === listener)) {
+    delete this._events[type];
+    if (this._events.removeListener)
+      this.emit('removeListener', type, listener);
+
+  } else if (isObject(list)) {
+    for (i = length; i-- > 0;) {
+      if (list[i] === listener ||
+          (list[i].listener && list[i].listener === listener)) {
+        position = i;
+        break;
+      }
+    }
+
+    if (position < 0)
+      return this;
+
+    if (list.length === 1) {
+      list.length = 0;
+      delete this._events[type];
+    } else {
+      list.splice(position, 1);
+    }
+
+    if (this._events.removeListener)
+      this.emit('removeListener', type, listener);
+  }
+
+  return this;
+};
+
+EventEmitter.prototype.removeAllListeners = function(type) {
+  var key, listeners;
+
+  if (!this._events)
+    return this;
+
+  // not listening for removeListener, no need to emit
+  if (!this._events.removeListener) {
+    if (arguments.length === 0)
+      this._events = {};
+    else if (this._events[type])
+      delete this._events[type];
+    return this;
+  }
+
+  // emit removeListener for all listeners on all events
+  if (arguments.length === 0) {
+    for (key in this._events) {
+      if (key === 'removeListener') continue;
+      this.removeAllListeners(key);
+    }
+    this.removeAllListeners('removeListener');
+    this._events = {};
+    return this;
+  }
+
+  listeners = this._events[type];
+
+  if (isFunction(listeners)) {
+    this.removeListener(type, listeners);
+  } else if (listeners) {
+    // LIFO order
+    while (listeners.length)
+      this.removeListener(type, listeners[listeners.length - 1]);
+  }
+  delete this._events[type];
+
+  return this;
+};
+
+EventEmitter.prototype.listeners = function(type) {
+  var ret;
+  if (!this._events || !this._events[type])
+    ret = [];
+  else if (isFunction(this._events[type]))
+    ret = [this._events[type]];
+  else
+    ret = this._events[type].slice();
+  return ret;
+};
+
+EventEmitter.prototype.listenerCount = function(type) {
+  if (this._events) {
+    var evlistener = this._events[type];
+
+    if (isFunction(evlistener))
+      return 1;
+    else if (evlistener)
+      return evlistener.length;
+  }
+  return 0;
+};
+
+EventEmitter.listenerCount = function(emitter, type) {
+  return emitter.listenerCount(type);
+};
+
+function isFunction(arg) {
+  return typeof arg === 'function';
+}
+
+function isNumber(arg) {
+  return typeof arg === 'number';
+}
+
+function isObject(arg) {
+  return typeof arg === 'object' && arg !== null;
+}
+
+function isUndefined(arg) {
+  return arg === void 0;
+}
+
+
+/***/ }),
+/* 15 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Attachment = __webpack_require__(21);
@@ -5992,15 +6300,15 @@ function resolveString(data) {
 
 
 /***/ }),
-/* 15 */
+/* 16 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(Buffer) {const path = __webpack_require__(29);
-const Message = __webpack_require__(16);
+const Message = __webpack_require__(17);
 const MessageCollector = __webpack_require__(44);
 const Collection = __webpack_require__(3);
 const Attachment = __webpack_require__(21);
-const RichEmbed = __webpack_require__(14);
+const RichEmbed = __webpack_require__(15);
 const Snowflake = __webpack_require__(7);
 const util = __webpack_require__(6);
 
@@ -6608,13 +6916,13 @@ TextBasedChannel.prototype.search =
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(13).Buffer))
 
 /***/ }),
-/* 16 */
+/* 17 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Mentions = __webpack_require__(40);
 const Attachment = __webpack_require__(41);
 const Embed = __webpack_require__(27);
-const RichEmbed = __webpack_require__(14);
+const RichEmbed = __webpack_require__(15);
 const MessageReaction = __webpack_require__(42);
 const ReactionCollector = __webpack_require__(43);
 const Util = __webpack_require__(4);
@@ -6981,7 +7289,7 @@ class Message {
    */
   isMemberMentioned(member) {
     // Lazy-loading is used here to get around a circular dependency that breaks things
-    if (!GuildMember) GuildMember = __webpack_require__(18);
+    if (!GuildMember) GuildMember = __webpack_require__(19);
     if (this.mentions.everyone) return true;
     if (this.mentions.users.has(member.id)) return true;
     if (member instanceof GuildMember && member.roles.some(r => this.mentions.roles.has(r.id))) return true;
@@ -7218,7 +7526,7 @@ module.exports = Message;
 
 
 /***/ }),
-/* 17 */
+/* 18 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Constants = __webpack_require__(0);
@@ -7475,10 +7783,10 @@ module.exports = Emoji;
 
 
 /***/ }),
-/* 18 */
+/* 19 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const TextBasedChannel = __webpack_require__(15);
+const TextBasedChannel = __webpack_require__(16);
 const Role = __webpack_require__(8);
 const Permissions = __webpack_require__(5);
 const Collection = __webpack_require__(3);
@@ -8090,7 +8398,7 @@ module.exports = GuildMember;
 
 
 /***/ }),
-/* 19 */
+/* 20 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const Channel = __webpack_require__(12);
@@ -8625,314 +8933,6 @@ module.exports = GuildChannel;
 
 
 /***/ }),
-/* 20 */
-/***/ (function(module, exports) {
-
-// Copyright Joyent, Inc. and other Node contributors.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to permit
-// persons to whom the Software is furnished to do so, subject to the
-// following conditions:
-//
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-// USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-function EventEmitter() {
-  this._events = this._events || {};
-  this._maxListeners = this._maxListeners || undefined;
-}
-module.exports = EventEmitter;
-
-// Backwards-compat with node 0.10.x
-EventEmitter.EventEmitter = EventEmitter;
-
-EventEmitter.prototype._events = undefined;
-EventEmitter.prototype._maxListeners = undefined;
-
-// By default EventEmitters will print a warning if more than 10 listeners are
-// added to it. This is a useful default which helps finding memory leaks.
-EventEmitter.defaultMaxListeners = 10;
-
-// Obviously not all Emitters should be limited to 10. This function allows
-// that to be increased. Set to zero for unlimited.
-EventEmitter.prototype.setMaxListeners = function(n) {
-  if (!isNumber(n) || n < 0 || isNaN(n))
-    throw TypeError('n must be a positive number');
-  this._maxListeners = n;
-  return this;
-};
-
-EventEmitter.prototype.emit = function(type) {
-  var er, handler, len, args, i, listeners;
-
-  if (!this._events)
-    this._events = {};
-
-  // If there is no 'error' event listener then throw.
-  if (type === 'error') {
-    if (!this._events.error ||
-        (isObject(this._events.error) && !this._events.error.length)) {
-      er = arguments[1];
-      if (er instanceof Error) {
-        throw er; // Unhandled 'error' event
-      } else {
-        // At least give some kind of context to the user
-        var err = new Error('Uncaught, unspecified "error" event. (' + er + ')');
-        err.context = er;
-        throw err;
-      }
-    }
-  }
-
-  handler = this._events[type];
-
-  if (isUndefined(handler))
-    return false;
-
-  if (isFunction(handler)) {
-    switch (arguments.length) {
-      // fast cases
-      case 1:
-        handler.call(this);
-        break;
-      case 2:
-        handler.call(this, arguments[1]);
-        break;
-      case 3:
-        handler.call(this, arguments[1], arguments[2]);
-        break;
-      // slower
-      default:
-        args = Array.prototype.slice.call(arguments, 1);
-        handler.apply(this, args);
-    }
-  } else if (isObject(handler)) {
-    args = Array.prototype.slice.call(arguments, 1);
-    listeners = handler.slice();
-    len = listeners.length;
-    for (i = 0; i < len; i++)
-      listeners[i].apply(this, args);
-  }
-
-  return true;
-};
-
-EventEmitter.prototype.addListener = function(type, listener) {
-  var m;
-
-  if (!isFunction(listener))
-    throw TypeError('listener must be a function');
-
-  if (!this._events)
-    this._events = {};
-
-  // To avoid recursion in the case that type === "newListener"! Before
-  // adding it to the listeners, first emit "newListener".
-  if (this._events.newListener)
-    this.emit('newListener', type,
-              isFunction(listener.listener) ?
-              listener.listener : listener);
-
-  if (!this._events[type])
-    // Optimize the case of one listener. Don't need the extra array object.
-    this._events[type] = listener;
-  else if (isObject(this._events[type]))
-    // If we've already got an array, just append.
-    this._events[type].push(listener);
-  else
-    // Adding the second element, need to change to array.
-    this._events[type] = [this._events[type], listener];
-
-  // Check for listener leak
-  if (isObject(this._events[type]) && !this._events[type].warned) {
-    if (!isUndefined(this._maxListeners)) {
-      m = this._maxListeners;
-    } else {
-      m = EventEmitter.defaultMaxListeners;
-    }
-
-    if (m && m > 0 && this._events[type].length > m) {
-      this._events[type].warned = true;
-      console.error('(node) warning: possible EventEmitter memory ' +
-                    'leak detected. %d listeners added. ' +
-                    'Use emitter.setMaxListeners() to increase limit.',
-                    this._events[type].length);
-      if (typeof console.trace === 'function') {
-        // not supported in IE 10
-        console.trace();
-      }
-    }
-  }
-
-  return this;
-};
-
-EventEmitter.prototype.on = EventEmitter.prototype.addListener;
-
-EventEmitter.prototype.once = function(type, listener) {
-  if (!isFunction(listener))
-    throw TypeError('listener must be a function');
-
-  var fired = false;
-
-  function g() {
-    this.removeListener(type, g);
-
-    if (!fired) {
-      fired = true;
-      listener.apply(this, arguments);
-    }
-  }
-
-  g.listener = listener;
-  this.on(type, g);
-
-  return this;
-};
-
-// emits a 'removeListener' event iff the listener was removed
-EventEmitter.prototype.removeListener = function(type, listener) {
-  var list, position, length, i;
-
-  if (!isFunction(listener))
-    throw TypeError('listener must be a function');
-
-  if (!this._events || !this._events[type])
-    return this;
-
-  list = this._events[type];
-  length = list.length;
-  position = -1;
-
-  if (list === listener ||
-      (isFunction(list.listener) && list.listener === listener)) {
-    delete this._events[type];
-    if (this._events.removeListener)
-      this.emit('removeListener', type, listener);
-
-  } else if (isObject(list)) {
-    for (i = length; i-- > 0;) {
-      if (list[i] === listener ||
-          (list[i].listener && list[i].listener === listener)) {
-        position = i;
-        break;
-      }
-    }
-
-    if (position < 0)
-      return this;
-
-    if (list.length === 1) {
-      list.length = 0;
-      delete this._events[type];
-    } else {
-      list.splice(position, 1);
-    }
-
-    if (this._events.removeListener)
-      this.emit('removeListener', type, listener);
-  }
-
-  return this;
-};
-
-EventEmitter.prototype.removeAllListeners = function(type) {
-  var key, listeners;
-
-  if (!this._events)
-    return this;
-
-  // not listening for removeListener, no need to emit
-  if (!this._events.removeListener) {
-    if (arguments.length === 0)
-      this._events = {};
-    else if (this._events[type])
-      delete this._events[type];
-    return this;
-  }
-
-  // emit removeListener for all listeners on all events
-  if (arguments.length === 0) {
-    for (key in this._events) {
-      if (key === 'removeListener') continue;
-      this.removeAllListeners(key);
-    }
-    this.removeAllListeners('removeListener');
-    this._events = {};
-    return this;
-  }
-
-  listeners = this._events[type];
-
-  if (isFunction(listeners)) {
-    this.removeListener(type, listeners);
-  } else if (listeners) {
-    // LIFO order
-    while (listeners.length)
-      this.removeListener(type, listeners[listeners.length - 1]);
-  }
-  delete this._events[type];
-
-  return this;
-};
-
-EventEmitter.prototype.listeners = function(type) {
-  var ret;
-  if (!this._events || !this._events[type])
-    ret = [];
-  else if (isFunction(this._events[type]))
-    ret = [this._events[type]];
-  else
-    ret = this._events[type].slice();
-  return ret;
-};
-
-EventEmitter.prototype.listenerCount = function(type) {
-  if (this._events) {
-    var evlistener = this._events[type];
-
-    if (isFunction(evlistener))
-      return 1;
-    else if (evlistener)
-      return evlistener.length;
-  }
-  return 0;
-};
-
-EventEmitter.listenerCount = function(emitter, type) {
-  return emitter.listenerCount(type);
-};
-
-function isFunction(arg) {
-  return typeof arg === 'function';
-}
-
-function isNumber(arg) {
-  return typeof arg === 'number';
-}
-
-function isObject(arg) {
-  return typeof arg === 'object' && arg !== null;
-}
-
-function isUndefined(arg) {
-  return arg === void 0;
-}
-
-
-/***/ }),
 /* 21 */
 /***/ (function(module, exports) {
 
@@ -9021,9 +9021,9 @@ const util = __webpack_require__(6);
 const Long = __webpack_require__(26);
 const User = __webpack_require__(10);
 const Role = __webpack_require__(8);
-const Emoji = __webpack_require__(17);
+const Emoji = __webpack_require__(18);
 const Presence = __webpack_require__(11).Presence;
-const GuildMember = __webpack_require__(18);
+const GuildMember = __webpack_require__(19);
 const Constants = __webpack_require__(0);
 const Collection = __webpack_require__(3);
 const Util = __webpack_require__(4);
@@ -10543,16 +10543,18 @@ module.exports = Invite;
 /* 24 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(Buffer) {const path = __webpack_require__(29);
+/* WEBPACK VAR INJECTION */(function(Buffer) {const EventEmitter = __webpack_require__(14);
+const path = __webpack_require__(29);
 const Util = __webpack_require__(4);
 const Attachment = __webpack_require__(21);
-const RichEmbed = __webpack_require__(14);
+const RichEmbed = __webpack_require__(15);
 
 /**
  * Represents a webhook.
  */
-class Webhook {
+class Webhook extends EventEmitter {
   constructor(client, dataOrID, token) {
+    super();
     if (client) {
       /**
        * The client that instantiated the webhook
@@ -12699,11 +12701,11 @@ const snekfetch = __webpack_require__(25);
 const Constants = __webpack_require__(0);
 const convertToBuffer = __webpack_require__(4).convertToBuffer;
 const User = __webpack_require__(10);
-const Message = __webpack_require__(16);
+const Message = __webpack_require__(17);
 const Guild = __webpack_require__(22);
 const Channel = __webpack_require__(12);
-const GuildMember = __webpack_require__(18);
-const Emoji = __webpack_require__(17);
+const GuildMember = __webpack_require__(19);
+const Emoji = __webpack_require__(18);
 const ReactionEmoji = __webpack_require__(30);
 const Role = __webpack_require__(8);
 
@@ -13361,7 +13363,7 @@ module.exports = ReactionEmoji;
 /***/ (function(module, exports, __webpack_require__) {
 
 const Collection = __webpack_require__(3);
-const EventEmitter = __webpack_require__(20).EventEmitter;
+const EventEmitter = __webpack_require__(14).EventEmitter;
 
 /**
  * Filter to be applied to the collector.
@@ -13699,7 +13701,7 @@ module.exports = OAuth2Application;
 /***/ (function(module, exports, __webpack_require__) {
 
 const Channel = __webpack_require__(12);
-const TextBasedChannel = __webpack_require__(15);
+const TextBasedChannel = __webpack_require__(16);
 const Collection = __webpack_require__(3);
 const Constants = __webpack_require__(0);
 
@@ -14361,7 +14363,7 @@ module.exports = MessageAttachment;
 /***/ (function(module, exports, __webpack_require__) {
 
 const Collection = __webpack_require__(3);
-const Emoji = __webpack_require__(17);
+const Emoji = __webpack_require__(18);
 const ReactionEmoji = __webpack_require__(30);
 
 /**
@@ -15203,7 +15205,7 @@ module.exports = RequestHandler;
 /* 49 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const GuildChannel = __webpack_require__(19);
+const GuildChannel = __webpack_require__(20);
 
 /**
  * Represents a guild category channel on Discord.
@@ -15307,7 +15309,7 @@ module.exports = PermissionOverwrites;
 /***/ (function(module, exports, __webpack_require__) {
 
 const Channel = __webpack_require__(12);
-const TextBasedChannel = __webpack_require__(15);
+const TextBasedChannel = __webpack_require__(16);
 const Collection = __webpack_require__(3);
 
 /**
@@ -15381,8 +15383,8 @@ module.exports = DMChannel;
 /* 52 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const GuildChannel = __webpack_require__(19);
-const TextBasedChannel = __webpack_require__(15);
+const GuildChannel = __webpack_require__(20);
+const TextBasedChannel = __webpack_require__(16);
 const Collection = __webpack_require__(3);
 
 /**
@@ -15513,7 +15515,7 @@ module.exports = TextChannel;
 /* 53 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const GuildChannel = __webpack_require__(19);
+const GuildChannel = __webpack_require__(20);
 const Collection = __webpack_require__(3);
 const Permissions = __webpack_require__(5);
 
@@ -15666,7 +15668,7 @@ module.exports = VoiceChannel;
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(Buffer) {const browser = typeof window !== 'undefined';
-const EventEmitter = __webpack_require__(20);
+const EventEmitter = __webpack_require__(14);
 const Constants = __webpack_require__(0);
 const zlib = __webpack_require__(39);
 const PacketManager = __webpack_require__(84);
@@ -16817,15 +16819,15 @@ module.exports = {
   ClientUserSettings: __webpack_require__(56),
   Collector: __webpack_require__(31),
   DMChannel: __webpack_require__(51),
-  Emoji: __webpack_require__(17),
+  Emoji: __webpack_require__(18),
   Game: __webpack_require__(11).Game,
   GroupDMChannel: __webpack_require__(33),
   Guild: __webpack_require__(22),
   GuildAuditLogs: __webpack_require__(47),
-  GuildChannel: __webpack_require__(19),
-  GuildMember: __webpack_require__(18),
+  GuildChannel: __webpack_require__(20),
+  GuildMember: __webpack_require__(19),
   Invite: __webpack_require__(23),
-  Message: __webpack_require__(16),
+  Message: __webpack_require__(17),
   MessageAttachment: __webpack_require__(41),
   MessageCollector: __webpack_require__(44),
   MessageEmbed: __webpack_require__(27),
@@ -16839,7 +16841,7 @@ module.exports = {
   Presence: __webpack_require__(11).Presence,
   ReactionEmoji: __webpack_require__(30),
   ReactionCollector: __webpack_require__(43),
-  RichEmbed: __webpack_require__(14),
+  RichEmbed: __webpack_require__(15),
   Role: __webpack_require__(8),
   TextChannel: __webpack_require__(52),
   User: __webpack_require__(10),
@@ -17666,7 +17668,7 @@ exports.homedir = function () {
 /* 70 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(process) {const EventEmitter = __webpack_require__(20);
+/* WEBPACK VAR INJECTION */(function(process) {const EventEmitter = __webpack_require__(14);
 const Constants = __webpack_require__(0);
 const Permissions = __webpack_require__(5);
 const Util = __webpack_require__(4);
@@ -18312,10 +18314,10 @@ const Collection = __webpack_require__(3);
 const Util = __webpack_require__(4);
 const resolvePermissions = __webpack_require__(75);
 
-const RichEmbed = __webpack_require__(14);
+const RichEmbed = __webpack_require__(15);
 const User = __webpack_require__(10);
-const GuildMember = __webpack_require__(18);
-const Message = __webpack_require__(16);
+const GuildMember = __webpack_require__(19);
+const Message = __webpack_require__(17);
 const Role = __webpack_require__(8);
 const Invite = __webpack_require__(23);
 const Webhook = __webpack_require__(24);
@@ -19536,14 +19538,14 @@ class SequentialRequestHandler extends RequestHandler {
         if (err) {
           if (err.status === 429) {
             this.queue.unshift(item);
-            this.restManager.client.setTimeout(() => {
+            this.client.setTimeout(() => {
               this.globalLimit = false;
               resolve();
-            }, Number(res.headers['retry-after']) + this.restManager.client.options.restTimeOffset);
+            }, Number(res.headers['retry-after']) + this.client.options.restTimeOffset);
             if (res.headers['x-ratelimit-global']) this.globalLimit = true;
           } else if (err.status >= 500 && err.status < 600) {
             this.queue.unshift(item);
-            this.restManager.client.setTimeout(resolve, 1e3 + this.restManager.client.options.restTimeOffset);
+            this.client.setTimeout(resolve, 1e3 + this.client.options.restTimeOffset);
           } else {
             item.reject(err.status >= 400 && err.status < 500 ?
               new DiscordAPIError(res.request.path, res.body, res.request.method) : err);
@@ -19571,9 +19573,9 @@ class SequentialRequestHandler extends RequestHandler {
                 method: item.request.method,
               });
             }
-            this.restManager.client.setTimeout(
+            this.client.setTimeout(
               () => resolve(data),
-              this.requestResetTime - Date.now() + this.timeDifference + this.restManager.client.options.restTimeOffset
+              this.requestResetTime - Date.now() + this.timeDifference + this.client.options.restTimeOffset
             );
           } else {
             resolve(data);
@@ -19754,10 +19756,10 @@ const Guild = __webpack_require__(22);
 const User = __webpack_require__(10);
 const CategoryChannel = __webpack_require__(49);
 const DMChannel = __webpack_require__(51);
-const Emoji = __webpack_require__(17);
+const Emoji = __webpack_require__(18);
 const TextChannel = __webpack_require__(52);
 const VoiceChannel = __webpack_require__(53);
-const GuildChannel = __webpack_require__(19);
+const GuildChannel = __webpack_require__(20);
 const GroupDMChannel = __webpack_require__(33);
 
 class ClientDataManager {
@@ -21203,7 +21205,7 @@ module.exports = MessageReactionRemoveAll;
 /* 127 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const EventEmitter = __webpack_require__(20).EventEmitter;
+const EventEmitter = __webpack_require__(14).EventEmitter;
 const Constants = __webpack_require__(0);
 const WebSocketConnection = __webpack_require__(54);
 
@@ -21346,7 +21348,7 @@ module.exports = ActionsManager;
 /***/ (function(module, exports, __webpack_require__) {
 
 const Action = __webpack_require__(2);
-const Message = __webpack_require__(16);
+const Message = __webpack_require__(17);
 
 class MessageCreateAction extends Action {
   handle(data) {
