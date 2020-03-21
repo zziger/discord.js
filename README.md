@@ -17,6 +17,10 @@
   </p>
 </div>
 
+### This is the fork of the [discord.js](https://npmjs.com/package/discord.js) package with the support of user accounts (in discord.js that support was removed with the version 12).
+### I don't take any responsibility for blocked Discord accounts that used this module.
+### Using this on a user account is prohibited by the [Discord TOS](https://discordapp.com/terms) and can lead to the account block.
+
 ## Table of contents
 
 - [About](#about)

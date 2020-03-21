@@ -1,7 +1,7 @@
 {
-  "name": "discord.js",
+  "name": "discord.js-selfbot",
   "version": "12.0.2",
-  "description": "A powerful library for interacting with the Discord API",
+  "description": "A fork of discord.js with support of user accounts",
   "main": "./src/index",
   "types": "./typings/index.d.ts",
   "scripts": {
