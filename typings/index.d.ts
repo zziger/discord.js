@@ -9,7 +9,7 @@ declare enum ChannelType {
   unknown = 7,
 }
 
-declare module 'discord.js' {
+declare module 'discord.js-selfbot' {
   import BaseCollection from '@discordjs/collection';
   import { EventEmitter } from 'events';
   import { Stream, Readable, Writable } from 'stream';
